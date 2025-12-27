@@ -1,164 +1,135 @@
-/**
- * VIB34D Audio Engine Module
- * Mobile-safe audio reactivity system with global window integration
- * Extracted from monolithic index.html for clean architecture
- */
+import { AudioChoreographer } from '../../src/core/AudioChoreographer.js';
 
 // Global audio state flags - CRITICAL for system integration
-window.audioEnabled = false; // Global audio flag (will auto-enable on interaction)
+window.audioEnabled = false;
 
-/**
- * Provides real-time audio analysis for all visualization systems.
- * This class is mobile-safe and integrates with the global window object.
- */
-export class SimpleAudioEngine {
-    /**
-     * Initializes the audio engine with default values.
-     */
+const defaultReactiveState = () => ({
+    bass: 0,
+    mid: 0,
+    high: 0,
+    energy: 0,
+    bands: new Float32Array(7),
+    triBands: new Float32Array(3),
+    projected: false,
+    sequence: { heartbeat: 0, swell: 0, snap: 0, intensity: 0, mode: 'hybrid' },
+    source: 'idle'
+});
+
+export class ChoreographyAudioEngine {
     constructor() {
-        this.context = null;
-        this.analyser = null;
-        this.dataArray = null;
+        this.choreographer = new AudioChoreographer({ lookaheadMs: 200, fftSize: 256, smoothing: 0.8 });
         this.isActive = false;
-        
-        // Mobile-safe: Initialize with defaults
-        window.audioReactive = {
-            bass: 0,
-            mid: 0, 
-            high: 0,
-            energy: 0
-        };
-        
-        console.log('🎵 Audio Engine: Initialized with default values');
+        this.source = 'idle';
+        this.frameHandle = null;
+        window.audioReactive = defaultReactiveState();
+        console.log('🎵 Audio Choreographer: Ready with lookahead + tri-band gating');
     }
-    
-    /**
-     * Initializes the audio context and starts processing audio data.
-     * @returns {Promise<boolean>} A promise that resolves to true if audio is successfully initialized, and false otherwise.
-     */
-    async init() {
+
+    async init({ preferMic = true } = {}) {
         if (this.isActive) return true;
-        
         try {
-            console.log('🎵 Simple Audio Engine: Starting...');
-            
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.context = new (window.AudioContext || window.webkitAudioContext)();
-            
-            if (this.context.state === 'suspended') {
-                await this.context.resume();
+            if (preferMic) {
+                await this.choreographer.startWithMicrophone();
+                this.source = 'mic';
+            } else {
+                await this.choreographer.startWithOscillator();
+                this.source = 'oscillator';
             }
-            
-            this.analyser = this.context.createAnalyser();
-            this.analyser.fftSize = 256;
-            this.analyser.smoothingTimeConstant = 0.8;
-            
-            const source = this.context.createMediaStreamSource(stream);
-            source.connect(this.analyser);
-            
-            this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-            this.isActive = true;
-            
-            // CRITICAL FIX: Enable global audio flag so visualizers will use the data
-            window.audioEnabled = true;
-            
-            this.startProcessing();
-            console.log('✅ Audio Engine: Active - window.audioEnabled = true');
-            return true;
-            
         } catch (error) {
-            console.log('⚠️ Audio denied - silent mode');
-            window.audioEnabled = false; // Keep audio disabled if permission denied
-            return false;
+            console.warn('Mic unavailable; falling back to oscillator', error);
+            await this.choreographer.startWithOscillator();
+            this.source = 'oscillator';
+        }
+
+        this.markActive();
+        return true;
+    }
+
+    async enableMic() {
+        await this.choreographer.startWithMicrophone();
+        this.source = 'mic';
+        this.markActive();
+    }
+
+    async enableOscillator() {
+        await this.choreographer.startWithOscillator();
+        this.source = 'oscillator';
+        this.markActive();
+    }
+
+    async loadFile(file) {
+        if (!file) return;
+        await this.choreographer.startWithFile(file);
+        this.source = 'file';
+        this.markActive();
+    }
+
+    setSequenceMode(mode) {
+        this.choreographer.setSequenceMode(mode);
+    }
+
+    setTelemetry(payload) {
+        this.choreographer.setTelemetry(payload);
+    }
+
+    markActive() {
+        if (!this.isActive) {
+            this.isActive = true;
+            window.audioEnabled = true;
+            this.startProcessing();
         }
     }
-    
-    /**
-     * Starts processing audio data and calculating audio reactive values.
-     */
+
     startProcessing() {
         const process = () => {
-            if (!this.isActive || !this.analyser) {
-                requestAnimationFrame(process);
-                return;
+            if (!this.isActive) return;
+            const frame = this.choreographer.sampleFrame();
+            if (frame) {
+                const [bass = 0, mid = 0, high = 0] = frame.triBands || [];
+                window.audioReactive = {
+                    ...window.audioReactive,
+                    bass,
+                    mid,
+                    high,
+                    energy: frame.energy ?? 0,
+                    bands: frame.bands ?? window.audioReactive.bands,
+                    triBands: frame.triBands ?? window.audioReactive.triBands,
+                    projected: frame.projected ?? false,
+                    sequence: frame.sequence ?? window.audioReactive.sequence,
+                    source: this.source
+                };
             }
-            
-            this.analyser.getByteFrequencyData(this.dataArray);
-            
-            // Simple frequency analysis
-            const len = this.dataArray.length;
-            const bassRange = Math.floor(len * 0.1);
-            const midRange = Math.floor(len * 0.3);
-            
-            let bass = 0, mid = 0, high = 0;
-            
-            for (let i = 0; i < bassRange; i++) bass += this.dataArray[i];
-            for (let i = bassRange; i < midRange; i++) mid += this.dataArray[i];
-            for (let i = midRange; i < len; i++) high += this.dataArray[i];
-            
-            bass = (bass / bassRange) / 255;
-            mid = (mid / (midRange - bassRange)) / 255;
-            high = (high / (len - midRange)) / 255;
-            
-            const smoothing = 0.7;
-            window.audioReactive.bass = bass * smoothing + window.audioReactive.bass * (1 - smoothing);
-            window.audioReactive.mid = mid * smoothing + window.audioReactive.mid * (1 - smoothing);
-            window.audioReactive.high = high * smoothing + window.audioReactive.high * (1 - smoothing);
-            window.audioReactive.energy = (window.audioReactive.bass + window.audioReactive.mid + window.audioReactive.high) / 3;
-            
-            // Debug logging every 5 seconds to verify audio processing
-            if (Date.now() % 5000 < 16) {
-                console.log(`🎵 Audio levels: Bass=${window.audioReactive.bass.toFixed(2)} Mid=${window.audioReactive.mid.toFixed(2)} High=${window.audioReactive.high.toFixed(2)} Energy=${window.audioReactive.energy.toFixed(2)}`);
-            }
-            
-            requestAnimationFrame(process);
+            this.frameHandle = requestAnimationFrame(process);
         };
-        
+
+        if (this.frameHandle) cancelAnimationFrame(this.frameHandle);
         process();
     }
-    
-    /**
-     * Checks if audio is currently active and processing.
-     * @returns {boolean} True if audio is active, false otherwise.
-     */
+
     isAudioActive() {
         return this.isActive && window.audioEnabled;
     }
-    
-    /**
-     * Gets the current audio reactive values.
-     * @returns {object} An object containing the current bass, mid, high, and energy values.
-     */
+
     getAudioLevels() {
         return window.audioReactive;
     }
-    
-    /**
-     * Stops audio processing and cleans up resources.
-     */
+
     stop() {
         this.isActive = false;
         window.audioEnabled = false;
-        
-        if (this.context) {
-            this.context.close();
-            this.context = null;
-        }
-        
-        console.log('🎵 Audio Engine: Stopped');
+        if (this.frameHandle) cancelAnimationFrame(this.frameHandle);
+        this.frameHandle = null;
+        this.choreographer.stop();
+        window.audioReactive = defaultReactiveState();
+        console.log('🎵 Audio Choreographer: Stopped');
     }
 }
 
-/**
- * Sets up the global audio toggle function.
- * This function is responsible for toggling audio reactivity and updating the UI state.
- */
 export function setupAudioToggle() {
     window.toggleAudio = function() {
         const audioBtn = document.querySelector('[onclick="toggleAudio()"]');
-        
+
         if (!window.audioEngine.isActive) {
-            // Try to start audio
             window.audioEngine.init().then(success => {
                 if (success) {
                     if (audioBtn) {
@@ -166,44 +137,43 @@ export function setupAudioToggle() {
                         audioBtn.style.borderColor = '#00ff00';
                         audioBtn.title = 'Audio Reactivity: ON';
                     }
-                    console.log('🎵 Audio Reactivity: ON');
+                    console.log('🎵 Audio Reactivity: ON (choreographer)');
                 } else {
                     console.log('⚠️ Audio permission denied or not available');
                 }
             });
         } else {
-            // Toggle audio processing
-            let audioEnabled = !window.audioEnabled;
-            window.audioEnabled = audioEnabled; // Update global flag
-            
+            const audioEnabled = !window.audioEnabled;
+            window.audioEnabled = audioEnabled;
+
             if (audioBtn) {
-                // Update button visual state
-                audioBtn.style.background = audioEnabled ? 
-                    'linear-gradient(45deg, rgba(0, 255, 0, 0.3), rgba(0, 255, 0, 0.6))' : 
+                audioBtn.style.background = audioEnabled ?
+                    'linear-gradient(45deg, rgba(0, 255, 0, 0.3), rgba(0, 255, 0, 0.6))' :
                     'linear-gradient(45deg, rgba(255, 0, 255, 0.1), rgba(255, 0, 255, 0.3))';
                 audioBtn.style.borderColor = audioEnabled ? '#00ff00' : 'rgba(255, 0, 255, 0.3)';
                 audioBtn.title = `Audio Reactivity: ${audioEnabled ? 'ON' : 'OFF'}`;
             }
-            
-            // Audio permission check for mobile
+
             if (audioEnabled) {
                 navigator.mediaDevices.getUserMedia({ audio: true }).catch(e => {
-                    audioEnabled = false;
                     window.audioEnabled = false;
                     console.log('⚠️ Audio permission denied:', e.message);
                 });
             }
-            
+
             console.log(`🎵 Audio Reactivity: ${audioEnabled ? 'ON' : 'OFF'}`);
         }
     };
 }
 
-// Create and initialize the global audio engine instance
-const audioEngine = new SimpleAudioEngine();
+const audioEngine = new ChoreographyAudioEngine();
 window.audioEngine = audioEngine;
+window.audioSources = {
+    enableMic: () => audioEngine.enableMic(),
+    enableOscillator: () => audioEngine.enableOscillator(),
+    loadFile: (file) => audioEngine.loadFile(file)
+};
 
-// Set up global audio toggle function
 setupAudioToggle();
 
-console.log('🎵 Audio Engine Module: Loaded');
+console.log('🎵 Audio Engine Module: Loaded with choreographer integration');
