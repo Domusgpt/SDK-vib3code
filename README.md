@@ -50,7 +50,6 @@ See [`DOCS/CONTROL_REFERENCE.md`](DOCS/CONTROL_REFERENCE.md) for the full walkth
 
 ## Additional references
 - [`DOCS/CONTROL_REFERENCE.md`](DOCS/CONTROL_REFERENCE.md) – Control IDs, slider ranges, toggle behaviors, and the underlying functions.
-- [`DOCS/ASSET_PACK_PLAYBOOK.md`](DOCS/ASSET_PACK_PLAYBOOK.md) – Agentic onboarding and repeatable recipes for exporting cards, gallery saves, and motion captures.
-- [`DOCS/TELEMETRY_STATUS.md`](DOCS/TELEMETRY_STATUS.md) – Telemetry/CLI gap analysis with the recommended payload format and command surface to make telemetry usable.
+
 - [`TESTING_GUIDE.md`](TESTING_GUIDE.md) – Available testing and verification steps.
 - [`UI-OVERHAUL-PLAN.md`](UI-OVERHAUL-PLAN.md) – Design intents and pending UI polish tasks.
