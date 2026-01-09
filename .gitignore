@@ -5,7 +5,10 @@ node_modules/
 # Build outputs
 dist/
 build/
-*.wasm
+
+# Allow our WASM builds
+!wasm/*.wasm
+!docs/wasm/*.wasm
 
 # IDE
 .idea/
