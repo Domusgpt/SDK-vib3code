@@ -357,7 +357,8 @@ describe('CommandBuffer', () => {
             buffer2.add(new DrawCommand({ vertexCount: 36 }));
             buffer2.end();
 
-            buffer.begin();
+            // Use begin(false) to resume recording without clearing existing commands
+            buffer.begin(false);
             buffer.merge(buffer2);
             buffer.end();
 

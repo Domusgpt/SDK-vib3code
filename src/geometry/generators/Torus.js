@@ -211,4 +211,94 @@ export function generateTorus(radius = 1, density = 16) {
     };
 }
 
+/**
+ * Generate Clifford Torus (alias with common parameter signature)
+ * @param {number} radius - Overall radius
+ * @param {number} tubeRadius - Tube thickness (used for scaling)
+ * @param {number} segments - Points per angle dimension
+ * @returns {object} Geometry object
+ */
+export function generateCliffordTorus(radius = 1, tubeRadius = 0.3, segments = 16) {
+    const vertices = generateCliffordTorusVertices(radius, segments);
+    const edges = generateCliffordTorusEdges(segments);
+
+    return {
+        name: 'clifford_torus',
+        vertices,
+        edges,
+        faces: [],
+        vertexCount: vertices.length,
+        edgeCount: edges.length,
+        faceCount: 0,
+        radius,
+        tubeRadius
+    };
+}
+
+/**
+ * Generate 4D torus with 3 radii
+ * @param {number} r1 - Primary radius
+ * @param {number} r2 - Secondary radius
+ * @param {number} r3 - Tertiary radius (W dimension)
+ * @param {number} segments - Points per dimension
+ * @returns {object} Geometry object
+ */
+export function generate4DTorus(r1 = 1, r2 = 0.3, r3 = 0.1, segments = 12) {
+    const vertices = [];
+    const edges = [];
+
+    const halfSeg = Math.max(2, Math.floor(segments / 2));
+
+    for (let i = 0; i < segments; i++) {
+        const theta = (i / segments) * Math.PI * 2;
+        const ct = Math.cos(theta);
+        const st = Math.sin(theta);
+
+        for (let j = 0; j < segments; j++) {
+            const phi = (j / segments) * Math.PI * 2;
+            const cp = Math.cos(phi);
+            const sp = Math.sin(phi);
+
+            for (let k = 0; k < halfSeg; k++) {
+                const psi = (k / halfSeg) * Math.PI * 2;
+                const cps = Math.cos(psi);
+                const sps = Math.sin(psi);
+
+                const x = (r1 + r2 * cp + r3 * cps) * ct;
+                const y = (r1 + r2 * cp + r3 * cps) * st;
+                const z = r2 * sp;
+                const w = r3 * sps;
+
+                vertices.push(new Vec4(x, y, z, w));
+            }
+        }
+    }
+
+    // Generate edges connecting neighbors
+    for (let i = 0; i < segments; i++) {
+        for (let j = 0; j < segments; j++) {
+            for (let k = 0; k < halfSeg; k++) {
+                const idx = i * segments * halfSeg + j * halfSeg + k;
+                const nextI = ((i + 1) % segments) * segments * halfSeg + j * halfSeg + k;
+                const nextJ = i * segments * halfSeg + ((j + 1) % segments) * halfSeg + k;
+                const nextK = i * segments * halfSeg + j * halfSeg + ((k + 1) % halfSeg);
+
+                edges.push([idx, nextI]);
+                edges.push([idx, nextJ]);
+                edges.push([idx, nextK]);
+            }
+        }
+    }
+
+    return {
+        name: '4d_torus',
+        vertices,
+        edges,
+        faces: [],
+        vertexCount: vertices.length,
+        edgeCount: edges.length,
+        faceCount: 0
+    };
+}
+
 export default generateTorus;

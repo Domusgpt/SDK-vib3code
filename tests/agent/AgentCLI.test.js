@@ -13,22 +13,25 @@ import {
 
 // Mock engine
 function createMockEngine() {
-    return {
+    const engine = {
         currentSystem: 'quantum',
         currentGeometry: 0,
         parameters: {},
-        setParameter: vi.fn((name, value) => {
-            this.parameters = this.parameters || {};
-            this.parameters[name] = value;
-        }),
-        getParameter: vi.fn((name) => {
-            return this.parameters?.[name];
-        }),
+        setParameter: null,
+        getParameter: null,
         setGeometry: vi.fn(),
         setSystem: vi.fn(),
         rotate: vi.fn(),
         resetRotation: vi.fn()
     };
+    // Use regular functions so 'this' refers to the engine object
+    engine.setParameter = vi.fn(function(name, value) {
+        engine.parameters[name] = value;
+    });
+    engine.getParameter = vi.fn(function(name) {
+        return engine.parameters[name];
+    });
+    return engine;
 }
 
 // Create writable stream that captures output

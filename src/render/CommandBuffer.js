@@ -66,13 +66,16 @@ export class CommandBuffer {
 
     /**
      * Begin recording commands
+     * @param {boolean} [clear=true] - Whether to clear existing commands
      * @returns {this}
      */
-    begin() {
-        this._commands = [];
+    begin(clear = true) {
+        if (clear) {
+            this._commands = [];
+            this._resetStats();
+        }
         this._recording = true;
         this._sorted = false;
-        this._resetStats();
         return this;
     }
 

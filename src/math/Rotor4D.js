@@ -98,14 +98,14 @@ export class Rotor4D {
         rotor.s = c;
 
         // Set the appropriate bivector component
-        // Note: negative sign because of geometric algebra conventions
+        // Positive bivector for counterclockwise rotation convention
         switch (plane.toUpperCase()) {
-            case 'XY': rotor.xy = -s; break;
-            case 'XZ': rotor.xz = -s; break;
-            case 'YZ': rotor.yz = -s; break;
-            case 'XW': rotor.xw = -s; break;
-            case 'YW': rotor.yw = -s; break;
-            case 'ZW': rotor.zw = -s; break;
+            case 'XY': rotor.xy = s; break;
+            case 'XZ': rotor.xz = s; break;
+            case 'YZ': rotor.yz = s; break;
+            case 'XW': rotor.xw = s; break;
+            case 'YW': rotor.yw = s; break;
+            case 'ZW': rotor.zw = s; break;
             default:
                 throw new Error(`Invalid rotation plane: ${plane}. Use XY, XZ, YZ, XW, YW, or ZW.`);
         }
@@ -438,30 +438,33 @@ export class Rotor4D {
 
         // 4x4 rotation matrix in column-major order
         // Each column is a transformed basis vector
+        // Formula derived from sandwich product R v R†
+        // Diagonal: s² minus bivectors containing that axis, plus others
+        // Off-diagonal: 2*s*bivector terms for single-plane contributions
         return new Float32Array([
             // Column 0 (transformed X axis)
-            s2 + xy2 + xz2 - yz2 + xw2 - yw2 - zw2 - xyzw2,
-            sxy + xzyz + xwyw + zwxyzw,
-            sxz - xyyz + xwzw - ywxyzw,
-            sxw - xyyw - xzzw + yzxyzw,
+            s2 - xy2 - xz2 + yz2 - xw2 + yw2 + zw2 - xyzw2,
+            sxy + xzyz + xwyw - zwxyzw,
+            sxz - xyyz + xwzw + ywxyzw,
+            sxw - xyyw - xzzw - yzxyzw,
 
             // Column 1 (transformed Y axis)
-            -sxy + xzyz + xwyw - zwxyzw,
-            s2 - xy2 + xz2 + yz2 - xw2 + yw2 - zw2 - xyzw2,
-            syz + xyxz + ywzw + xwxyzw,
-            syw + xyxw - yzzw - xzxyzw,
+            -sxy + xzyz + xwyw + zwxyzw,
+            s2 - xy2 + xz2 - yz2 + xw2 - yw2 + zw2 - xyzw2,
+            syz + xyxz + ywzw - xwxyzw,
+            syw + xyxw - yzzw + xzxyzw,
 
             // Column 2 (transformed Z axis)
-            -sxz - xyyz + xwzw + ywxyzw,
-            -syz + xyxz + ywzw - xwxyzw,
-            s2 - xy2 - xz2 + yz2 - xw2 - yw2 + zw2 - xyzw2,
-            szw + xzxw + yzyw + xyxyzw,
+            -sxz - xyyz + xwzw - ywxyzw,
+            -syz + xyxz + ywzw + xwxyzw,
+            s2 + xy2 - xz2 - yz2 + xw2 + yw2 - zw2 - xyzw2,
+            szw + xzxw + yzyw - xyxyzw,
 
             // Column 3 (transformed W axis)
-            -sxw - xyyw - xzzw - yzxyzw,
-            -syw + xyxw - yzzw + xzxyzw,
-            -szw + xzxw + yzyw - xyxyzw,
-            s2 - xy2 - xz2 - yz2 + xw2 + yw2 + zw2 - xyzw2
+            -sxw - xyyw - xzzw + yzxyzw,
+            -syw + xyxw - yzzw - xzxyzw,
+            -szw + xzxw + yzyw + xyxyzw,
+            s2 + xy2 + xz2 + yz2 - xw2 - yw2 - zw2 - xyzw2
         ]);
     }
 

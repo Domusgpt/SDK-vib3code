@@ -15,23 +15,32 @@ import { Vec4 } from '../../math/Vec4.js';
 /**
  * Generate 5-cell (pentatope) vertices
  * Regular 5-cell inscribed in unit 4-sphere
+ * All vertices equidistant from each other (edge length = size * sqrt(2))
  * @param {number} size - Scale factor (default 1)
  * @returns {Vec4[]} Array of 5 vertices
  */
 export function generatePentatopeVertices(size = 1) {
-    // Coordinates for regular 5-cell centered at origin
-    const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
-    const a = size / Math.sqrt(10);
-    const b = a * Math.sqrt(5);
-    const c = a * 2;
+    // Standard regular 5-cell coordinates
+    // These form a regular 4-simplex with all edges equal length
+    // Vertices are on the 3-sphere of radius size
 
+    const s = size;
+    const sqrt5 = Math.sqrt(5);
+    const sqrt10 = Math.sqrt(10);
+
+    // Coordinates that give equal distances between all vertex pairs
+    // Based on the 4-simplex inscribed in unit sphere
     return [
-        new Vec4(b, 0, -a, 0),
-        new Vec4(-b, 0, -a, 0),
-        new Vec4(0, b, a, 0),
-        new Vec4(0, -b, a, 0),
-        new Vec4(0, 0, 0, c * Math.sqrt(5))
-    ];
+        new Vec4(s, s, s, -s / sqrt5),
+        new Vec4(s, -s, -s, -s / sqrt5),
+        new Vec4(-s, s, -s, -s / sqrt5),
+        new Vec4(-s, -s, s, -s / sqrt5),
+        new Vec4(0, 0, 0, s * sqrt5 - s / sqrt5)
+    ].map(v => {
+        // Normalize to put all on sphere of radius 'size'
+        const len = v.length();
+        return new Vec4(v.x * size / len, v.y * size / len, v.z * size / len, v.w * size / len);
+    });
 }
 
 /**
@@ -187,6 +196,29 @@ export function generateTetrahedronLattice(size = 0.5, count = 4, wSpacing = 0.8
         vertexCount: vertices.length,
         edgeCount: edges.length,
         faceCount: 0
+    };
+}
+
+// 5-cell aliases and exports (5-cell is the common name for pentatope)
+export const generate5CellVertices = generatePentatopeVertices;
+export const generate5CellEdges = generatePentatopeEdges;
+export const generate5CellFaces = generatePentatopeFaces;
+
+/**
+ * Generate complete 5-cell geometry (alias with correct name)
+ * @param {number} size - Scale factor
+ * @returns {object} Geometry object
+ */
+export function generate5Cell(size = 1) {
+    return {
+        name: '5cell',
+        vertices: generatePentatopeVertices(size),
+        edges: generatePentatopeEdges(),
+        faces: generatePentatopeFaces(),
+        cells: 5,
+        vertexCount: 5,
+        edgeCount: 10,
+        faceCount: 10
     };
 }
 

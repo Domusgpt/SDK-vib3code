@@ -411,11 +411,34 @@ export class Node4D {
 
     /**
      * Transform a point from local to world space
+     * Note: In 4D, we can't use homogeneous coordinates for translation
+     * since W is a spatial dimension. We apply rotation/scale via the
+     * rotation part of the matrix, then add world position separately.
      * @param {Vec4} localPoint
      * @returns {Vec4}
      */
     localToWorld(localPoint) {
-        return this.worldMatrix.multiplyVec4(localPoint);
+        // Get local rotation/scale only (exclude translation)
+        // by using the rotation rotor directly
+        const scaledPoint = new Vec4(
+            localPoint.x * this._scale.x,
+            localPoint.y * this._scale.y,
+            localPoint.z * this._scale.z,
+            localPoint.w * this._scale.w
+        );
+
+        // Apply rotation
+        const rotated = this._rotation.rotate(scaledPoint);
+
+        // Add local position
+        const localResult = rotated.add(this._position);
+
+        // If has parent, transform through parent
+        if (this._parent) {
+            return this._parent.localToWorld(localResult);
+        }
+
+        return localResult;
     }
 
     /**

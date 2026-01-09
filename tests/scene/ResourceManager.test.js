@@ -143,9 +143,9 @@ describe('ResourceManager', () => {
         });
 
         it('collects unreferenced resources', () => {
+            manager.autoGC = false; // Disable auto for manual test BEFORE release
             manager.register('test', 'geometry', {});
             manager.release('test');
-            manager.autoGC = false; // Disable auto for manual test
 
             const disposed = manager.runGC();
 

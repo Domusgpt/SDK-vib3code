@@ -349,12 +349,9 @@ export class TelemetryService {
 
     /**
      * Flush buffered events (e.g., to external service)
+     * @returns {object} Payload with events, spans, metrics
      */
     flush() {
-        if (this.eventBuffer.length === 0 && this.spanBuffer.length === 0) {
-            return;
-        }
-
         const payload = {
             events: [...this.eventBuffer],
             spans: [...this.spanBuffer],
@@ -366,8 +363,10 @@ export class TelemetryService {
         this.eventBuffer = [];
         this.spanBuffer = [];
 
-        // Emit flush event for external handlers
-        this.emit('flush', payload);
+        // Emit flush event for external handlers (only if there was data)
+        if (payload.events.length > 0 || payload.spans.length > 0) {
+            this.emit('flush', payload);
+        }
 
         return payload;
     }
