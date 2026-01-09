@@ -1,6 +1,6 @@
 {
   "name": "@vib3/sdk",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "VIB3+ 4D Visualization SDK - Unified engine with 6D rotation, MCP agentic integration, and cross-platform support",
   "type": "module",
   "main": "src/core/VIB3Engine.js",
