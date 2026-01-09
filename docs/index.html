@@ -3,939 +3,740 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIB3+ Engine Demo - 4D Visualization</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #1a1a2e;
-            --bg-tertiary: #252545;
-            --text-primary: #ffffff;
-            --text-secondary: #aaaaaa;
-            --accent-cyan: #00ffff;
-            --accent-magenta: #ff00ff;
-            --accent-green: #00ff88;
-            --border-color: #333;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Header */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 30px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 20px;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: var(--accent-cyan);
-        }
-
-        /* Main Layout */
-        .main-container {
-            display: grid;
-            grid-template-columns: 280px 1fr 300px;
-            min-height: calc(100vh - 60px);
-        }
-
-        /* Left Panel - Controls */
-        .controls-panel {
-            background: var(--bg-secondary);
-            padding: 20px;
-            border-right: 1px solid var(--border-color);
-            overflow-y: auto;
-        }
-
-        .control-section {
-            margin-bottom: 25px;
-        }
-
-        .section-title {
-            font-size: 14px;
-            text-transform: uppercase;
-            color: var(--accent-cyan);
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        /* System Selector */
-        .system-selector {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .system-btn {
-            padding: 12px 8px;
-            background: var(--bg-tertiary);
-            border: 2px solid transparent;
-            border-radius: 8px;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 11px;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .system-btn:hover {
-            border-color: var(--accent-cyan);
-        }
-
-        .system-btn.active {
-            background: var(--accent-cyan);
-            color: var(--bg-primary);
-        }
-
-        .system-btn.quantum { --system-color: var(--accent-green); }
-        .system-btn.faceted { --system-color: #ff4488; }
-        .system-btn.holographic { --system-color: #44aaff; }
-
-        .system-btn.active.quantum { background: var(--accent-green); }
-        .system-btn.active.faceted { background: #ff4488; }
-        .system-btn.active.holographic { background: #44aaff; }
-
-        /* Geometry Dropdown */
-        .geometry-select {
-            width: 100%;
-            padding: 10px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 13px;
-        }
-
-        /* Rotation Sliders */
-        .rotation-sliders {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .slider-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .slider-label {
-            width: 35px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-family: monospace;
-        }
-
-        .slider-input {
-            flex: 1;
-            -webkit-appearance: none;
-            height: 4px;
-            background: var(--bg-tertiary);
-            border-radius: 2px;
-            outline: none;
-        }
-
-        .slider-input::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: var(--accent-cyan);
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .slider-value {
-            width: 45px;
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-align: right;
-            font-family: monospace;
-        }
-
-        /* 3D Space vs 4D Hyperspace labels */
-        .space-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            margin-top: 15px;
-        }
-
-        .space-label:first-child {
-            margin-top: 0;
-        }
-
-        .space-label.hyperspace {
-            color: var(--accent-magenta);
-        }
-
-        /* Center - Visualization */
-        .visualization-area {
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-primary);
-        }
-
-        .canvas-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #mainCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        .canvas-overlay {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .overlay-btn {
-            padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .overlay-btn:hover {
-            background: rgba(0, 255, 255, 0.2);
-            border-color: var(--accent-cyan);
-        }
-
-        /* Info Bar */
-        .info-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 20px;
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border-color);
-            font-size: 12px;
-        }
-
-        .fps-counter {
-            font-family: monospace;
-            color: var(--accent-green);
-        }
-
-        /* Right Panel - Features */
-        .features-panel {
-            background: var(--bg-secondary);
-            padding: 20px;
-            border-left: 1px solid var(--border-color);
-            overflow-y: auto;
-        }
-
-        /* Card Bending Controls */
-        .bend-presets {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        .bend-preset-btn {
-            padding: 8px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.2s;
-        }
-
-        .bend-preset-btn:hover {
-            border-color: var(--accent-cyan);
-        }
-
-        .bend-preset-btn.active {
-            border-color: var(--accent-cyan);
-            background: rgba(0, 255, 255, 0.1);
-        }
-
-        /* Audio Controls */
-        .audio-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .audio-btn {
-            padding: 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .audio-btn:hover {
-            border-color: var(--accent-magenta);
-        }
-
-        .audio-btn.active {
-            border-color: var(--accent-magenta);
-            background: rgba(255, 0, 255, 0.1);
-        }
-
-        .audio-visualizer {
-            height: 60px;
-            background: var(--bg-tertiary);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        /* Export Controls */
-        .export-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .export-btn {
-            padding: 12px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta));
-            border: none;
-            border-radius: 6px;
-            color: var(--bg-primary);
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
-        }
-
-        /* Gallery Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            width: 90%;
-            height: 90%;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .modal-body {
-            height: calc(100% - 60px);
-            overflow: auto;
-        }
-
-        /* Feature Info */
-        .feature-info {
-            padding: 10px;
-            background: var(--bg-tertiary);
-            border-radius: 6px;
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-top: 10px;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .main-container {
-                grid-template-columns: 250px 1fr;
-            }
-            .features-panel {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
-            .controls-panel {
-                display: none;
-            }
-        }
-    </style>
+    <title>VIB3+ Engine - 24 Geometries • 6D Rotation</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" onerror="console.warn('Google Fonts failed to load - using fallback')">
+    
+    <!-- Organized CSS Architecture -->
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/header-enhanced.css">
+    <link rel="stylesheet" href="styles/controls.css">
+    <link rel="stylesheet" href="styles/reactivity.css">
+    <link rel="stylesheet" href="styles/gallery-modal.css">
+    <link rel="stylesheet" href="styles/bottom-bezel.css">
+    <link rel="stylesheet" href="styles/geometry-tabs.css">
+    <link rel="stylesheet" href="styles/mobile.css">
+    <link rel="stylesheet" href="styles/animations.css">
+    <link rel="stylesheet" href="styles/z-index-fix.css">
+    <link rel="stylesheet" href="styles/glitch-icons.css">
 </head>
-<body>
-    <header class="header">
-        <div class="logo">VIB3+ Engine</div>
-        <nav class="nav-links">
-            <a href="#" id="galleryLink">Gallery</a>
-            <a href="#" id="viewerLink">Viewer</a>
-            <a href="#" id="docsLink">Docs</a>
-        </nav>
-    </header>
+<body class="loading">
+    <!-- Enhanced Top Navigation Bar -->
+    <div class="top-bar">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <div class="logo">VIB3+ ENGINE</div>
+            <div class="engine-status">24 GEOMETRIES • 6D</div>
+        </div>
 
-    <main class="main-container">
-        <!-- Left Panel - Controls -->
-        <aside class="controls-panel">
-            <div class="control-section">
-                <h3 class="section-title">System</h3>
-                <div class="system-selector">
-                    <button class="system-btn quantum active" data-system="quantum">Quantum</button>
-                    <button class="system-btn faceted" data-system="faceted">Faceted</button>
-                    <button class="system-btn holographic" data-system="holographic">Holographic</button>
-                </div>
-            </div>
+        <!-- System Selector -->
+        <div class="system-selector">
+            <button class="system-btn active" data-system="faceted" onclick="switchSystem('faceted')">
+                <span class="system-icon">🔷</span>
+                <span>FACETED</span>
+            </button>
+            <button class="system-btn" data-system="quantum" onclick="switchSystem('quantum')">
+                <span class="system-icon">🌌</span>
+                <span>QUANTUM</span>
+            </button>
+            <button class="system-btn" data-system="holographic" onclick="switchSystem('holographic')">
+                <span class="system-icon">✨</span>
+                <span>HOLOGRAPHIC</span>
+            </button>
+            <button class="system-btn" data-system="polychora" onclick="switchSystem('polychora')">
+                <span class="system-icon">🔮</span>
+                <span>POLYCHORA</span>
+            </button>
+        </div>
 
-            <div class="control-section">
-                <h3 class="section-title">Geometry (0-23)</h3>
-                <select class="geometry-select" id="geometrySelect">
-                    <optgroup label="Base Geometries (0-7)">
-                        <option value="0">0 - Tetrahedron</option>
-                        <option value="1">1 - Hypercube</option>
-                        <option value="2">2 - Sphere</option>
-                        <option value="3">3 - Torus</option>
-                        <option value="4">4 - Klein Bottle</option>
-                        <option value="5">5 - Fractal</option>
-                        <option value="6">6 - Wave</option>
-                        <option value="7">7 - Crystal</option>
-                    </optgroup>
-                    <optgroup label="Hypersphere Core (8-15)">
-                        <option value="8">8 - Tetra + Hypersphere</option>
-                        <option value="9">9 - Cube + Hypersphere</option>
-                        <option value="10">10 - Sphere + Hypersphere</option>
-                        <option value="11">11 - Torus + Hypersphere</option>
-                        <option value="12">12 - Klein + Hypersphere</option>
-                        <option value="13">13 - Fractal + Hypersphere</option>
-                        <option value="14">14 - Wave + Hypersphere</option>
-                        <option value="15">15 - Crystal + Hypersphere</option>
-                    </optgroup>
-                    <optgroup label="Hypertetra Core (16-23)">
-                        <option value="16">16 - Tetra + Hypertetra</option>
-                        <option value="17">17 - Cube + Hypertetra</option>
-                        <option value="18">18 - Sphere + Hypertetra</option>
-                        <option value="19">19 - Torus + Hypertetra</option>
-                        <option value="20">20 - Klein + Hypertetra</option>
-                        <option value="21">21 - Fractal + Hypertetra</option>
-                        <option value="22">22 - Wave + Hypertetra</option>
-                        <option value="23">23 - Crystal + Hypertetra</option>
-                    </optgroup>
-                </select>
-            </div>
+        <!-- Action Section -->
+        <div class="action-section">
+            <!-- Save Button (prominent) -->
+            <button class="save-btn" onclick="saveToGallery()" title="Save Current State">
+                💾 <span>SAVE</span>
+            </button>
 
-            <div class="control-section">
-                <h3 class="section-title">6D Rotation</h3>
-                <div class="rotation-sliders">
-                    <div class="space-label">3D Space</div>
-                    <div class="slider-row">
-                        <span class="slider-label">XY</span>
-                        <input type="range" class="slider-input" id="rotXY" min="0" max="6.28" step="0.01" value="0">
-                        <span class="slider-value" id="rotXYVal">0.00</span>
-                    </div>
-                    <div class="slider-row">
-                        <span class="slider-label">XZ</span>
-                        <input type="range" class="slider-input" id="rotXZ" min="0" max="6.28" step="0.01" value="0">
-                        <span class="slider-value" id="rotXZVal">0.00</span>
-                    </div>
-                    <div class="slider-row">
-                        <span class="slider-label">YZ</span>
-                        <input type="range" class="slider-input" id="rotYZ" min="0" max="6.28" step="0.01" value="0">
-                        <span class="slider-value" id="rotYZVal">0.00</span>
-                    </div>
-
-                    <div class="space-label hyperspace">4D Hyperspace</div>
-                    <div class="slider-row">
-                        <span class="slider-label">XW</span>
-                        <input type="range" class="slider-input" id="rotXW" min="0" max="6.28" step="0.01" value="0">
-                        <span class="slider-value" id="rotXWVal">0.00</span>
-                    </div>
-                    <div class="slider-row">
-                        <span class="slider-label">YW</span>
-                        <input type="range" class="slider-input" id="rotYW" min="0" max="6.28" step="0.01" value="0">
-                        <span class="slider-value" id="rotYWVal">0.00</span>
-                    </div>
-                    <div class="slider-row">
-                        <span class="slider-label">ZW</span>
-                        <input type="range" class="slider-input" id="rotZW" min="0" max="6.28" step="0.01" value="0">
-                        <span class="slider-value" id="rotZWVal">0.00</span>
-                    </div>
-                </div>
+            <!-- Other Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="openGallery()" title="Gallery">🖼️</button>
+                <button class="action-btn" onclick="toggleAudio()" title="Audio">🎵</button>
+                <button class="action-btn" onclick="toggleDeviceTilt()" title="Device Tilt (4D Rotation)" id="tiltBtn">📱</button>
+                <button class="action-btn" onclick="showLLMInterface()" title="AI Parameters">🤖</button>
+                <button class="action-btn" onclick="toggleInteractivity()" title="Interactivity Menu (Press I)">I</button>
             </div>
-
-            <div class="control-section">
-                <h3 class="section-title">Variation</h3>
-                <div class="slider-row">
-                    <span class="slider-label">Slot</span>
-                    <input type="range" class="slider-input" id="variationSlot" min="0" max="99" step="1" value="0">
-                    <span class="slider-value" id="variationVal">0</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Center - Visualization -->
-        <section class="visualization-area">
-            <div class="canvas-container">
-                <canvas id="mainCanvas"></canvas>
-                <div class="canvas-overlay">
-                    <button class="overlay-btn" id="fullscreenBtn">⛶ Fullscreen</button>
-                    <button class="overlay-btn" id="resetBtn">↺ Reset</button>
-                    <button class="overlay-btn" id="autoRotateBtn">▶ Auto-Rotate</button>
-                </div>
-            </div>
-            <div class="info-bar">
-                <div>
-                    <span id="systemInfo">Quantum</span> |
-                    <span id="geometryInfo">Geometry 0</span> |
-                    <span id="variationInfo">Variation 0</span>
-                </div>
-                <div class="fps-counter" id="fpsCounter">60 FPS</div>
-            </div>
-        </section>
-
-        <!-- Right Panel - Features -->
-        <aside class="features-panel">
-            <div class="control-section">
-                <h3 class="section-title">Card Bending</h3>
-                <div class="bend-presets">
-                    <button class="bend-preset-btn" data-preset="none">None</button>
-                    <button class="bend-preset-btn" data-preset="subtle">Subtle</button>
-                    <button class="bend-preset-btn active" data-preset="standard">Standard</button>
-                    <button class="bend-preset-btn" data-preset="dramatic">Dramatic</button>
-                    <button class="bend-preset-btn" data-preset="holographic">Holographic</button>
-                </div>
-                <div class="feature-info">
-                    Move mouse over canvas to bend the card effect in 3D.
-                </div>
-            </div>
-
-            <div class="control-section">
-                <h3 class="section-title">Audio Reactivity</h3>
-                <div class="audio-controls">
-                    <button class="audio-btn" id="micBtn">🎤 Microphone</button>
-                    <button class="audio-btn" id="fileBtn">📁 Audio File</button>
-                    <input type="file" id="audioFileInput" accept="audio/*" style="display: none;">
-                </div>
-                <canvas class="audio-visualizer" id="audioVisualizer"></canvas>
-                <div class="feature-info">
-                    Audio features map to 4D rotation planes for reactive visualization.
-                </div>
-            </div>
-
-            <div class="control-section">
-                <h3 class="section-title">Export</h3>
-                <div class="export-controls">
-                    <button class="export-btn" id="screenshotBtn">📷 Screenshot</button>
-                    <button class="export-btn" id="cardExportBtn">🃏 Export Card</button>
-                </div>
-            </div>
-
-            <div class="control-section">
-                <h3 class="section-title">Keyboard Shortcuts</h3>
-                <div class="feature-info">
-                    <strong>F</strong> - Toggle Fullscreen<br>
-                    <strong>R</strong> - Reset Rotation<br>
-                    <strong>Space</strong> - Auto-Rotate<br>
-                    <strong>Ctrl+S</strong> - Screenshot<br>
-                    <strong>G</strong> - Open Gallery<br>
-                    <strong>Esc</strong> - Exit Fullscreen
-                </div>
-            </div>
-        </aside>
-    </main>
-
-    <!-- Gallery Modal -->
-    <div class="modal-overlay" id="galleryModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Gallery - 100 Variations</h2>
-                <button class="modal-close" id="closeGallery">&times;</button>
-            </div>
-            <div class="modal-body" id="galleryContainer"></div>
         </div>
     </div>
 
-    <script type="module">
-        // Demo initialization script
-        const state = {
-            system: 'quantum',
-            geometry: 0,
-            variation: 0,
-            rotation: { xy: 0, xz: 0, yz: 0, xw: 0, yw: 0, zw: 0 },
-            autoRotate: false,
-            bendPreset: 'standard',
-            audioActive: false
+    <!-- Main Canvas Container -->
+    <div class="canvas-container" id="canvasContainer">
+        <!-- Dynamic Canvas Containers - Canvases created/destroyed per system -->
+        <div class="holographic-layers" id="vib34dLayers" style="display: block;"></div>
+        <div class="holographic-layers" id="quantumLayers" style="display: none;"></div>
+        <div class="holographic-layers" id="holographicLayers" style="display: none;"></div>
+        <div class="holographic-layers" id="polychoraLayers" style="display: none;"></div>
+    </div>
+
+    <!-- Bottom Bezel Control Panel (Tab-Based) -->
+    <div class="control-panel" id="controlPanel">
+        <!-- Bezel Header with Tabs -->
+        <div class="bezel-header">
+            <div class="bezel-tabs">
+                <button class="bezel-tab active" data-tab="controls" onclick="switchBezelTab('controls')">
+                    <span class="tab-icon">⚙️</span>
+                    <span>Controls</span>
+                </button>
+                <button class="bezel-tab" data-tab="color" onclick="switchBezelTab('color')">
+                    <span class="tab-icon">🎨</span>
+                    <span>Color</span>
+                </button>
+                <button class="bezel-tab" data-tab="geometry" onclick="switchBezelTab('geometry')">
+                    <span class="tab-icon">🧬</span>
+                    <span>Geometry</span>
+                </button>
+                <button class="bezel-tab" data-tab="reactivity" onclick="switchBezelTab('reactivity')">
+                    <span class="tab-icon">🎛️</span>
+                    <span>Reactivity</span>
+                </button>
+                <button class="bezel-tab" data-tab="export" onclick="switchBezelTab('export')">
+                    <span class="tab-icon">💾</span>
+                    <span>Export</span>
+                </button>
+            </div>
+
+            <!-- Quick Actions (shown when collapsed) -->
+            <div class="quick-access">
+                <button class="quick-action-btn" onclick="quickRandomize()" title="Quick Randomize">🎲</button>
+                <button class="quick-action-btn" onclick="quickSave()" title="Quick Save">💾</button>
+                <button class="quick-action-btn" onclick="quickGallery()" title="Open Gallery">🖼️</button>
+            </div>
+
+            <!-- Collapse Toggle -->
+            <button class="bezel-collapse-btn" onclick="toggleBezelCollapse()" title="Toggle Controls (Ctrl+B / Space)">▼</button>
+        </div>
+
+        <!-- Tab 1: Controls Content (6D Rotations + Visual Parameters) -->
+        <div class="bezel-content active" id="controls-content">
+            <div class="tab-content-grid">
+                <!-- 3D Space Rotations -->
+                <div class="control-section">
+                    <div class="section-title">3D Space Rotations</div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>X-Y Plane</span>
+                            <span class="control-value" id="rot4dXY-display">0.00</span>
+                        </div>
+                        <input type="range" id="rot4dXY" class="control-slider" min="-6.28" max="6.28" step="0.01" value="0"
+                               oninput="updateParameter('rot4dXY', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>X-Z Plane</span>
+                            <span class="control-value" id="rot4dXZ-display">0.00</span>
+                        </div>
+                        <input type="range" id="rot4dXZ" class="control-slider" min="-6.28" max="6.28" step="0.01" value="0"
+                               oninput="updateParameter('rot4dXZ', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Y-Z Plane</span>
+                            <span class="control-value" id="rot4dYZ-display">0.00</span>
+                        </div>
+                        <input type="range" id="rot4dYZ" class="control-slider" min="-6.28" max="6.28" step="0.01" value="0"
+                               oninput="updateParameter('rot4dYZ', this.value)">
+                    </div>
+                </div>
+
+                <!-- 4D Hyperspace Rotations -->
+                <div class="control-section">
+                    <div class="section-title">4D Hyperspace Rotations</div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>X-W Plane</span>
+                            <span class="control-value" id="rot4dXW-display">0.00</span>
+                        </div>
+                        <input type="range" id="rot4dXW" class="control-slider" min="-6.28" max="6.28" step="0.01" value="0"
+                               oninput="updateParameter('rot4dXW', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Y-W Plane</span>
+                            <span class="control-value" id="rot4dYW-display">0.00</span>
+                        </div>
+                        <input type="range" id="rot4dYW" class="control-slider" min="-6.28" max="6.28" step="0.01" value="0"
+                               oninput="updateParameter('rot4dYW', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Z-W Plane</span>
+                            <span class="control-value" id="rot4dZW-display">0.00</span>
+                        </div>
+                        <input type="range" id="rot4dZW" class="control-slider" min="-6.28" max="6.28" step="0.01" value="0"
+                               oninput="updateParameter('rot4dZW', this.value)">
+                    </div>
+                </div>
+
+                <!-- Visual Parameters -->
+                <div class="control-section">
+                    <div class="section-title">Visual Parameters</div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Grid Density</span>
+                            <span class="control-value" id="gridDensity-display">15</span>
+                        </div>
+                        <input type="range" id="gridDensity" class="control-slider" min="5" max="100" step="1" value="15"
+                               oninput="updateParameter('gridDensity', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Morph Factor</span>
+                            <span class="control-value" id="morphFactor-display">1.00</span>
+                        </div>
+                        <input type="range" id="morphFactor" class="control-slider" min="0" max="2" step="0.01" value="1"
+                               oninput="updateParameter('morphFactor', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Chaos</span>
+                            <span class="control-value" id="chaos-display">0.20</span>
+                        </div>
+                        <input type="range" id="chaos" class="control-slider" min="0" max="1" step="0.01" value="0.2"
+                               oninput="updateParameter('chaos', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Speed</span>
+                            <span class="control-value" id="speed-display">1.00</span>
+                        </div>
+                        <input type="range" id="speed" class="control-slider" min="0.1" max="3" step="0.01" value="1"
+                               oninput="updateParameter('speed', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Color Content -->
+        <div class="bezel-content" id="color-content">
+            <div class="tab-content-grid">
+                <div class="control-section">
+                    <div class="section-title">Color Parameters</div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Hue</span>
+                            <span class="control-value" id="hue-display">200°</span>
+                        </div>
+                        <input type="range" id="hue" class="control-slider" min="0" max="360" step="1" value="200"
+                               oninput="updateParameter('hue', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Saturation</span>
+                            <span class="control-value" id="saturation-display">0.80</span>
+                        </div>
+                        <input type="range" id="saturation" class="control-slider" min="0" max="1" step="0.01" value="0.8"
+                               oninput="updateParameter('saturation', this.value)">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Intensity</span>
+                            <span class="control-value" id="intensity-display">0.50</span>
+                        </div>
+                        <input type="range" id="intensity" class="control-slider" min="0" max="1" step="0.01" value="0.5"
+                               oninput="updateParameter('intensity', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Geometry Content (8 Base + 3 Core Tabs = 24 Geometries) -->
+        <div class="bezel-content" id="geometry-content">
+            <div class="tab-content-grid">
+                <div class="control-section">
+                    <div class="section-title">📐 24 Geometry System</div>
+                    <div class="geometry-container" data-active-core="base">
+                        <!-- Core Type Tabs (3 tabs) -->
+                        <div id="coreTabsContainer">
+                            <!-- Populated by geometry-tabs.js -->
+                        </div>
+
+                        <!-- Base Geometry Buttons (8 buttons) -->
+                        <div class="geometry-grid" id="geometryGrid">
+                            <!-- Populated by geometry-tabs.js -->
+                        </div>
+                    </div>
+
+                    <!-- Geometry Info Display -->
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 255, 255, 0.15); border-radius: 8px;">
+                        <div style="font-family: 'Orbitron', monospace; font-size: 0.75rem; color: rgba(255, 255, 255, 0.7); text-align: center;">
+                            <strong style="color: #00ffff;">Active Geometry:</strong>
+                            <span data-geometry-display style="color: #ffffff;">Tetrahedron</span>
+                            <span style="opacity: 0.6; margin-left: 10px;">(#<span data-geometry-display data-geometry-index="0">0</span>)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Reactivity Content -->
+        <div class="bezel-content" id="reactivity-content">
+            <div class="tab-content-grid">
+                <!-- Interactivity Matrix -->
+                <div class="control-section">
+                    <div class="section-title">🎛️ Interactivity Matrix</div>
+                    <div class="reactivity-grid">
+                        <div class="reactivity-header"></div>
+                        <div class="reactivity-header">🔷 FACET</div>
+                        <div class="reactivity-header">🌌 QUANTUM</div>
+                        <div class="reactivity-header">✨ HOLO</div>
+
+                        <div class="reactivity-label">🖱️ Mouse</div>
+                        <div class="reactivity-cell" onclick="document.getElementById('facetedMouse').click()">
+                            <input type="checkbox" id="facetedMouse" onchange="toggleSystemReactivity('faceted', 'mouse', this.checked)">
+                            <span class="cell-text">ROT</span>
+                        </div>
+                        <div class="reactivity-cell" onclick="document.getElementById('quantumMouse').click()">
+                            <input type="checkbox" id="quantumMouse" onchange="toggleSystemReactivity('quantum', 'mouse', this.checked)">
+                            <span class="cell-text">VEL</span>
+                        </div>
+                        <div class="reactivity-cell" onclick="document.getElementById('holographicMouse').click()">
+                            <input type="checkbox" id="holographicMouse" onchange="toggleSystemReactivity('holographic', 'mouse', this.checked)">
+                            <span class="cell-text">SHIMMER</span>
+                        </div>
+
+                        <div class="reactivity-label">👆 Click</div>
+                        <div class="reactivity-cell" onclick="document.getElementById('facetedClick').click()">
+                            <input type="checkbox" id="facetedClick" onchange="toggleSystemReactivity('faceted', 'click', this.checked)">
+                            <span class="cell-text">BURST</span>
+                        </div>
+                        <div class="reactivity-cell" onclick="document.getElementById('quantumClick').click()">
+                            <input type="checkbox" id="quantumClick" onchange="toggleSystemReactivity('quantum', 'click', this.checked)">
+                            <span class="cell-text">BLAST</span>
+                        </div>
+                        <div class="reactivity-cell" onclick="document.getElementById('holographicClick').click()">
+                            <input type="checkbox" id="holographicClick" onchange="toggleSystemReactivity('holographic', 'click', this.checked)">
+                            <span class="cell-text">RIPPLE</span>
+                        </div>
+
+                        <div class="reactivity-label">🌀 Scroll</div>
+                        <div class="reactivity-cell" onclick="document.getElementById('facetedScroll').click()">
+                            <input type="checkbox" id="facetedScroll" onchange="toggleSystemReactivity('faceted', 'scroll', this.checked)">
+                            <span class="cell-text">CYCLE</span>
+                        </div>
+                        <div class="reactivity-cell" onclick="document.getElementById('quantumScroll').click()">
+                            <input type="checkbox" id="quantumScroll" onchange="toggleSystemReactivity('quantum', 'scroll', this.checked)">
+                            <span class="cell-text">WAVE</span>
+                        </div>
+                        <div class="reactivity-cell" onclick="document.getElementById('holographicScroll').click()">
+                            <input type="checkbox" id="holographicScroll" onchange="toggleSystemReactivity('holographic', 'scroll', this.checked)">
+                            <span class="cell-text">SWEEP</span>
+                        </div>
+                    </div>
+                    <div class="reactivity-note">Toggle mouse, click, and scroll interactions per system</div>
+                </div>
+
+                <!-- Audio Reactivity Matrix -->
+                <div class="control-section">
+                    <div class="section-title">🎵 Audio Reactivity Matrix</div>
+                    <div class="audio-grid">
+                        <div class="audio-header"></div>
+                        <div class="audio-header">🎨 COLOR</div>
+                        <div class="audio-header">🧬 GEO</div>
+                        <div class="audio-header">🌀 MOVE</div>
+
+                        <div class="audio-label">LOW</div>
+                        <div class="audio-cell" onclick="document.getElementById('lowColor').click()">
+                            <input type="checkbox" id="lowColor" onchange="toggleAudioReactivity('low', 'color', this.checked)">
+                            <span class="cell-text">30%</span>
+                        </div>
+                        <div class="audio-cell" onclick="document.getElementById('lowGeometry').click()">
+                            <input type="checkbox" id="lowGeometry" onchange="toggleAudioReactivity('low', 'geometry', this.checked)">
+                            <span class="cell-text">30%</span>
+                        </div>
+                        <div class="audio-cell" onclick="document.getElementById('lowMovement').click()">
+                            <input type="checkbox" id="lowMovement" onchange="toggleAudioReactivity('low', 'movement', this.checked)">
+                            <span class="cell-text">30%</span>
+                        </div>
+
+                        <div class="audio-label">MED</div>
+                        <div class="audio-cell" onclick="document.getElementById('mediumColor').click()">
+                            <input type="checkbox" id="mediumColor" checked onchange="toggleAudioReactivity('medium', 'color', this.checked)">
+                            <span class="cell-text">100%</span>
+                        </div>
+                        <div class="audio-cell" onclick="document.getElementById('mediumGeometry').click()">
+                            <input type="checkbox" id="mediumGeometry" onchange="toggleAudioReactivity('medium', 'geometry', this.checked)">
+                            <span class="cell-text">100%</span>
+                        </div>
+                        <div class="audio-cell" onclick="document.getElementById('mediumMovement').click()">
+                            <input type="checkbox" id="mediumMovement" onchange="toggleAudioReactivity('medium', 'movement', this.checked)">
+                            <span class="cell-text">100%</span>
+                        </div>
+
+                        <div class="audio-label">HIGH</div>
+                        <div class="audio-cell" onclick="document.getElementById('highColor').click()">
+                            <input type="checkbox" id="highColor" onchange="toggleAudioReactivity('high', 'color', this.checked)">
+                            <span class="cell-text">200%</span>
+                        </div>
+                        <div class="audio-cell" onclick="document.getElementById('highGeometry').click()">
+                            <input type="checkbox" id="highGeometry" onchange="toggleAudioReactivity('high', 'geometry', this.checked)">
+                            <span class="cell-text">200%</span>
+                        </div>
+                        <div class="audio-cell" onclick="document.getElementById('highMovement').click()">
+                            <input type="checkbox" id="highMovement" onchange="toggleAudioReactivity('high', 'movement', this.checked)">
+                            <span class="cell-text">200%</span>
+                        </div>
+                    </div>
+                    <div class="audio-note">Control audio sensitivity and which parameters react</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Export Content -->
+        <div class="bezel-content" id="export-content">
+            <div class="tab-content-grid">
+                <div class="control-section">
+                    <div class="section-title">📤 Export & Actions</div>
+                    <div class="action-button-row">
+                        <button class="panel-btn" onclick="createTradingCard()">🎴 Trading Card</button>
+                        <button class="panel-btn" onclick="openGallery()">🖼️ Open Gallery</button>
+                        <button class="panel-btn" onclick="resetAll()">🔄 Reset All</button>
+                    </div>
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 255, 255, 0.15); border-radius: 8px; text-align: center;">
+                        <div style="font-family: 'Orbitron', monospace; font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+                            💡 <strong style="color: #00ffff;">TIP:</strong> Use <strong>🎲 Randomize All</strong> and <strong>🎯 Random Tab</strong> buttons at the top of each tab to randomize parameters!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- URL Parameter Handler (runs first) -->
+    <script type="module" src="js/core/url-params.js"></script>
+
+    <!-- Gallery Preview Fix (runs early for gallery previews) -->
+    <script type="module" src="js/core/gallery-preview-fix.js"></script>
+
+    <!-- Core JavaScript Modules (NEW CLEAN ARCHITECTURE) - Order matters for globals -->
+    <script type="module" src="js/audio/audio-engine.js"></script>
+    <script type="module" src="js/controls/ui-handlers.js"></script>
+    <script type="module" src="js/gallery/gallery-manager.js"></script>
+    <script type="module" src="js/gallery/gallery-modal.js"></script>
+    <script type="module" src="js/ui/bezel-tabs.js"></script>
+    <script type="module" src="js/geometry/geometry-tabs.js"></script>
+    <script type="module" src="js/interactions/device-tilt.js"></script>
+    <script type="module" src="js/core/ui-fixes.js"></script>
+
+    <!-- Enhanced UI Modules -->
+    <script type="module" src="js/ui/geometric-icons.js"></script>
+    <script type="module" src="js/core/comprehensive-fixes.js"></script>
+    <script type="module" src="js/core/global-shortcuts.js"></script>
+    <script type="module" src="js/core/performance-optimizer.js"></script>
+    <script type="module" src="js/core/state-manager.js"></script>
+    <script type="module" src="js/core/layout-polish.js"></script>
+    <script type="module" src="js/core/system-diagnostics.js"></script>
+    <script type="module" src="js/core/loading-states.js"></script>
+    <script type="module" src="js/core/visual-test-suite.js"></script>
+
+    <!-- Initialize globals and user parameter state BEFORE main app -->
+    <script>
+        // Initialize global state that modules need
+        window.userParameterState = {};
+        // CRITICAL FIX: Don't overwrite currentSystem if URL parameters already set it
+        if (!window.currentSystem) {
+            window.currentSystem = 'faceted';
+            console.log('🔧 Global: Set currentSystem to default faceted');
+        } else {
+            console.log(`🔧 Global: Preserving existing currentSystem = '${window.currentSystem}'`);
+        }
+        window.moduleReady = false;
+        
+        // Initialize geometries data - 24 GEOMETRIES PER SYSTEM
+        window.geometries = {
+            faceted: [
+                // Base geometries (0-7)
+                'Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal',
+                // Hypersphere Core (8-15)
+                '🌀 Tetrahedron Core', '🌀 Hypercube Core', '🌀 Sphere Core', '🌀 Torus Core',
+                '🌀 Klein Core', '🌀 Fractal Core', '🌀 Wave Core', '🌀 Crystal Core',
+                // Hypertetrahedron Core (16-23)
+                '🔺 Tetrahedron Core', '🔺 Hypercube Core', '🔺 Sphere Core', '🔺 Torus Core',
+                '🔺 Klein Core', '🔺 Fractal Core', '🔺 Wave Core', '🔺 Crystal Core'
+            ],
+            quantum: [
+                // Base geometries (0-7)
+                'Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal',
+                // Hypersphere Core (8-15)
+                '🌀 Tetrahedron Core', '🌀 Hypercube Core', '🌀 Sphere Core', '🌀 Torus Core',
+                '🌀 Klein Core', '🌀 Fractal Core', '🌀 Wave Core', '🌀 Crystal Core',
+                // Hypertetrahedron Core (16-23)
+                '🔺 Tetrahedron Core', '🔺 Hypercube Core', '🔺 Sphere Core', '🔺 Torus Core',
+                '🔺 Klein Core', '🔺 Fractal Core', '🔺 Wave Core', '🔺 Crystal Core'
+            ],
+            holographic: ['HOLOGRAPHIC'], // Single holographic mode
+            polychora: ['5-CELL', 'TESSERACT', '16-CELL', '24-CELL', '600-CELL', '120-CELL']
         };
+        
+        console.log('🔧 Global state initialized for clean architecture');
+    </script>
 
-        // Canvas setup
-        const canvas = document.getElementById('mainCanvas');
-        const ctx = canvas.getContext('2d');
-
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth * window.devicePixelRatio;
-            canvas.height = container.clientHeight * window.devicePixelRatio;
-            canvas.style.width = container.clientWidth + 'px';
-            canvas.style.height = container.clientHeight + 'px';
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // Simple 4D visualization demo
-        function render() {
-            ctx.fillStyle = '#0a0a0f';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
-            const scale = Math.min(canvas.width, canvas.height) * 0.3;
-
-            // Generate 4D points based on geometry
-            const points = generate4DGeometry(state.geometry);
-
-            // Apply 6D rotation
-            const rotated = points.map(p => rotate6D(p, state.rotation));
-
-            // Project to 3D then 2D
-            const projected = rotated.map(p => project4Dto2D(p, scale));
-
-            // Draw
-            ctx.strokeStyle = getSystemColor(state.system);
-            ctx.lineWidth = 2;
-            ctx.shadowColor = getSystemColor(state.system);
-            ctx.shadowBlur = 10;
-
-            // Draw edges
-            ctx.beginPath();
-            for (let i = 0; i < projected.length; i++) {
-                for (let j = i + 1; j < projected.length; j++) {
-                    const dist = Math.sqrt(
-                        (rotated[i][0] - rotated[j][0]) ** 2 +
-                        (rotated[i][1] - rotated[j][1]) ** 2 +
-                        (rotated[i][2] - rotated[j][2]) ** 2 +
-                        (rotated[i][3] - rotated[j][3]) ** 2
-                    );
-                    if (dist < 1.5) {
-                        ctx.moveTo(cx + projected[i][0], cy + projected[i][1]);
-                        ctx.lineTo(cx + projected[j][0], cy + projected[j][1]);
+    <!-- Main Application Module -->
+    <script type="module">
+        (async function() {
+            try {
+                console.log('📦 Starting system imports...');
+                
+                // Import the main app first
+                const VIB34DApp = (await import('./js/core/app.js')).default;
+                console.log('✅ VIB34DApp imported');
+                
+                // Try to import system engines - make them optional for clean architecture demo
+                let VIB34DIntegratedEngine, QuantumEngine, RealHolographicSystem, PolychoraSystem;
+                let CollectionManager, UnifiedSaveManager, ParameterMapper, CanvasManager, TradingCardGenerator, ReactivityManager;
+                
+                try {
+                    const coreEngine = await import('./src/core/Engine.js');
+                    VIB34DIntegratedEngine = coreEngine.VIB34DIntegratedEngine;
+                    console.log('✅ VIB34DIntegratedEngine imported');
+                } catch (e) {
+                    console.warn('⚠️ VIB34DIntegratedEngine not available:', e.message);
+                }
+                
+                try {
+                    const quantumEngine = await import('./src/quantum/QuantumEngine.js');
+                    QuantumEngine = quantumEngine.QuantumEngine;
+                    console.log('✅ QuantumEngine imported');
+                } catch (e) {
+                    console.warn('⚠️ QuantumEngine not available:', e.message);
+                }
+                
+                try {
+                    const holoSystem = await import('./src/holograms/RealHolographicSystem.js');
+                    RealHolographicSystem = holoSystem.RealHolographicSystem;
+                    console.log('✅ RealHolographicSystem imported');
+                } catch (e) {
+                    console.warn('⚠️ RealHolographicSystem not available:', e.message);
+                }
+                
+                try {
+                    const newPolySystem = await import('./src/core/PolychoraSystemNew.js');
+                    NewPolychoraEngine = newPolySystem.NewPolychoraEngine;
+                    console.log('✅ NEW 4D Polychora Engine imported with VIB34D DNA');
+                } catch (e) {
+                    console.warn('⚠️ New Polychora Engine not available:', e.message);
+                    // Fallback to old system if new one fails
+                    try {
+                        const polySystem = await import('./src/core/PolychoraSystem.js');
+                        NewPolychoraEngine = polySystem.PolychoraSystem;
+                        console.log('✅ Fallback to old PolychoraSystem');
+                    } catch (e2) {
+                        console.warn('⚠️ No Polychora system available:', e2.message);
                     }
                 }
-            }
-            ctx.stroke();
-
-            // Draw vertices
-            ctx.fillStyle = '#ffffff';
-            projected.forEach(([x, y]) => {
-                ctx.beginPath();
-                ctx.arc(cx + x, cy + y, 4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Auto-rotate
-            if (state.autoRotate) {
-                state.rotation.xw += 0.01;
-                state.rotation.yw += 0.007;
-                updateSliders();
-            }
-
-            requestAnimationFrame(render);
-        }
-
-        function generate4DGeometry(index) {
-            const baseIndex = index % 8;
-            const coreType = Math.floor(index / 8);
-
-            // Base geometry points
-            let points = [];
-            switch (baseIndex) {
-                case 0: // Tetrahedron
-                    points = [[1,1,1,0], [1,-1,-1,0], [-1,1,-1,0], [-1,-1,1,0]];
-                    break;
-                case 1: // Hypercube (tesseract)
-                    for (let x = -1; x <= 1; x += 2)
-                        for (let y = -1; y <= 1; y += 2)
-                            for (let z = -1; z <= 1; z += 2)
-                                for (let w = -1; w <= 1; w += 2)
-                                    points.push([x, y, z, w]);
-                    break;
-                case 2: // Sphere
-                    for (let i = 0; i < 20; i++) {
-                        const phi = Math.acos(-1 + 2 * i / 20);
-                        const theta = Math.sqrt(20 * Math.PI) * phi;
-                        points.push([
-                            Math.cos(theta) * Math.sin(phi),
-                            Math.sin(theta) * Math.sin(phi),
-                            Math.cos(phi),
-                            Math.sin(phi * 2) * 0.3
-                        ]);
-                    }
-                    break;
-                default:
-                    // Generate procedural points
-                    for (let i = 0; i < 16; i++) {
-                        const angle = (i / 16) * Math.PI * 2;
-                        points.push([
-                            Math.cos(angle),
-                            Math.sin(angle),
-                            Math.cos(angle * 2) * 0.5,
-                            Math.sin(angle * 2) * 0.5
-                        ]);
-                    }
-            }
-
-            // Apply core warp
-            if (coreType === 1) {
-                // Hypersphere warp
-                points = points.map(([x, y, z, w]) => {
-                    const r = Math.sqrt(x*x + y*y + z*z + w*w) || 1;
-                    const factor = Math.sin(r * Math.PI) / r;
-                    return [x * factor, y * factor, z * factor, w * factor + 0.5];
-                });
-            } else if (coreType === 2) {
-                // Hypertetrahedron warp
-                points = points.map(([x, y, z, w]) => {
-                    const offset = (x + y + z + w) * 0.25;
-                    return [x + offset * 0.3, y + offset * 0.3, z + offset * 0.3, w + offset * 0.5];
-                });
-            }
-
-            return points;
-        }
-
-        function rotate6D(p, rot) {
-            let [x, y, z, w] = p;
-
-            // XY rotation
-            let cos = Math.cos(rot.xy), sin = Math.sin(rot.xy);
-            [x, y] = [x * cos - y * sin, x * sin + y * cos];
-
-            // XZ rotation
-            cos = Math.cos(rot.xz); sin = Math.sin(rot.xz);
-            [x, z] = [x * cos - z * sin, x * sin + z * cos];
-
-            // YZ rotation
-            cos = Math.cos(rot.yz); sin = Math.sin(rot.yz);
-            [y, z] = [y * cos - z * sin, y * sin + z * cos];
-
-            // XW rotation
-            cos = Math.cos(rot.xw); sin = Math.sin(rot.xw);
-            [x, w] = [x * cos - w * sin, x * sin + w * cos];
-
-            // YW rotation
-            cos = Math.cos(rot.yw); sin = Math.sin(rot.yw);
-            [y, w] = [y * cos - w * sin, y * sin + w * cos];
-
-            // ZW rotation
-            cos = Math.cos(rot.zw); sin = Math.sin(rot.zw);
-            [z, w] = [z * cos - w * sin, z * sin + w * cos];
-
-            return [x, y, z, w];
-        }
-
-        function project4Dto2D(p, scale) {
-            const [x, y, z, w] = p;
-            const dist = 3;
-            const factor = dist / (dist - w);
-            return [x * factor * scale, y * factor * scale];
-        }
-
-        function getSystemColor(system) {
-            const colors = {
-                quantum: '#00ff88',
-                faceted: '#ff4488',
-                holographic: '#44aaff'
-            };
-            return colors[system] || '#ffffff';
-        }
-
-        function updateSliders() {
-            ['xy', 'xz', 'yz', 'xw', 'yw', 'zw'].forEach(plane => {
-                const slider = document.getElementById(`rot${plane.toUpperCase()}`);
-                const value = document.getElementById(`rot${plane.toUpperCase()}Val`);
-                if (slider && value) {
-                    slider.value = state.rotation[plane];
-                    value.textContent = state.rotation[plane].toFixed(2);
+                
+                // Import other components with fallbacks
+                try {
+                    const canvasManager = await import('./src/core/CanvasManager.js');
+                    CanvasManager = canvasManager.CanvasManager;
+                } catch (e) {
+                    console.warn('⚠️ CanvasManager not available - using stub');
                 }
-            });
-        }
+                
+                try {
+                    const unifiedReactivityManager = await import('./src/core/UnifiedReactivityManager.js');
+                    UnifiedReactivityManager = unifiedReactivityManager.UnifiedReactivityManager;
+                    console.log('✅ UnifiedReactivityManager imported');
+                } catch (e) {
+                    console.warn('⚠️ UnifiedReactivityManager not available');
+                }
+                
+                try {
+                    const reactivityManager = await import('./src/core/ReactivityManager.js');
+                    ReactivityManager = reactivityManager.ReactivityManager;
+                } catch (e) {
+                    console.warn('⚠️ ReactivityManager not available - using stub');
+                }
 
-        function updateInfo() {
-            document.getElementById('systemInfo').textContent = state.system.charAt(0).toUpperCase() + state.system.slice(1);
-            document.getElementById('geometryInfo').textContent = `Geometry ${state.geometry}`;
-            document.getElementById('variationInfo').textContent = `Variation ${state.variation}`;
-        }
+                // Store engine classes globally for system switching
+                window.engineClasses = {
+                    VIB34DIntegratedEngine,
+                    QuantumEngine,
+                    RealHolographicSystem,
+                    NewPolychoraEngine
+                };
+                
+                console.log('📦 Engine classes stored:', Object.keys(window.engineClasses).filter(k => window.engineClasses[k]));
 
-        // Event listeners
-        document.querySelectorAll('.system-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.system-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                state.system = btn.dataset.system;
-                updateInfo();
-            });
-        });
+                // Initialize Unified Reactivity Manager FIRST
+                if (UnifiedReactivityManager) {
+                    const reactivityManager = new UnifiedReactivityManager();
+                    console.log('✅ UnifiedReactivityManager initialized');
+                } else {
+                    // Fallback getCurrentReactivityState function
+                    window.getCurrentReactivityState = function() {
+                        return {
+                            system: window.currentSystem || 'faceted',
+                            mouse: { faceted: true, quantum: false, holographic: false, polychora: false, mixed: false },
+                            click: { faceted: true, quantum: false, holographic: false, polychora: false, mixed: false },
+                            scroll: { faceted: true, quantum: false, holographic: false, polychora: false, mixed: false },
+                            audio: window.audioEnabled || false,
+                            interactivity: window.interactivityEnabled !== false,
+                            deviceTilt: window.deviceTiltHandler?.isEnabled || false
+                        };
+                    };
+                    console.log('⚠️ Using fallback getCurrentReactivityState');
+                }
 
-        document.getElementById('geometrySelect').addEventListener('change', (e) => {
-            state.geometry = parseInt(e.target.value);
-            updateInfo();
-        });
+                // Initialize VIB34D Application
+                const app = new VIB34DApp();
+                window.vib34dApp = app;
+                
+                // CRITICAL FIX: Ensure global functions are available IMMEDIATELY for gallery previews
+                await app.initialize();
+                
+                // Force check that essential functions are global
+                if (!window.syncVisualizerToUI) {
+                    console.error('🚨 CRITICAL: syncVisualizerToUI not available globally after app init');
+                } else {
+                    console.log('✅ Essential functions available globally');
+                }
 
-        ['xy', 'xz', 'yz', 'xw', 'yw', 'zw'].forEach(plane => {
-            const slider = document.getElementById(`rot${plane.toUpperCase()}`);
-            const value = document.getElementById(`rot${plane.toUpperCase()}Val`);
-            slider.addEventListener('input', () => {
-                state.rotation[plane] = parseFloat(slider.value);
-                value.textContent = state.rotation[plane].toFixed(2);
-            });
-        });
+                // Initialize default system
+                const initialSystem = window.currentSystem || 'faceted';
+                if (window.switchSystem) {
+                    await window.switchSystem(initialSystem);
+                }
+                
+                if (window.setupGeometry) {
+                    window.setupGeometry(initialSystem);
+                }
 
-        document.getElementById('variationSlot').addEventListener('input', (e) => {
-            state.variation = parseInt(e.target.value);
-            document.getElementById('variationVal').textContent = state.variation;
-            updateInfo();
-        });
+                window.moduleReady = true;
+                document.body.classList.remove('loading');
 
-        document.getElementById('fullscreenBtn').addEventListener('click', () => {
-            canvas.parentElement.requestFullscreen?.();
-        });
-
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            state.rotation = { xy: 0, xz: 0, yz: 0, xw: 0, yw: 0, zw: 0 };
-            updateSliders();
-        });
-
-        document.getElementById('autoRotateBtn').addEventListener('click', (e) => {
-            state.autoRotate = !state.autoRotate;
-            e.target.textContent = state.autoRotate ? '⏸ Stop' : '▶ Auto-Rotate';
-        });
-
-        document.getElementById('screenshotBtn').addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = `vib3-${state.system}-${state.geometry}-${Date.now()}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-        });
-
-        document.getElementById('galleryLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('galleryModal').style.display = 'flex';
-        });
-
-        document.getElementById('closeGallery').addEventListener('click', () => {
-            document.getElementById('galleryModal').style.display = 'none';
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            switch (e.key.toLowerCase()) {
-                case 'f':
-                    canvas.parentElement.requestFullscreen?.();
-                    break;
-                case 'r':
-                    state.rotation = { xy: 0, xz: 0, yz: 0, xw: 0, yw: 0, zw: 0 };
-                    updateSliders();
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    state.autoRotate = !state.autoRotate;
-                    document.getElementById('autoRotateBtn').textContent = state.autoRotate ? '⏸ Stop' : '▶ Auto-Rotate';
-                    break;
-                case 'g':
-                    document.getElementById('galleryModal').style.display = 'flex';
-                    break;
-                case 'escape':
-                    document.getElementById('galleryModal').style.display = 'none';
-                    break;
+                console.log('🚀 VIB34D Clean Architecture System Loaded');
+                
+                // TESTING MODE: Run architecture tests if requested
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('testing-mode')) {
+                    console.log('🧪 TESTING MODE: Running architecture validation...');
+                    
+                    // Add test results overlay
+                    const testOverlay = document.createElement('div');
+                    testOverlay.id = 'test-overlay';
+                    testOverlay.style.cssText = `
+                        position: fixed;
+                        top: 60px;
+                        left: 20px;
+                        width: 400px;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                        background: rgba(0, 0, 0, 0.95);
+                        border: 2px solid #00ffff;
+                        border-radius: 10px;
+                        padding: 15px;
+                        font-family: 'Orbitron', monospace;
+                        font-size: 0.8rem;
+                        color: #fff;
+                        z-index: 9999;
+                    `;
+                    testOverlay.innerHTML = `
+                        <h3 style="color: #00ffff; margin-bottom: 10px;">🧪 ARCHITECTURE TEST</h3>
+                        <div id="test-results"></div>
+                    `;
+                    document.body.appendChild(testOverlay);
+                    
+                    // Run tests  
+                    setTimeout(runArchitectureTests, 1000);
+                    
+                    function runArchitectureTests() {
+                    const results = document.getElementById('test-results');
+                    let passedTests = 0;
+                    let totalTests = 0;
+                    
+                    function logTest(message, passed) {
+                        totalTests++;
+                        if (passed) passedTests++;
+                        
+                        const div = document.createElement('div');
+                        div.style.cssText = `color: ${passed ? '#00ff00' : '#ff4444'}; margin: 2px 0;`;
+                        div.innerHTML = `${passed ? '✅' : '❌'} ${message}`;
+                        results.appendChild(div);
+                    }
+                    
+                    // Test essential functions
+                    logTest('window.switchSystem available', typeof window.switchSystem === 'function');
+                    logTest('window.selectGeometry available', typeof window.selectGeometry === 'function');
+                    logTest('window.updateParameter available', typeof window.updateParameter === 'function');
+                    logTest('window.randomizeAll available', typeof window.randomizeAll === 'function');
+                    logTest('window.resetAll available', typeof window.resetAll === 'function');
+                    
+                    // Test DOM elements
+                    logTest('Canvas Container exists', !!document.getElementById('canvasContainer'));
+                    logTest('Control Panel exists', !!document.getElementById('controlPanel'));
+                    logTest('Panel Header exists', !!document.getElementById('panelHeader'));
+                    logTest('Faceted Layers exist', !!document.getElementById('vib34dLayers'));
+                    
+                    // Test parameter controls
+                    const params = ['rot4dXW', 'rot4dYW', 'rot4dZW', 'gridDensity', 'morphFactor', 'chaos', 'speed', 'hue', 'intensity', 'saturation'];
+                    params.forEach(param => {
+                        const slider = document.getElementById(param);
+                        logTest(`${param} slider exists`, !!slider);
+                    });
+                    
+                    // Test system buttons
+                    const systems = ['faceted', 'quantum', 'holographic', 'polychora'];
+                    systems.forEach(system => {
+                        const btn = document.querySelector(`[data-system="${system}"]`);
+                        logTest(`${system} button exists`, !!btn);
+                    });
+                    
+                    // Final results
+                    const passRate = ((passedTests / totalTests) * 100).toFixed(1);
+                    const finalDiv = document.createElement('div');
+                    finalDiv.style.cssText = `
+                        color: ${passRate >= 90 ? '#00ff00' : passRate >= 70 ? '#ffff00' : '#ff4444'};
+                        font-weight: bold;
+                        margin-top: 10px;
+                        padding: 10px;
+                        border-top: 1px solid #333;
+                    `;
+                    finalDiv.innerHTML = `
+                        <div>📊 RESULT: ${passedTests}/${totalTests} (${passRate}%)</div>
+                        <div>${passRate >= 90 ? '✅ ARCHITECTURE READY' : passRate >= 70 ? '⚠️ NEEDS FIXES' : '❌ CRITICAL ISSUES'}</div>
+                    `;
+                    results.appendChild(finalDiv);
+                    
+                    console.log(`🧪 Architecture test complete: ${passedTests}/${totalTests} passed (${passRate}%)`);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize VIB34D system:', error);
+                document.body.classList.remove('loading');
+                
+                // Show error overlay
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(255, 0, 0, 0.9);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    font-family: 'Orbitron', monospace;
+                    z-index: 10000;
+                    max-width: 80vw;
+                `;
+                errorDiv.innerHTML = `
+                    <h3>❌ VIB34D Initialization Failed</h3>
+                    <p>${error.message}</p>
+                    <small>Check console for details</small>
+                `;
+                document.body.appendChild(errorDiv);
             }
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                document.getElementById('screenshotBtn').click();
-            }
-        });
-
-        // FPS counter
-        let frameCount = 0;
-        let lastTime = performance.now();
-        function updateFPS() {
-            frameCount++;
-            const now = performance.now();
-            if (now - lastTime >= 1000) {
-                document.getElementById('fpsCounter').textContent = `${frameCount} FPS`;
-                frameCount = 0;
-                lastTime = now;
-            }
-            requestAnimationFrame(updateFPS);
-        }
-
-        // Start
-        updateInfo();
-        render();
-        updateFPS();
+        })();
     </script>
 </body>
 </html>

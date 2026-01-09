@@ -1,0 +1,94 @@
+/**
+ * Z-Index Hierarchy Fix
+ * Ensures UI stays above canvas at all times
+ */
+
+/* Z-Index Stack (highest to lowest) */
+
+/* 1. Top Bar - Highest */
+.top-bar {
+    z-index: 10000 !important;
+}
+
+.top-bar,
+.top-bar * {
+    position: relative;
+}
+
+.system-btn,
+.action-btn,
+.save-btn,
+.logo,
+.logo-section {
+    z-index: 10001 !important;
+}
+
+/* 2. Control Panel / Bezel */
+.control-panel {
+    z-index: 9000 !important;
+}
+
+.control-panel * {
+    position: relative;
+}
+
+/* 3. Floating Debug Button */
+#floating-debug-btn {
+    z-index: 9999 !important;
+}
+
+/* 4. Diagnostics Overlay */
+#system-diagnostics-overlay {
+    z-index: 10002 !important;
+}
+
+/* 5. Canvas - MUST stay below UI */
+.canvas-container {
+    z-index: 1 !important;
+    isolation: isolate; /* Create new stacking context */
+}
+
+.canvas-container,
+.canvas-container * {
+    max-height: 100vh;
+}
+
+/* Force all canvas children to stay in canvas context */
+.holographic-layers,
+.holographic-layers *,
+.visualization-canvas,
+.visualization-canvas *,
+canvas,
+canvas * {
+    z-index: -1 !important; /* NEGATIVE - force BEHIND */
+    position: absolute !important;
+}
+
+/* Prevent any canvas element from escaping */
+.canvas-container canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: -1 !important; /* NEGATIVE */
+}
+
+/* Specifically target all layer divs */
+#vib34dLayers,
+#quantumLayers,
+#holographicLayers,
+#polychoraLayers {
+    z-index: -1 !important;
+    position: absolute !important;
+}
+
+#vib34dLayers *,
+#quantumLayers *,
+#holographicLayers *,
+#polychoraLayers * {
+    z-index: -1 !important;
+}
+
+/* Gallery Modal (when opened) */
+.gallery-modal {
+    z-index: 10003 !important;
+}

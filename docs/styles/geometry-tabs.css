@@ -1,0 +1,356 @@
+/* VIB34D Geometry Selection System - 8 Buttons + 3 Core Tabs */
+
+/* Geometry Container */
+.geometry-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Core Type Tabs - 3 tabs for 3 polytope behaviors */
+.core-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: stretch;
+}
+
+.core-tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.core-tab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.core-tab:hover::before {
+    opacity: 1;
+}
+
+.core-tab-icon {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+}
+
+.core-tab-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.core-tab-range {
+    font-size: 0.65rem;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+/* Base Tab - Cyan Theme */
+.core-tab[data-core="base"] {
+    border-color: rgba(0, 255, 255, 0.2);
+}
+
+.core-tab[data-core="base"]:hover {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.4);
+    color: #00ffff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.core-tab[data-core="base"].active {
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 200, 255, 0.25));
+    border-color: rgba(0, 255, 255, 0.6);
+    color: #00ffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+/* Hypersphere Core Tab - Magenta Theme */
+.core-tab[data-core="hypersphere"] {
+    border-color: rgba(255, 0, 255, 0.2);
+}
+
+.core-tab[data-core="hypersphere"]:hover {
+    background: rgba(255, 0, 255, 0.1);
+    border-color: rgba(255, 0, 255, 0.4);
+    color: #ff00ff;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+}
+
+.core-tab[data-core="hypersphere"].active {
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.2), rgba(200, 0, 255, 0.25));
+    border-color: rgba(255, 0, 255, 0.6);
+    color: #ff00ff;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.1);
+}
+
+/* Hypertetrahedron Core Tab - Orange Theme */
+.core-tab[data-core="hypertetra"] {
+    border-color: rgba(255, 136, 0, 0.2);
+}
+
+.core-tab[data-core="hypertetra"]:hover {
+    background: rgba(255, 136, 0, 0.1);
+    border-color: rgba(255, 136, 0, 0.4);
+    color: #ff8800;
+    box-shadow: 0 0 15px rgba(255, 136, 0, 0.3);
+}
+
+.core-tab[data-core="hypertetra"].active {
+    background: linear-gradient(135deg, rgba(255, 136, 0, 0.2), rgba(255, 100, 0, 0.25));
+    border-color: rgba(255, 136, 0, 0.6);
+    color: #ff8800;
+    box-shadow: 0 0 20px rgba(255, 136, 0, 0.4), inset 0 0 10px rgba(255, 136, 0, 0.1);
+}
+
+/* Geometry Grid - 8 Base Geometry Buttons */
+.geometry-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.geom-btn {
+    padding: 14px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.geom-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.geom-btn:hover::before {
+    opacity: 1;
+}
+
+.geom-icon {
+    font-size: 1.8rem;
+    margin-bottom: 2px;
+}
+
+.geom-name {
+    font-size: 0.7rem;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+/* Base Core - Cyan Buttons */
+.geometry-container[data-active-core="base"] .geom-btn {
+    border-color: rgba(0, 255, 255, 0.2);
+}
+
+.geometry-container[data-active-core="base"] .geom-btn:hover {
+    background: rgba(0, 255, 255, 0.15);
+    border-color: rgba(0, 255, 255, 0.5);
+    color: #00ffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    transform: translateY(-3px);
+}
+
+.geometry-container[data-active-core="base"] .geom-btn.active {
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.25), rgba(0, 200, 255, 0.3));
+    border-color: rgba(0, 255, 255, 0.7);
+    color: #00ffff;
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.5), inset 0 0 15px rgba(0, 255, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+/* Hypersphere Core - Magenta Buttons */
+.geometry-container[data-active-core="hypersphere"] .geom-btn {
+    border-color: rgba(255, 0, 255, 0.2);
+}
+
+.geometry-container[data-active-core="hypersphere"] .geom-btn:hover {
+    background: rgba(255, 0, 255, 0.15);
+    border-color: rgba(255, 0, 255, 0.5);
+    color: #ff00ff;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+    transform: translateY(-3px);
+}
+
+.geometry-container[data-active-core="hypersphere"] .geom-btn.active {
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.25), rgba(200, 0, 255, 0.3));
+    border-color: rgba(255, 0, 255, 0.7);
+    color: #ff00ff;
+    box-shadow: 0 0 25px rgba(255, 0, 255, 0.5), inset 0 0 15px rgba(255, 0, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+/* Hypertetrahedron Core - Orange Buttons */
+.geometry-container[data-active-core="hypertetra"] .geom-btn {
+    border-color: rgba(255, 136, 0, 0.2);
+}
+
+.geometry-container[data-active-core="hypertetra"] .geom-btn:hover {
+    background: rgba(255, 136, 0, 0.15);
+    border-color: rgba(255, 136, 0, 0.5);
+    color: #ff8800;
+    box-shadow: 0 0 20px rgba(255, 136, 0, 0.3);
+    transform: translateY(-3px);
+}
+
+.geometry-container[data-active-core="hypertetra"] .geom-btn.active {
+    background: linear-gradient(135deg, rgba(255, 136, 0, 0.25), rgba(255, 100, 0, 0.3));
+    border-color: rgba(255, 136, 0, 0.7);
+    color: #ff8800;
+    box-shadow: 0 0 25px rgba(255, 136, 0, 0.5), inset 0 0 15px rgba(255, 136, 0, 0.2);
+    transform: translateY(-3px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .geometry-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .geom-btn {
+        padding: 12px 8px;
+        min-height: 55px;
+        font-size: 0.7rem;
+    }
+
+    .geom-icon {
+        font-size: 1.5rem;
+    }
+
+    .geom-name {
+        font-size: 0.65rem;
+    }
+
+    .core-tab {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+    }
+
+    .core-tab-icon {
+        font-size: 1.2rem;
+    }
+
+    .core-tab-name {
+        font-size: 0.7rem;
+    }
+
+    .core-tab-range {
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .geometry-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .geom-btn {
+        padding: 10px 6px;
+        min-height: 50px;
+        font-size: 0.65rem;
+    }
+
+    .geom-icon {
+        font-size: 1.3rem;
+    }
+
+    .geom-name {
+        font-size: 0.6rem;
+    }
+
+    .core-tab {
+        padding: 8px 10px;
+        font-size: 0.7rem;
+    }
+
+    .core-tab-icon {
+        font-size: 1rem;
+    }
+
+    .core-tab-name {
+        font-size: 0.65rem;
+    }
+}
+
+/* Animation Effects */
+.geom-btn,
+.core-tab {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.geom-btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+.core-tab:active {
+    transform: scale(0.97);
+}
+
+/* Glow Animation for Active Elements */
+@keyframes coreGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px var(--glow-color), inset 0 0 10px var(--glow-color);
+    }
+    50% {
+        box-shadow: 0 0 30px var(--glow-color), inset 0 0 15px var(--glow-color);
+    }
+}
+
+.core-tab.active {
+    animation: coreGlow 2s ease-in-out infinite;
+}
+
+.geometry-container[data-active-core="base"] .core-tab.active {
+    --glow-color: rgba(0, 255, 255, 0.4);
+}
+
+.geometry-container[data-active-core="hypersphere"] .core-tab.active {
+    --glow-color: rgba(255, 0, 255, 0.4);
+}
+
+.geometry-container[data-active-core="hypertetra"] .core-tab.active {
+    --glow-color: rgba(255, 136, 0, 0.4);
+}
