@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIB3+ Integrated System - WASM Core + New Architecture</title>
+    <title>VIB3+ Integrated System - 5-Layer Holographic Visualization</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -117,19 +117,34 @@
             margin-bottom: 20px;
         }
 
-        /* Canvas */
+        /* Canvas Container - 5-Layer System */
         .canvas-area {
             position: relative;
             background: var(--bg-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        #mainCanvas {
+        .canvas-stack {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
         }
+
+        .canvas-stack canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Layer order: background(0) -> edges(1) -> geometry(2) -> particles(3) -> shimmer(4) */
+        .layer-background { z-index: 1; }
+        .layer-edges { z-index: 2; }
+        .layer-geometry { z-index: 3; }
+        .layer-particles { z-index: 4; }
+        .layer-shimmer { z-index: 5; pointer-events: none; }
 
         .canvas-overlay {
             position: absolute;
@@ -137,6 +152,7 @@
             left: 16px;
             display: flex;
             gap: 8px;
+            z-index: 10;
         }
 
         .overlay-btn {
@@ -163,6 +179,7 @@
             font-family: monospace;
             font-size: 12px;
             color: var(--accent-quantum);
+            z-index: 10;
         }
 
         /* Controls */
@@ -287,6 +304,7 @@
             gap: 16px;
             font-size: 11px;
             color: var(--text-dim);
+            z-index: 10;
         }
 
         .status-item {
@@ -339,31 +357,48 @@
         .loading-overlay.hidden {
             display: none;
         }
+
+        .layer-indicator {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            z-index: 10;
+        }
+
+        .layer-indicator div {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 2px 0;
+        }
+
+        .layer-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
-        <div class="loading-text" id="loadingText">Initializing WASM Core...</div>
+        <div class="loading-text" id="loadingText">Initializing VIB3+...</div>
     </div>
 
     <!-- Header -->
     <header class="header">
-        <div style="display: flex; align-items: center; gap: 16px;">
-            <div class="logo">VIB3+ INTEGRATED</div>
-            <div class="wasm-badge">WASM CORE ACTIVE</div>
-        </div>
-
+        <div class="logo">VIB3+ Engine</div>
         <div class="system-tabs">
-            <button class="system-tab active" data-system="quantum">QUANTUM</button>
-            <button class="system-tab" data-system="faceted">FACETED</button>
-            <button class="system-tab" data-system="holographic">HOLOGRAPHIC</button>
+            <button class="system-tab active" data-system="quantum">Quantum</button>
+            <button class="system-tab" data-system="faceted">Faceted</button>
+            <button class="system-tab" data-system="holographic">Holographic</button>
         </div>
-
-        <div style="font-size: 11px; color: var(--text-dim);">
-            v1.9.0 | C++ Core | 6D Rotation
-        </div>
+        <span class="wasm-badge" id="wasmBadge">JS FALLBACK</span>
     </header>
 
     <!-- Main Content -->
@@ -371,23 +406,7 @@
         <!-- Left Panel: Rotation Controls -->
         <div class="panel">
             <div class="panel-section">
-                <div class="panel-title">3D Space Rotation</div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>XY Plane</span><span id="xyVal">0.00</span></div>
-                    <input type="range" id="rotXY" min="0" max="6.28" step="0.01" value="0">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>XZ Plane</span><span id="xzVal">0.00</span></div>
-                    <input type="range" id="rotXZ" min="0" max="6.28" step="0.01" value="0">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>YZ Plane</span><span id="yzVal">0.00</span></div>
-                    <input type="range" id="rotYZ" min="0" max="6.28" step="0.01" value="0">
-                </div>
-            </div>
-
-            <div class="panel-section">
-                <div class="panel-title">4D Hyperspace Rotation</div>
+                <div class="panel-title">4D Rotation (Hyperspace)</div>
                 <div class="slider-group">
                     <div class="slider-label"><span>XW Plane</span><span id="xwVal">0.00</span></div>
                     <input type="range" id="rotXW" min="0" max="6.28" step="0.01" value="0">
@@ -399,6 +418,22 @@
                 <div class="slider-group">
                     <div class="slider-label"><span>ZW Plane</span><span id="zwVal">0.00</span></div>
                     <input type="range" id="rotZW" min="0" max="6.28" step="0.01" value="0">
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">3D Rotation</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>XY Plane</span><span id="xyVal">0.00</span></div>
+                    <input type="range" id="rotXY" min="0" max="6.28" step="0.01" value="0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>XZ Plane</span><span id="xzVal">0.00</span></div>
+                    <input type="range" id="rotXZ" min="0" max="6.28" step="0.01" value="0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>YZ Plane</span><span id="yzVal">0.00</span></div>
+                    <input type="range" id="rotYZ" min="0" max="6.28" step="0.01" value="0">
                 </div>
             </div>
 
@@ -415,27 +450,41 @@
             </div>
         </div>
 
-        <!-- Center: Canvas -->
+        <!-- Center: Canvas Stack (5 Layers) -->
         <div class="canvas-area">
-            <canvas id="mainCanvas"></canvas>
+            <div class="canvas-stack" id="canvasStack">
+                <!-- 5 canvases will be created dynamically -->
+            </div>
+
+            <div class="layer-indicator">
+                <div><span class="layer-dot" style="background:#1a1a2e"></span> L1: Background</div>
+                <div><span class="layer-dot" style="background:#4488ff"></span> L2: Edges</div>
+                <div><span class="layer-dot" style="background:#00ff88"></span> L3: Geometry</div>
+                <div><span class="layer-dot" style="background:#ff44aa"></span> L4: Particles</div>
+                <div><span class="layer-dot" style="background:#ffffff"></span> L5: Shimmer</div>
+            </div>
+
             <div class="fps-badge" id="fpsBadge">-- FPS</div>
 
             <div class="canvas-overlay">
-                <button class="overlay-btn" id="autoRotateBtn">▶ Auto-Rotate</button>
-                <button class="overlay-btn" id="resetBtn">↺ Reset</button>
-                <button class="overlay-btn" id="fullscreenBtn">⛶ Fullscreen</button>
+                <button class="overlay-btn" id="autoRotateBtn">Auto-Rotate</button>
+                <button class="overlay-btn" id="resetBtn">Reset</button>
+                <button class="overlay-btn" id="fullscreenBtn">Fullscreen</button>
             </div>
 
             <div class="status-bar">
                 <div class="status-item">
                     <div class="status-dot"></div>
-                    <span id="wasmStatus">WASM</span>
+                    <span id="wasmStatus">JS</span>
                 </div>
                 <div class="status-item">
                     <span id="vertexCount">0 vertices</span>
                 </div>
                 <div class="status-item">
                     <span id="geoInfo">Geometry 0</span>
+                </div>
+                <div class="status-item">
+                    <span id="layerCount">5 layers</span>
                 </div>
             </div>
         </div>
@@ -459,39 +508,328 @@
             </div>
 
             <div class="panel-section">
-                <div class="panel-title">Features (New Architecture)</div>
-                <button class="feature-btn" id="cardBendBtn">
-                    <span class="feature-icon">🃏</span>
-                    <span>Card Bending Effect</span>
-                </button>
+                <div class="panel-title">Features</div>
                 <button class="feature-btn" id="audioBtn">
-                    <span class="feature-icon">🎵</span>
+                    <span class="feature-icon">*</span>
                     <span>Audio Reactivity</span>
                 </button>
                 <button class="feature-btn" id="gyroBtn">
-                    <span class="feature-icon">📱</span>
+                    <span class="feature-icon">@</span>
                     <span>Gyroscope Control</span>
                 </button>
                 <button class="feature-btn" id="exportBtn">
-                    <span class="feature-icon">📸</span>
+                    <span class="feature-icon">#</span>
                     <span>Export Trading Card</span>
                 </button>
             </div>
         </div>
     </main>
 
-    <!-- WASM Module -->
-    <script src="./wasm/vib3_core.js"></script>
-
-    <!-- Application -->
+    <!-- Application Script - No WASM dependency, pure JS -->
     <script type="module">
-        // Import from new src/ modules
-        import { Vec4 } from './src/math/Vec4.js';
-        import { Rotor4D } from './src/math/Rotor4D.js';
-        import { Mat4x4 } from './src/math/Mat4x4.js';
-        import * as Projection from './src/math/Projection.js';
+        // =================================================================
+        // VIB3+ 5-LAYER CANVAS MANAGEMENT SYSTEM
+        // =================================================================
+        // Properly manages 5 canvases per system, destroys on switch
 
-        // State
+        /**
+         * CanvasManager - Manages 5-layer canvas system
+         * Creates/destroys canvases when switching between visualization systems
+         */
+        class CanvasManager {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.canvases = [];
+                this.contexts = [];
+                this.currentSystem = null;
+                this.layerNames = ['background', 'edges', 'geometry', 'particles', 'shimmer'];
+            }
+
+            /**
+             * Initialize 5 canvases for a system
+             * @param {string} system - 'quantum', 'faceted', or 'holographic'
+             */
+            initializeForSystem(system) {
+                // Destroy existing canvases if switching systems
+                if (this.currentSystem !== system) {
+                    this.destroyCanvases();
+                }
+
+                this.currentSystem = system;
+
+                // Create 5 new canvases
+                for (let i = 0; i < 5; i++) {
+                    const canvas = document.createElement('canvas');
+                    canvas.className = `layer-${this.layerNames[i]}`;
+                    canvas.id = `canvas-${system}-${this.layerNames[i]}`;
+                    canvas.dataset.layer = i;
+                    canvas.dataset.system = system;
+
+                    this.container.appendChild(canvas);
+                    this.canvases.push(canvas);
+                    this.contexts.push(canvas.getContext('2d'));
+                }
+
+                this.resize();
+                console.log(`CanvasManager: Created 5 canvases for ${system} system`);
+            }
+
+            /**
+             * Destroy all current canvases
+             */
+            destroyCanvases() {
+                for (const canvas of this.canvases) {
+                    canvas.remove();
+                }
+                this.canvases = [];
+                this.contexts = [];
+                console.log(`CanvasManager: Destroyed canvases for ${this.currentSystem} system`);
+            }
+
+            /**
+             * Resize all canvases to container size
+             */
+            resize() {
+                const dpr = window.devicePixelRatio || 1;
+                const width = this.container.clientWidth;
+                const height = this.container.clientHeight;
+
+                for (const canvas of this.canvases) {
+                    canvas.width = width * dpr;
+                    canvas.height = height * dpr;
+                    canvas.style.width = width + 'px';
+                    canvas.style.height = height + 'px';
+
+                    const ctx = this.contexts[this.canvases.indexOf(canvas)];
+                    ctx.scale(dpr, dpr);
+                }
+            }
+
+            /**
+             * Clear a specific layer
+             * @param {number} layerIndex - 0-4
+             */
+            clearLayer(layerIndex) {
+                const ctx = this.contexts[layerIndex];
+                const canvas = this.canvases[layerIndex];
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            /**
+             * Clear all layers
+             */
+            clearAll() {
+                for (let i = 0; i < 5; i++) {
+                    this.clearLayer(i);
+                }
+            }
+
+            /**
+             * Get context for a specific layer
+             * @param {number} layerIndex - 0-4
+             * @returns {CanvasRenderingContext2D}
+             */
+            getContext(layerIndex) {
+                return this.contexts[layerIndex];
+            }
+
+            /**
+             * Get canvas dimensions
+             * @returns {{width: number, height: number}}
+             */
+            getDimensions() {
+                if (this.canvases.length === 0) return { width: 0, height: 0 };
+                return {
+                    width: this.container.clientWidth,
+                    height: this.container.clientHeight
+                };
+            }
+        }
+
+        // =================================================================
+        // MATH LIBRARY - Inline to avoid module loading issues
+        // =================================================================
+
+        class Vec4 {
+            constructor(x = 0, y = 0, z = 0, w = 0) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.w = w;
+            }
+
+            clone() {
+                return new Vec4(this.x, this.y, this.z, this.w);
+            }
+
+            add(v) {
+                return new Vec4(this.x + v.x, this.y + v.y, this.z + v.z, this.w + v.w);
+            }
+
+            scale(s) {
+                return new Vec4(this.x * s, this.y * s, this.z * s, this.w * s);
+            }
+
+            length() {
+                return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+            }
+
+            normalize() {
+                const len = this.length();
+                if (len === 0) return new Vec4();
+                return this.scale(1 / len);
+            }
+
+            lerp(v, t) {
+                return new Vec4(
+                    this.x + (v.x - this.x) * t,
+                    this.y + (v.y - this.y) * t,
+                    this.z + (v.z - this.z) * t,
+                    this.w + (v.w - this.w) * t
+                );
+            }
+        }
+
+        /**
+         * 4D Rotor using Geometric Algebra
+         * Handles rotation in all 6 planes: XY, XZ, YZ, XW, YW, ZW
+         */
+        class Rotor4D {
+            constructor() {
+                this.s = 1;  // Scalar
+                this.xy = 0; // Bivector components
+                this.xz = 0;
+                this.yz = 0;
+                this.xw = 0;
+                this.yw = 0;
+                this.zw = 0;
+                this.xyzw = 0; // Pseudoscalar
+            }
+
+            static fromPlaneAngle(plane, angle) {
+                const rotor = new Rotor4D();
+                const c = Math.cos(angle / 2);
+                const s = Math.sin(angle / 2);
+
+                rotor.s = c;
+
+                switch (plane.toUpperCase()) {
+                    case 'XY': rotor.xy = s; break;
+                    case 'XZ': rotor.xz = s; break;
+                    case 'YZ': rotor.yz = s; break;
+                    case 'XW': rotor.xw = s; break;
+                    case 'YW': rotor.yw = s; break;
+                    case 'ZW': rotor.zw = s; break;
+                }
+
+                return rotor;
+            }
+
+            static fromEuler6(angles) {
+                let result = new Rotor4D();
+
+                // Apply rotations in order: XY, XZ, YZ, XW, YW, ZW
+                const planes = ['XY', 'XZ', 'YZ', 'XW', 'YW', 'ZW'];
+                const keys = ['xy', 'xz', 'yz', 'xw', 'yw', 'zw'];
+
+                for (let i = 0; i < 6; i++) {
+                    const angle = angles[keys[i]] || 0;
+                    if (Math.abs(angle) > 0.0001) {
+                        const planeRotor = Rotor4D.fromPlaneAngle(planes[i], angle);
+                        result = result.multiply(planeRotor);
+                    }
+                }
+
+                return result;
+            }
+
+            multiply(r) {
+                const result = new Rotor4D();
+
+                // Full geometric product of 4D rotors
+                result.s = this.s * r.s - this.xy * r.xy - this.xz * r.xz - this.yz * r.yz
+                         - this.xw * r.xw - this.yw * r.yw - this.zw * r.zw + this.xyzw * r.xyzw;
+
+                result.xy = this.s * r.xy + this.xy * r.s - this.xz * r.yz + this.yz * r.xz
+                          - this.xw * r.yw + this.yw * r.xw + this.zw * r.xyzw + this.xyzw * r.zw;
+
+                result.xz = this.s * r.xz + this.xy * r.yz + this.xz * r.s - this.yz * r.xy
+                          - this.xw * r.zw - this.yw * r.xyzw + this.zw * r.xw + this.xyzw * r.yw;
+
+                result.yz = this.s * r.yz - this.xy * r.xz + this.xz * r.xy + this.yz * r.s
+                          + this.xw * r.xyzw - this.yw * r.zw + this.zw * r.yw + this.xyzw * r.xw;
+
+                result.xw = this.s * r.xw + this.xy * r.yw + this.xz * r.zw + this.yz * r.xyzw
+                          + this.xw * r.s - this.yw * r.xy - this.zw * r.xz + this.xyzw * r.yz;
+
+                result.yw = this.s * r.yw - this.xy * r.xw + this.xz * r.xyzw + this.yz * r.zw
+                          + this.xw * r.xy + this.yw * r.s - this.zw * r.yz + this.xyzw * r.xz;
+
+                result.zw = this.s * r.zw - this.xy * r.xyzw - this.xz * r.xw - this.yz * r.yw
+                          + this.xw * r.xz + this.yw * r.yz + this.zw * r.s + this.xyzw * r.xy;
+
+                result.xyzw = this.s * r.xyzw + this.xy * r.zw - this.xz * r.yw + this.yz * r.xw
+                            + this.xw * r.yz - this.yw * r.xz + this.zw * r.xy + this.xyzw * r.s;
+
+                return result;
+            }
+
+            reverse() {
+                const result = new Rotor4D();
+                result.s = this.s;
+                result.xy = -this.xy;
+                result.xz = -this.xz;
+                result.yz = -this.yz;
+                result.xw = -this.xw;
+                result.yw = -this.yw;
+                result.zw = -this.zw;
+                result.xyzw = this.xyzw;
+                return result;
+            }
+
+            rotate(v) {
+                // Sandwich product: R * v * R†
+                const { s, xy, xz, yz, xw, yw, zw, xyzw } = this;
+                const { x, y, z, w } = v;
+
+                // Compute R * v
+                const tx = s * x + xy * y + xz * z + xw * w;
+                const ty = s * y - xy * x + yz * z + yw * w;
+                const tz = s * z - xz * x - yz * y + zw * w;
+                const tw = s * w - xw * x - yw * y - zw * z;
+
+                const txyz = xy * z - xz * y + yz * x + xyzw * w;
+                const txyw = xy * w - xw * y + yw * x - xyzw * z;
+                const txzw = xz * w - xw * z + zw * x + xyzw * y;
+                const tyzw = yz * w - yw * z + zw * y - xyzw * x;
+
+                // Compute (R * v) * R†
+                return new Vec4(
+                    tx * s - ty * xy - tz * xz - tw * xw + txyz * yz + txyw * yw + txzw * zw - tyzw * xyzw,
+                    ty * s + tx * xy - tz * yz - tw * yw - txyz * xz - txyw * xw + tyzw * zw + txzw * xyzw,
+                    tz * s + tx * xz + ty * yz - tw * zw + txyz * xy - txzw * xw - tyzw * yw - txyw * xyzw,
+                    tw * s + tx * xw + ty * yw + tz * zw - txyw * xy - txzw * xz - tyzw * yz + txyz * xyzw
+                );
+            }
+        }
+
+        /**
+         * 4D to 3D Perspective Projection
+         */
+        function perspectiveProject(v, d = 2) {
+            const denom = d - v.w;
+            if (Math.abs(denom) < 1e-10) {
+                const sign = denom >= 0 ? 1 : -1;
+                return new Vec4(v.x * sign * 10000, v.y * sign * 10000, v.z * sign * 10000, 0);
+            }
+            const scale = 1 / denom;
+            return new Vec4(v.x * scale, v.y * scale, v.z * scale, 0);
+        }
+
+        // =================================================================
+        // APPLICATION STATE
+        // =================================================================
+
         const state = {
             system: 'quantum',
             geometry: 0,
@@ -499,39 +837,26 @@
             rotation: { xy: 0, xz: 0, yz: 0, xw: 0, yw: 0, zw: 0 },
             projectionDistance: 3,
             pointSize: 4,
-            autoRotate: false,
-            useWasm: false,
-            wasmModule: null
+            autoRotate: false
         };
 
-        // Canvas setup
-        const canvas = document.getElementById('mainCanvas');
-        const ctx = canvas.getContext('2d');
+        let canvasManager = null;
         let animationId = null;
         let lastTime = 0;
         let frameCount = 0;
         let fps = 0;
+        let time = 0;
 
-        // Initialize WASM
-        async function initWasm() {
-            try {
-                document.getElementById('loadingText').textContent = 'Loading WASM Core...';
-                state.wasmModule = await Vib3Core();
-                state.useWasm = true;
-                document.getElementById('wasmStatus').textContent = 'WASM ✓';
-                console.log('WASM Core loaded successfully');
-            } catch (err) {
-                console.warn('WASM not available, using JS fallback:', err);
-                document.getElementById('wasmStatus').textContent = 'JS Fallback';
-            }
-            document.getElementById('loadingText').textContent = 'Initializing visualization...';
-        }
+        // Particle system
+        const particles = [];
 
-        // Generate geometry using new src/geometry system
+        // =================================================================
+        // GEOMETRY GENERATION
+        // =================================================================
+
         function generateGeometry(geometryIndex) {
             const baseIndex = geometryIndex % 8;
             const coreType = Math.floor(geometryIndex / 8);
-
             let points = [];
 
             switch (baseIndex) {
@@ -557,7 +882,7 @@
                     break;
 
                 case 2: // Sphere
-                    const sphereRes = 24;
+                    const sphereRes = 32;
                     for (let i = 0; i < sphereRes; i++) {
                         const phi = Math.acos(-1 + 2 * i / sphereRes);
                         const theta = Math.sqrt(sphereRes * Math.PI) * phi;
@@ -571,7 +896,7 @@
                     break;
 
                 case 3: // Torus
-                    const torusRes = 20;
+                    const torusRes = 24;
                     for (let i = 0; i < torusRes; i++) {
                         for (let j = 0; j < torusRes / 2; j++) {
                             const u = (i / torusRes) * Math.PI * 2;
@@ -588,7 +913,7 @@
                     break;
 
                 case 4: // Klein Bottle
-                    const kleinRes = 20;
+                    const kleinRes = 24;
                     for (let i = 0; i < kleinRes; i++) {
                         for (let j = 0; j < kleinRes / 2; j++) {
                             const u = (i / kleinRes) * Math.PI * 2;
@@ -604,31 +929,28 @@
                     }
                     break;
 
-                case 5: // Fractal (Sierpinski)
-                    const fractalPoints = [
+                case 5: // Fractal
+                    const fractalBase = [
                         new Vec4(0, 1, 0, 0),
                         new Vec4(-1, -0.5, 0.5, 0),
                         new Vec4(1, -0.5, 0.5, 0),
                         new Vec4(0, -0.5, -1, 0),
                         new Vec4(0, 0, 0, 1)
                     ];
-                    // Subdivide
-                    for (let iter = 0; iter < 3; iter++) {
+                    for (const p of fractalBase) points.push(p);
+                    for (let iter = 0; iter < 2; iter++) {
                         const newPoints = [];
-                        for (const p of fractalPoints) {
-                            for (const q of fractalPoints) {
-                                if (p !== q) {
-                                    newPoints.push(p.clone().add(q).scale(0.5));
-                                }
+                        for (let i = 0; i < points.length; i++) {
+                            for (let j = i + 1; j < points.length; j++) {
+                                newPoints.push(points[i].lerp(points[j], 0.5));
                             }
                         }
-                        fractalPoints.push(...newPoints.slice(0, 20));
+                        points = points.concat(newPoints.slice(0, 30));
                     }
-                    points = fractalPoints.slice(0, 50);
                     break;
 
                 case 6: // Wave
-                    const waveRes = 15;
+                    const waveRes = 18;
                     for (let i = 0; i < waveRes; i++) {
                         for (let j = 0; j < waveRes; j++) {
                             const x = (i / waveRes - 0.5) * 2;
@@ -641,7 +963,7 @@
                     }
                     break;
 
-                case 7: // Crystal (Octahedron extended)
+                case 7: // Crystal
                     points = [
                         new Vec4(1, 0, 0, 0), new Vec4(-1, 0, 0, 0),
                         new Vec4(0, 1, 0, 0), new Vec4(0, -1, 0, 0),
@@ -653,29 +975,19 @@
                     break;
             }
 
-            // Apply core warp (from src/geometry/warp/)
+            // Apply core warp
             if (coreType === 1) {
-                // Hypersphere Core warp
+                // Hypersphere Core
                 points = points.map(p => {
                     const len = p.length() || 1;
                     const factor = Math.sin(len * Math.PI) / len;
-                    return new Vec4(
-                        p.x * factor,
-                        p.y * factor,
-                        p.z * factor,
-                        p.w * factor + 0.5
-                    );
+                    return new Vec4(p.x * factor, p.y * factor, p.z * factor, p.w * factor + 0.5);
                 });
             } else if (coreType === 2) {
-                // Hypertetrahedron Core warp
+                // Hypertetra Core
                 points = points.map(p => {
                     const offset = (p.x + p.y + p.z + p.w) * 0.25;
-                    return new Vec4(
-                        p.x + offset * 0.3,
-                        p.y + offset * 0.3,
-                        p.z + offset * 0.3,
-                        p.w + offset * 0.5
-                    );
+                    return new Vec4(p.x + offset * 0.3, p.y + offset * 0.3, p.z + offset * 0.3, p.w + offset * 0.5);
                 });
             }
 
@@ -683,56 +995,42 @@
             return points;
         }
 
-        // Rotate point using new Rotor4D from src/math
-        function rotatePoint(point, rotation) {
-            // Create rotor from all 6 angles using the new math library
-            const rotor = Rotor4D.fromEuler6({
-                xy: rotation.xy,
-                xz: rotation.xz,
-                yz: rotation.yz,
-                xw: rotation.xw,
-                yw: rotation.yw,
-                zw: rotation.zw
-            });
+        // =================================================================
+        // COLOR PALETTES
+        // =================================================================
 
-            return rotor.rotate(point);
-        }
-
-        // Project 4D to 2D using new Projection module
-        function projectTo2D(point, scale) {
-            const projected = Projection.perspective(point, state.projectionDistance);
-            return {
-                x: projected.x * scale,
-                y: projected.y * scale,
-                depth: point.w // Use W for depth coloring
+        function getPalette(system) {
+            const palettes = {
+                quantum: {
+                    primary: [0, 255, 136],
+                    secondary: [0, 200, 255],
+                    accent: [180, 255, 180],
+                    glow: [0, 255, 200],
+                    bg: [5, 15, 20]
+                },
+                faceted: {
+                    primary: [255, 68, 136],
+                    secondary: [255, 136, 200],
+                    accent: [255, 200, 255],
+                    glow: [255, 100, 180],
+                    bg: [20, 5, 15]
+                },
+                holographic: {
+                    primary: [68, 170, 255],
+                    secondary: [136, 200, 255],
+                    accent: [200, 230, 255],
+                    glow: [100, 180, 255],
+                    bg: [5, 10, 25]
+                }
             };
+            return palettes[system] || palettes.quantum;
         }
 
-        // Get system color
-        function getSystemColor(system, depth = 0) {
-            const colors = {
-                quantum: { h: 150, s: 100, l: 50 },    // Green
-                faceted: { h: 330, s: 100, l: 60 },    // Pink
-                holographic: { h: 200, s: 100, l: 60 } // Blue
-            };
-            const c = colors[system] || colors.quantum;
-            const depthFactor = 0.5 + depth * 0.5;
-            return `hsla(${c.h}, ${c.s}%, ${c.l * depthFactor}%, ${0.7 + depth * 0.3})`;
-        }
+        // =================================================================
+        // PARTICLE SYSTEM
+        // =================================================================
 
-        // 5-LAYER HOLOGRAPHIC VISUALIZATION SYSTEM
-        // Layer 1: Deep background glow
-        // Layer 2: Edge mesh with gradient
-        // Layer 3: Core geometry with bloom
-        // Layer 4: Particle overlay
-        // Layer 5: Holographic shimmer
-
-        let time = 0;
-        const particles = [];
-        const trails = [];
-
-        // Initialize particles for holographic effect
-        function initParticles(count = 100) {
+        function initParticles(count = 80) {
             particles.length = 0;
             for (let i = 0; i < count; i++) {
                 particles.push({
@@ -740,67 +1038,52 @@
                     y: Math.random() * 2 - 1,
                     z: Math.random() * 2 - 1,
                     w: Math.random() * 2 - 1,
-                    vx: (Math.random() - 0.5) * 0.02,
-                    vy: (Math.random() - 0.5) * 0.02,
+                    vx: (Math.random() - 0.5) * 0.015,
+                    vy: (Math.random() - 0.5) * 0.015,
                     size: Math.random() * 2 + 1,
                     hue: Math.random() * 60 - 30
                 });
             }
         }
-        initParticles();
 
-        // Get holographic color palette based on system
-        function getHoloPalette(system) {
-            const palettes = {
-                quantum: {
-                    primary: [0, 255, 136],      // Bright cyan-green
-                    secondary: [0, 200, 255],    // Electric blue
-                    accent: [180, 255, 180],     // Soft green
-                    glow: [0, 255, 200],         // Teal glow
-                    bg: [5, 15, 20]              // Deep teal-black
-                },
-                faceted: {
-                    primary: [255, 68, 136],     // Hot pink
-                    secondary: [255, 136, 200],  // Soft pink
-                    accent: [255, 200, 255],     // Light magenta
-                    glow: [255, 100, 180],       // Pink glow
-                    bg: [20, 5, 15]              // Deep magenta-black
-                },
-                holographic: {
-                    primary: [68, 170, 255],     // Sky blue
-                    secondary: [136, 200, 255],  // Light blue
-                    accent: [200, 230, 255],     // Ice blue
-                    glow: [100, 180, 255],       // Blue glow
-                    bg: [5, 10, 25]              // Deep blue-black
-                }
-            };
-            return palettes[system] || palettes.quantum;
-        }
+        // =================================================================
+        // 5-LAYER RENDERING SYSTEM
+        // =================================================================
 
-        // Render frame with 5-layer holographic effect
         function render() {
-            const width = canvas.width;
-            const height = canvas.height;
+            const { width, height } = canvasManager.getDimensions();
             const cx = width / 2;
             const cy = height / 2;
             const scale = Math.min(width, height) * 0.35;
             time += 0.016;
 
-            const palette = getHoloPalette(state.system);
+            const palette = getPalette(state.system);
 
-            // LAYER 1: Deep background with radial gradient
-            const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(width, height) * 0.7);
-            bgGrad.addColorStop(0, `rgba(${palette.bg[0] + 15}, ${palette.bg[1] + 20}, ${palette.bg[2] + 25}, 1)`);
+            // Get contexts for all 5 layers
+            const ctxBg = canvasManager.getContext(0);
+            const ctxEdges = canvasManager.getContext(1);
+            const ctxGeometry = canvasManager.getContext(2);
+            const ctxParticles = canvasManager.getContext(3);
+            const ctxShimmer = canvasManager.getContext(4);
+
+            // Clear all layers
+            canvasManager.clearAll();
+
+            // ============================================================
+            // LAYER 1: BACKGROUND (deep gradient)
+            // ============================================================
+            const bgGrad = ctxBg.createRadialGradient(cx, cy, 0, cx, cy, Math.max(width, height) * 0.7);
+            bgGrad.addColorStop(0, `rgba(${palette.bg[0] + 20}, ${palette.bg[1] + 25}, ${palette.bg[2] + 30}, 1)`);
             bgGrad.addColorStop(0.5, `rgba(${palette.bg[0]}, ${palette.bg[1]}, ${palette.bg[2]}, 1)`);
             bgGrad.addColorStop(1, 'rgba(2, 2, 5, 1)');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, width, height);
+            ctxBg.fillStyle = bgGrad;
+            ctxBg.fillRect(0, 0, width, height);
 
-            // Generate geometry
+            // Generate and transform geometry
             const geometryIndex = state.coreType * 8 + state.geometry;
             const points = generateGeometry(geometryIndex);
 
-            // Auto-rotate with smooth motion
+            // Auto-rotate
             if (state.autoRotate) {
                 state.rotation.xw += 0.012;
                 state.rotation.yw += 0.008;
@@ -809,23 +1092,27 @@
                 updateSliderDisplays();
             }
 
-            // Transform and project points
+            // Create rotor and transform points
+            const rotor = Rotor4D.fromEuler6(state.rotation);
             const projected = points.map(p => {
-                const rotated = rotatePoint(p, state.rotation);
-                const proj = projectTo2D(rotated, scale);
+                const rotated = rotor.rotate(p);
+                const proj = perspectiveProject(rotated, state.projectionDistance);
                 return {
-                    ...proj,
+                    x: proj.x * scale,
+                    y: proj.y * scale,
+                    depth: rotated.w,
                     original: rotated,
-                    screenX: cx + proj.x,
-                    screenY: cy + proj.y
+                    screenX: cx + proj.x * scale,
+                    screenY: cy + proj.y * scale
                 };
             });
 
-            // Sort by depth
             projected.sort((a, b) => a.depth - b.depth);
 
-            // LAYER 2: Edge mesh with gradient strokes
-            ctx.lineCap = 'round';
+            // ============================================================
+            // LAYER 2: EDGE MESH (gradient strokes)
+            // ============================================================
+            ctxEdges.lineCap = 'round';
             for (let i = 0; i < projected.length; i++) {
                 for (let j = i + 1; j < projected.length; j++) {
                     const pi = projected[i].original;
@@ -836,12 +1123,11 @@
                     );
 
                     if (dist < 2.2) {
-                        const alpha = Math.max(0, 1 - dist / 2.2) * 0.4;
+                        const alpha = Math.max(0, 1 - dist / 2.2) * 0.5;
                         const avgDepth = (projected[i].depth + projected[j].depth) / 2;
                         const depthFactor = (avgDepth + 2) / 4;
 
-                        // Create gradient stroke
-                        const grad = ctx.createLinearGradient(
+                        const grad = ctxEdges.createLinearGradient(
                             projected[i].screenX, projected[i].screenY,
                             projected[j].screenX, projected[j].screenY
                         );
@@ -849,17 +1135,19 @@
                         grad.addColorStop(0.5, `rgba(${palette.primary[0]}, ${palette.primary[1]}, ${palette.primary[2]}, ${alpha * 1.5})`);
                         grad.addColorStop(1, `rgba(${palette.secondary[0]}, ${palette.secondary[1]}, ${palette.secondary[2]}, ${alpha * depthFactor})`);
 
-                        ctx.strokeStyle = grad;
-                        ctx.lineWidth = 1 + depthFactor * 2;
-                        ctx.beginPath();
-                        ctx.moveTo(projected[i].screenX, projected[i].screenY);
-                        ctx.lineTo(projected[j].screenX, projected[j].screenY);
-                        ctx.stroke();
+                        ctxEdges.strokeStyle = grad;
+                        ctxEdges.lineWidth = 1 + depthFactor * 2;
+                        ctxEdges.beginPath();
+                        ctxEdges.moveTo(projected[i].screenX, projected[i].screenY);
+                        ctxEdges.lineTo(projected[j].screenX, projected[j].screenY);
+                        ctxEdges.stroke();
                     }
                 }
             }
 
-            // LAYER 3: Core geometry with bloom effect
+            // ============================================================
+            // LAYER 3: GEOMETRY (bloom + core points)
+            // ============================================================
             projected.forEach((p, idx) => {
                 const normalizedDepth = (p.depth + 2) / 4;
                 const baseSize = state.pointSize * (0.6 + normalizedDepth * 1.2);
@@ -868,79 +1156,77 @@
 
                 // Outer glow (bloom)
                 const glowSize = size * 4;
-                const glowGrad = ctx.createRadialGradient(p.screenX, p.screenY, 0, p.screenX, p.screenY, glowSize);
+                const glowGrad = ctxGeometry.createRadialGradient(p.screenX, p.screenY, 0, p.screenX, p.screenY, glowSize);
                 glowGrad.addColorStop(0, `rgba(${palette.glow[0]}, ${palette.glow[1]}, ${palette.glow[2]}, ${0.4 * normalizedDepth})`);
                 glowGrad.addColorStop(0.3, `rgba(${palette.primary[0]}, ${palette.primary[1]}, ${palette.primary[2]}, ${0.2 * normalizedDepth})`);
                 glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = glowGrad;
-                ctx.beginPath();
-                ctx.arc(p.screenX, p.screenY, glowSize, 0, Math.PI * 2);
-                ctx.fill();
+                ctxGeometry.fillStyle = glowGrad;
+                ctxGeometry.beginPath();
+                ctxGeometry.arc(p.screenX, p.screenY, glowSize, 0, Math.PI * 2);
+                ctxGeometry.fill();
 
                 // Core point
-                const coreGrad = ctx.createRadialGradient(p.screenX, p.screenY, 0, p.screenX, p.screenY, size);
+                const coreGrad = ctxGeometry.createRadialGradient(p.screenX, p.screenY, 0, p.screenX, p.screenY, size);
                 coreGrad.addColorStop(0, `rgba(255, 255, 255, ${0.9 * normalizedDepth})`);
-                coreGrad.addColorStop(0.3, `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, ${0.8})`);
-                coreGrad.addColorStop(0.7, `rgba(${palette.primary[0]}, ${palette.primary[1]}, ${palette.primary[2]}, ${0.6})`);
+                coreGrad.addColorStop(0.3, `rgba(${palette.accent[0]}, ${palette.accent[1]}, ${palette.accent[2]}, 0.8)`);
+                coreGrad.addColorStop(0.7, `rgba(${palette.primary[0]}, ${palette.primary[1]}, ${palette.primary[2]}, 0.6)`);
                 coreGrad.addColorStop(1, `rgba(${palette.secondary[0]}, ${palette.secondary[1]}, ${palette.secondary[2]}, 0)`);
-                ctx.fillStyle = coreGrad;
-                ctx.beginPath();
-                ctx.arc(p.screenX, p.screenY, size, 0, Math.PI * 2);
-                ctx.fill();
+                ctxGeometry.fillStyle = coreGrad;
+                ctxGeometry.beginPath();
+                ctxGeometry.arc(p.screenX, p.screenY, size, 0, Math.PI * 2);
+                ctxGeometry.fill();
             });
 
-            // LAYER 4: Floating particles
-            ctx.globalCompositeOperation = 'screen';
+            // ============================================================
+            // LAYER 4: PARTICLES (floating overlay)
+            // ============================================================
+            ctxParticles.globalCompositeOperation = 'screen';
             particles.forEach(particle => {
-                // Update particle position
                 particle.x += particle.vx;
                 particle.y += particle.vy;
-                particle.z += Math.sin(time + particle.x) * 0.005;
+                particle.z += Math.sin(time + particle.x) * 0.004;
                 particle.w = Math.sin(time * 0.5 + particle.y * 2) * 0.5;
 
-                // Wrap around
                 if (particle.x > 1.5) particle.x = -1.5;
                 if (particle.x < -1.5) particle.x = 1.5;
                 if (particle.y > 1.5) particle.y = -1.5;
                 if (particle.y < -1.5) particle.y = 1.5;
 
-                // Project particle
                 const pVec = new Vec4(particle.x, particle.y, particle.z, particle.w);
-                const rotated = rotatePoint(pVec, state.rotation);
-                const proj = Projection.perspective(rotated, state.projectionDistance);
+                const rotated = rotor.rotate(pVec);
+                const proj = perspectiveProject(rotated, state.projectionDistance);
 
                 const px = cx + proj.x * scale * 0.8;
                 const py = cy + proj.y * scale * 0.8;
                 const pDepth = (rotated.w + 2) / 4;
                 const pSize = particle.size * (0.5 + pDepth);
 
-                // Draw particle with glow
-                const hueShift = particle.hue + time * 20;
-                ctx.fillStyle = `hsla(${(state.system === 'quantum' ? 150 : state.system === 'faceted' ? 330 : 200) + hueShift}, 100%, ${60 + pDepth * 30}%, ${0.3 + pDepth * 0.4})`;
-                ctx.beginPath();
-                ctx.arc(px, py, pSize, 0, Math.PI * 2);
-                ctx.fill();
+                const baseHue = state.system === 'quantum' ? 150 : state.system === 'faceted' ? 330 : 200;
+                ctxParticles.fillStyle = `hsla(${baseHue + particle.hue + time * 15}, 100%, ${60 + pDepth * 30}%, ${0.3 + pDepth * 0.4})`;
+                ctxParticles.beginPath();
+                ctxParticles.arc(px, py, pSize, 0, Math.PI * 2);
+                ctxParticles.fill();
             });
+            ctxParticles.globalCompositeOperation = 'source-over';
 
-            // LAYER 5: Holographic shimmer overlay
-            const shimmerGrad = ctx.createLinearGradient(0, 0, width, height);
+            // ============================================================
+            // LAYER 5: SHIMMER (holographic overlay)
+            // ============================================================
             const shimmerPhase = time * 0.3;
+            const shimmerGrad = ctxShimmer.createLinearGradient(0, 0, width, height);
             shimmerGrad.addColorStop(0, `rgba(${palette.primary[0]}, ${palette.primary[1]}, ${palette.primary[2]}, ${0.02 + Math.sin(shimmerPhase) * 0.02})`);
             shimmerGrad.addColorStop(0.3 + Math.sin(shimmerPhase * 1.5) * 0.1, `rgba(255, 255, 255, ${0.03 + Math.sin(shimmerPhase * 2) * 0.02})`);
-            shimmerGrad.addColorStop(0.6 + Math.cos(shimmerPhase) * 0.1, `rgba(${palette.secondary[0]}, ${palette.secondary[1]}, ${palette.secondary[2]}, ${0.02})`);
-            shimmerGrad.addColorStop(1, `rgba(${palette.glow[0]}, ${palette.glow[1]}, ${palette.glow[2]}, ${0.01})`);
-            ctx.fillStyle = shimmerGrad;
-            ctx.fillRect(0, 0, width, height);
+            shimmerGrad.addColorStop(0.6 + Math.cos(shimmerPhase) * 0.1, `rgba(${palette.secondary[0]}, ${palette.secondary[1]}, ${palette.secondary[2]}, 0.02)`);
+            shimmerGrad.addColorStop(1, `rgba(${palette.glow[0]}, ${palette.glow[1]}, ${palette.glow[2]}, 0.01)`);
+            ctxShimmer.fillStyle = shimmerGrad;
+            ctxShimmer.fillRect(0, 0, width, height);
 
-            // Reset composite operation
-            ctx.globalCompositeOperation = 'source-over';
-
-            // Vignette effect
-            const vignetteGrad = ctx.createRadialGradient(cx, cy, Math.min(width, height) * 0.3, cx, cy, Math.max(width, height) * 0.7);
+            // Vignette on shimmer layer
+            const vignetteGrad = ctxShimmer.createRadialGradient(cx, cy, Math.min(width, height) * 0.3, cx, cy, Math.max(width, height) * 0.7);
             vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            vignetteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
-            ctx.fillStyle = vignetteGrad;
-            ctx.fillRect(0, 0, width, height);
+            vignetteGrad.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+            ctxShimmer.fillStyle = vignetteGrad;
+            ctxShimmer.fillRect(0, 0, width, height);
 
             // Update FPS
             frameCount++;
@@ -952,20 +1238,15 @@
                 document.getElementById('fpsBadge').textContent = `${fps} FPS`;
             }
 
-            // Update geometry info
             document.getElementById('geoInfo').textContent = `Geometry ${geometryIndex}`;
 
             animationId = requestAnimationFrame(render);
         }
 
-        // Resize canvas
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth * window.devicePixelRatio;
-            canvas.height = container.clientHeight * window.devicePixelRatio;
-        }
+        // =================================================================
+        // UI SETUP
+        // =================================================================
 
-        // Update slider displays
         function updateSliderDisplays() {
             document.getElementById('xyVal').textContent = state.rotation.xy.toFixed(2);
             document.getElementById('xzVal').textContent = state.rotation.xz.toFixed(2);
@@ -975,14 +1256,21 @@
             document.getElementById('zwVal').textContent = state.rotation.zw.toFixed(2);
         }
 
-        // Setup UI
         function setupUI() {
-            // System tabs
+            // System tabs - switch systems and reinitialize canvases
             document.querySelectorAll('.system-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.system-tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
-                    state.system = tab.dataset.system;
+
+                    const newSystem = tab.dataset.system;
+                    if (newSystem !== state.system) {
+                        state.system = newSystem;
+                        // IMPORTANT: Reinitialize canvases for new system
+                        canvasManager.initializeForSystem(state.system);
+                        initParticles();
+                        console.log(`Switched to ${state.system} system - 5 canvases recreated`);
+                    }
                 });
             });
 
@@ -1012,7 +1300,7 @@
                 const slider = document.getElementById(`rot${plane}`);
                 slider.addEventListener('input', () => {
                     state.rotation[plane.toLowerCase()] = parseFloat(slider.value);
-                    document.getElementById(`${plane.toLowerCase()}Val`).textContent = slider.value;
+                    document.getElementById(`${plane.toLowerCase()}Val`).textContent = parseFloat(slider.value).toFixed(2);
                 });
             });
 
@@ -1028,14 +1316,13 @@
                 document.getElementById('sizeVal').textContent = e.target.value;
             });
 
-            // Auto-rotate button
+            // Auto-rotate
             document.getElementById('autoRotateBtn').addEventListener('click', () => {
                 state.autoRotate = !state.autoRotate;
-                document.getElementById('autoRotateBtn').textContent =
-                    state.autoRotate ? '⏸ Stop' : '▶ Auto-Rotate';
+                document.getElementById('autoRotateBtn').textContent = state.autoRotate ? 'Stop' : 'Auto-Rotate';
             });
 
-            // Reset button
+            // Reset
             document.getElementById('resetBtn').addEventListener('click', () => {
                 state.rotation = { xy: 0, xz: 0, yz: 0, xw: 0, yw: 0, zw: 0 };
                 ['XY', 'XZ', 'YZ', 'XW', 'YW', 'ZW'].forEach(plane => {
@@ -1044,55 +1331,68 @@
                 updateSliderDisplays();
             });
 
-            // Fullscreen button
+            // Fullscreen
             document.getElementById('fullscreenBtn').addEventListener('click', () => {
-                canvas.parentElement.requestFullscreen?.();
+                document.querySelector('.canvas-area').requestFullscreen?.();
             });
 
-            // Feature buttons
-            document.getElementById('cardBendBtn').addEventListener('click', function() {
-                this.classList.toggle('active');
-                alert('Card Bending: Uses CardBending.js from src/viewer/\nMaps mouse position to 3D CSS transforms + 4D rotation');
-            });
-
-            document.getElementById('audioBtn').addEventListener('click', function() {
-                this.classList.toggle('active');
-                alert('Audio Reactivity: Uses AudioReactivity.js from src/viewer/\nFFT analysis maps frequency bands to 6D rotation planes');
-            });
-
-            document.getElementById('gyroBtn').addEventListener('click', function() {
-                this.classList.toggle('active');
-                alert('Gyroscope: Uses ReactivityManager.js from src/viewer/\nDevice orientation maps to XW, YW, ZW rotation planes');
-            });
-
+            // Export
             document.getElementById('exportBtn').addEventListener('click', () => {
+                // Merge all 5 canvases into one for export
+                const exportCanvas = document.createElement('canvas');
+                const { width, height } = canvasManager.getDimensions();
+                const dpr = window.devicePixelRatio || 1;
+                exportCanvas.width = width * dpr;
+                exportCanvas.height = height * dpr;
+                const ctx = exportCanvas.getContext('2d');
+
+                // Draw each layer in order
+                for (let i = 0; i < 5; i++) {
+                    ctx.drawImage(canvasManager.canvases[i], 0, 0);
+                }
+
                 const link = document.createElement('a');
                 link.download = `vib3-${state.system}-geo${state.coreType * 8 + state.geometry}.png`;
-                link.href = canvas.toDataURL();
+                link.href = exportCanvas.toDataURL();
                 link.click();
             });
         }
 
-        // Initialize
+        // =================================================================
+        // INITIALIZATION
+        // =================================================================
+
         async function init() {
-            await initWasm();
+            document.getElementById('loadingText').textContent = 'Creating canvas layers...';
 
-            document.getElementById('loadingText').textContent = 'Setting up visualization...';
+            // Create canvas manager and initialize 5 canvases
+            canvasManager = new CanvasManager('canvasStack');
+            canvasManager.initializeForSystem(state.system);
 
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+            // Initialize particles
+            initParticles();
 
+            // Setup resize handler
+            window.addEventListener('resize', () => {
+                canvasManager.resize();
+            });
+
+            document.getElementById('loadingText').textContent = 'Setting up controls...';
             setupUI();
 
+            // Hide loading overlay
             document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('wasmStatus').textContent = 'JS';
+            document.getElementById('wasmBadge').textContent = '5-LAYER CANVAS';
 
+            // Start render loop
             lastTime = performance.now();
             render();
 
-            console.log('VIB3+ Integrated System initialized');
-            console.log('- WASM Core:', state.useWasm ? 'Active' : 'JS Fallback');
-            console.log('- Using: src/math/Vec4.js, Rotor4D.js, Mat4x4.js, Projection.js');
-            console.log('- Geometry: 8 base × 3 cores = 24 variants');
+            console.log('VIB3+ 5-Layer Holographic System initialized');
+            console.log('- Canvas Manager: 5 layers per system');
+            console.log('- Current system:', state.system);
+            console.log('- Layers: background, edges, geometry, particles, shimmer');
         }
 
         init();
