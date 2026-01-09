@@ -582,18 +582,130 @@
         </div>
     </main>
 
-    <!-- Application Script using REAL VIB3 Engine -->
+    <!-- Application Script using REAL VIB3 Engine with C++ WASM Core -->
     <script type="module">
         // =================================================================
-        // IMPORT REAL VIB3 SYSTEMS
+        // VIB3+ ENGINE - C++ WASM CORE (NO FALLBACKS)
+        // Following CPP_CORE_ARCHITECTURE.md plan
         // =================================================================
 
+        // Import visualization systems first
         import { CanvasManager } from './src/core/CanvasManager.js';
         import { QuantumEngine } from './src/quantum/QuantumEngine.js';
         import { FacetedSystem } from './src/faceted/FacetedSystem.js';
         import { RealHolographicSystem } from './src/holograms/RealHolographicSystem.js';
 
-        console.log('VIB3+ Modules loaded');
+        console.log('VIB3+ Visualization systems imported');
+
+        // =================================================================
+        // WASM CORE INITIALIZATION - Required, No Fallbacks
+        // =================================================================
+
+        let wasmCore = null;
+        let wasmReady = false;
+
+        async function initWasmCore() {
+            document.getElementById('loadingText').textContent = 'Loading C++ WASM Core...';
+
+            try {
+                // Load the Vib3Core WASM module from the wasm directory
+                const wasmPath = './wasm/vib3_core.js';
+                const wasmModule = await import(wasmPath);
+
+                // Initialize the module - it returns a Promise
+                wasmCore = await wasmModule.default({
+                    locateFile: (path) => './wasm/' + path
+                });
+
+                // Verify WASM functions are available
+                const functions = {
+                    vec4_create: typeof wasmCore._vib3_vec4_create,
+                    vec4_add: typeof wasmCore._vib3_vec4_add,
+                    vec4_scale: typeof wasmCore._vib3_vec4_scale,
+                    rotor4d_identity: typeof wasmCore._vib3_rotor4d_identity,
+                    rotor4d_from_euler6: typeof wasmCore._vib3_rotor4d_from_euler6,
+                    rotor4d_rotate: typeof wasmCore._vib3_rotor4d_rotate,
+                    rotor4d_to_matrix: typeof wasmCore._vib3_rotor4d_to_matrix,
+                    mat4x4_identity: typeof wasmCore._vib3_mat4x4_identity,
+                    mat4x4_multiply: typeof wasmCore._vib3_mat4x4_multiply,
+                    project_perspective: typeof wasmCore._vib3_project_perspective,
+                    project_stereographic: typeof wasmCore._vib3_project_stereographic
+                };
+
+                console.log('VIB3+ WASM Core Functions:', functions);
+
+                // Make WASM core globally available for all visualization systems
+                window.Vib3Core = wasmCore;
+                window.vib3Wasm = wasmCore;
+                wasmReady = true;
+
+                // Create high-level WASM math API
+                window.Vib3Math = createWasmMathAPI(wasmCore);
+
+                console.log('✅ VIB3+ C++ WASM Core loaded successfully');
+                console.log('Available via window.Vib3Core and window.Vib3Math');
+
+                return wasmCore;
+
+            } catch (error) {
+                console.error('❌ WASM Core loading failed:', error);
+                document.getElementById('loadingText').textContent = 'WASM Core failed: ' + error.message;
+                throw error; // No fallbacks - fail fast
+            }
+        }
+
+        // =================================================================
+        // HIGH-LEVEL WASM MATH API
+        // Wraps low-level FFI calls with proper memory management
+        // =================================================================
+
+        function createWasmMathAPI(wasm) {
+            return {
+                // Vec4 operations
+                vec4: {
+                    create: (x, y, z, w) => {
+                        const ptr = wasm._vib3_vec4_create(x, y, z, w);
+                        return { ptr, x, y, z, w };
+                    },
+                    add: (a, b) => wasm._vib3_vec4_add(a.ptr, b.ptr),
+                    scale: (v, s) => wasm._vib3_vec4_scale(v.ptr, s),
+                    lerp: (a, b, t) => wasm._vib3_vec4_lerp(a.ptr, b.ptr, t)
+                },
+
+                // Rotor4D operations - 8-component geometric algebra rotor
+                rotor4d: {
+                    identity: () => wasm._vib3_rotor4d_identity(),
+                    fromPlaneAngle: (plane, angle) => wasm._vib3_rotor4d_from_plane_angle(plane, angle),
+                    fromEuler6: (xy, xz, yz, xw, yw, zw) => wasm._vib3_rotor4d_from_euler6(xy, xz, yz, xw, yw, zw),
+                    multiply: (a, b) => wasm._vib3_rotor4d_multiply(a, b),
+                    rotate: (rotor, vec) => wasm._vib3_rotor4d_rotate(rotor, vec),
+                    slerp: (a, b, t) => wasm._vib3_rotor4d_slerp(a, b, t),
+                    toMatrix: (rotor) => wasm._vib3_rotor4d_to_matrix(rotor)
+                },
+
+                // Mat4x4 operations
+                mat4x4: {
+                    identity: () => wasm._vib3_mat4x4_identity(),
+                    multiply: (a, b) => wasm._vib3_mat4x4_multiply(a, b),
+                    multiplyVec4: (mat, vec) => wasm._vib3_mat4x4_multiply_vec4(mat, vec)
+                },
+
+                // Projection operations (4D -> 3D)
+                project: {
+                    perspective: (vec, d) => wasm._vib3_project_perspective(vec, d || 2.0),
+                    stereographic: (vec) => wasm._vib3_project_stereographic(vec),
+                    orthographic: (vec) => wasm._vib3_project_orthographic(vec)
+                },
+
+                // Memory helpers
+                malloc: (size) => wasm._malloc(size),
+                free: (ptr) => wasm._free(ptr),
+
+                // Direct access to WASM heap for advanced usage
+                HEAPF32: () => wasm.HEAPF32,
+                HEAP8: () => wasm.HEAP8
+            };
+        }
 
         // =================================================================
         // APPLICATION STATE
@@ -833,43 +945,52 @@
         }
 
         // =================================================================
-        // INITIALIZATION
+        // INITIALIZATION - C++ WASM CORE REQUIRED
         // =================================================================
 
         async function init() {
-            console.log('Initializing VIB3+ Engine...');
-            document.getElementById('loadingText').textContent = 'Creating Canvas Manager...';
+            console.log('🚀 Initializing VIB3+ Engine with C++ WASM Core...');
 
             try {
-                // Create CanvasManager
+                // Step 1: Load WASM Core (C++ math library) - REQUIRED
+                await initWasmCore();
+                document.getElementById('statusBadge').textContent = 'WASM CORE';
+
+                // Step 2: Create Canvas Manager
+                document.getElementById('loadingText').textContent = 'Creating Canvas Manager...';
                 canvasManager = new CanvasManager();
 
+                // Step 3: Initialize Quantum visualization system
                 document.getElementById('loadingText').textContent = 'Loading Quantum System...';
-
-                // Initialize with Quantum system
                 await switchSystem('quantum');
 
-                // Setup UI
+                // Step 4: Setup UI controls
+                document.getElementById('loadingText').textContent = 'Setting up controls...';
                 setupUI();
 
-                // Start FPS counter
+                // Step 5: Start FPS counter
                 lastTime = performance.now();
                 updateFPS();
 
-                document.getElementById('engineStatus').textContent = 'WebGL Active';
+                // Update status - WASM Core is now active
+                document.getElementById('engineStatus').textContent = 'WASM+WebGL';
                 document.getElementById('statusBadge').textContent = 'QUANTUM ACTIVE';
                 document.getElementById('loadingOverlay').classList.add('hidden');
 
-                console.log('VIB3+ Engine initialized successfully');
+                console.log('✅ VIB3+ Engine initialized successfully');
+                console.log('🔧 Core: C++ WASM (window.Vib3Core)');
+                console.log('🔧 Math API: window.Vib3Math');
+                console.log('🔧 Rendering: WebGL 2.0');
 
             } catch (error) {
-                console.error('VIB3+ Engine initialization failed:', error);
-                document.getElementById('loadingText').textContent = `Error: ${error.message}`;
-                document.getElementById('statusBadge').textContent = 'INIT FAILED';
+                console.error('❌ VIB3+ Engine initialization failed:', error);
+                document.getElementById('loadingText').textContent = `WASM Core Error: ${error.message}`;
+                document.getElementById('statusBadge').textContent = 'WASM FAILED';
+                // Don't hide overlay - keep error visible
             }
         }
 
-        // Start
+        // Start engine
         init();
     </script>
 </body>
