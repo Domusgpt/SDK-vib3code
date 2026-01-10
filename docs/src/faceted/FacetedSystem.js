@@ -11,6 +11,8 @@ export class FacetedSystem {
         this.program = null;
         this.isActive = false;
         this.time = 0;
+        this.initAttempts = 0;
+        this.maxInitAttempts = 10;
         this.parameters = {
             geometry: 0,
             rot4dXY: 0, rot4dXZ: 0, rot4dYZ: 0,
@@ -24,8 +26,26 @@ export class FacetedSystem {
             dimension: 3.5
         };
 
-        // Auto-initialize on construction
-        this.initialize();
+        // Try to initialize - may need retry if canvas not ready yet
+        this.tryInitialize();
+    }
+
+    /**
+     * Try to initialize, with retries if canvas not ready
+     */
+    tryInitialize() {
+        if (this.initialize()) {
+            console.log('✅ Faceted System initialized successfully');
+            return;
+        }
+
+        this.initAttempts++;
+        if (this.initAttempts < this.maxInitAttempts) {
+            console.log(`⏳ Faceted init attempt ${this.initAttempts}/${this.maxInitAttempts} - retrying...`);
+            setTimeout(() => this.tryInitialize(), 50);
+        } else {
+            console.error('❌ Faceted System failed to initialize after max attempts');
+        }
     }
 
     /**
@@ -366,7 +386,20 @@ export class FacetedSystem {
      */
     setActive(active) {
         if (active) {
-            this.start();
+            // Ensure we're initialized before starting
+            if (!this.gl || !this.program) {
+                console.log('⚠️ Faceted not initialized yet, attempting init...');
+                this.initAttempts = 0;
+                this.tryInitialize();
+                // Delay start until init completes
+                setTimeout(() => {
+                    if (this.gl && this.program) {
+                        this.start();
+                    }
+                }, 100);
+            } else {
+                this.start();
+            }
         } else {
             this.stop();
         }
