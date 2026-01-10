@@ -2,27 +2,42 @@
 
 ## Executive Summary
 
-VIB3+ is a **4D geometry visualization engine** with unique market positioning. No competitor offers browser-based 4D visualization with trading card export, agentic control, and multi-system architecture.
+VIB3+ is a **4D procedural asset generation engine** designed to produce visual assets for digital design, game development, and wearables. The core differentiator is **real-time 4D geometry with 6D rotation mathematics** that generates unique, infinitely variable visual patterns.
+
+### Primary Use Cases
+1. **Procedural texture/material generation** for game engines
+2. **Plugin/SDK** for Unreal Engine, Unity, Blender
+3. **Shader library** export (GLSL, HLSL, ShaderGraph)
+4. **AR/VR wearables** - live visuals for glasses, headsets
+5. **Digital design assets** - backgrounds, patterns, motion graphics
 
 ---
 
-## Part 1: Competitive Landscape
+## Part 1: Target Market & Competitors
 
-### Direct Competitors
+### Direct Competitors (Asset Generation)
 | Product | Focus | Price | Gap VIB3+ Fills |
 |---------|-------|-------|-----------------|
-| **Shadertoy** | Shader coding | Free | No 4D abstraction, requires GLSL |
-| **cables.gl** | Visual programming | Free | No 4D, complex node-based |
-| **TouchDesigner** | Pro VJ/installations | $400+ | No 4D, desktop-only |
-| **Art Blocks** | NFT generative art | Variable | No 4D, no immersive viewer |
-| **fxhash** | NFT generative art | Variable | No 4D, no trading card focus |
+| **Substance Designer** | Procedural textures | $20/mo | No 4D geometry, node-based |
+| **Houdini** | Procedural 3D | $270/yr indie | Complex, steep learning curve |
+| **ShaderToy** | GLSL shaders | Free | No export, no engine integration |
+| **Quixel Mixer** | Texture mixing | Free | Not procedural, preset-based |
+| **Material Maker** | Open source textures | Free | 2D only, no 4D math |
 
-### VIB3+ Unique Value Proposition
-1. **Only browser-based 4D visualization engine** with full 6D rotation
-2. **Trading card export** with immersive viewer (device tilt, card bending)
-3. **Agentic control** via telemetry + MCP server
-4. **Three visualization paradigms** (Quantum, Holographic, Faceted)
-5. **24-geometry encoding** (8 base x 3 core types)
+### Game Engine Plugin Market
+| Engine | Plugin Ecosystem | Opportunity |
+|--------|------------------|-------------|
+| **Unreal Engine** | Marketplace (30% cut) | HLSL material functions |
+| **Unity** | Asset Store (30% cut) | ShaderGraph nodes, C# API |
+| **Godot** | Asset Library (free) | GDShader export |
+| **Blender** | Extensions | Geometry nodes, shader nodes |
+
+### VIB3+ Unique Value
+1. **4D geometry mathematics** - no competitor has this
+2. **Real-time parameter tweaking** - instant feedback
+3. **24 base geometries × 3 core types** = 72 unique foundations
+4. **6D rotation** creates infinite variation from same base
+5. **Web-based editor** + native export = accessible + professional
 
 ---
 
@@ -202,51 +217,68 @@ interface VisualizationSystem {
 
 ## Part 5: Monetization Strategy
 
-### Tier 1: Free (Open Source Core)
-- Full visualization engine
-- Basic export (PNG, JSON)
-- Local presets
-- Community gallery
+### Tier 1: Free (Web Editor)
+- Full web-based visualization engine
+- Basic export (PNG, JSON, web embed)
+- Community presets
+- Watermarked exports
 
-### Tier 2: Pro ($9.99/month)
-- Cloud preset sync
-- HD/4K export
-- GIF/video export
-- Custom watermark removal
+### Tier 2: Creator ($19/month)
+- **GLSL/HLSL shader export** - copy-paste into any engine
+- 4K texture export (PNG, EXR)
+- Animated texture sequences
+- No watermark
+- Cloud preset library
+
+### Tier 3: Studio ($99/month per seat)
+- **Native plugins**: Unreal, Unity, Blender, Godot
+- C++/C# SDK for custom integration
+- Batch export (100s of variations)
+- Team preset sharing
 - Priority support
+- Commercial license (royalty-free assets)
 
-### Tier 3: Enterprise ($49.99/month)
-- API access for agentic integration
-- White-label embedding
-- Custom branding
-- SSO authentication
-- SLA support
+### Tier 4: Enterprise (Custom pricing)
+- Source code license
+- Custom engine integration
+- On-premise deployment
+- White-label SDK
+- Dedicated support engineer
 
-### Tier 4: NFT Marketplace (Transaction Fee)
-- 2.5% on NFT mints
-- 1% on secondary sales
-- Featured artist program
-- Curated collections
+### Revenue Streams
+1. **Plugin sales** on Unreal Marketplace, Unity Asset Store
+2. **SaaS subscriptions** for web editor
+3. **Asset packs** - pre-made VIB3 materials/textures
+4. **Consulting** - custom integration for studios
 
 ---
 
 ## Part 6: Target Users
 
-### Primary: Creative Coders
-- **Need**: Visual experimentation without GLSL expertise
-- **Value**: 4D abstraction, instant feedback, export to portfolio
+### Primary: Game Developers
+- **Need**: Procedural materials, particle effects, UI elements
+- **Value**: Direct engine export (Unreal/Unity), royalty-free, infinite variations
+- **Use cases**: Sci-fi UIs, magic effects, portals, energy shields, holographic displays
 
-### Secondary: Generative Artists
-- **Need**: Unique visual style for NFT/art market
-- **Value**: 24-geometry system, trading card format, blockchain integration
+### Secondary: Digital Designers / Motion Graphics
+- **Need**: Unique backgrounds, patterns, animated textures
+- **Value**: Real-time preview, 4K export, animation sequences
+- **Use cases**: Music videos, broadcast graphics, social media content
 
-### Tertiary: Developers/Agents
-- **Need**: Programmable visualization for dashboards, AI art
-- **Value**: MCP integration, telemetry API, embeddable viewer
+### Tertiary: AR/VR Developers
+- **Need**: Lightweight real-time shaders for wearables
+- **Value**: Optimized GLSL, mobile-friendly, low latency
+- **Use cases**: AR glasses overlays, VR environments, spatial computing
 
-### Quaternary: Educators
-- **Need**: Demonstrate 4D geometry concepts
-- **Value**: Interactive sliders, multiple projection types, export for presentations
+### Quaternary: Technical Artists
+- **Need**: Procedural generation tools, shader libraries
+- **Value**: C++ WASM core, SDK integration, batch processing
+- **Use cases**: Automated asset pipelines, parametric design systems
+
+### Quinary: Indie Game Studios
+- **Need**: Professional visual effects without dedicated FX artist
+- **Value**: Preset library, one-click export, affordable pricing
+- **Use cases**: Small teams shipping polished games
 
 ---
 
@@ -272,7 +304,64 @@ interface VisualizationSystem {
 
 ---
 
-## Part 8: Immediate Action Items
+## Part 8: Export Architecture (Critical for Adoption)
+
+### Shader Export Formats
+```
+VIB3+ Parameter State
+        │
+        ├──► GLSL (WebGL) - Current
+        │    └── Direct web embed
+        │
+        ├──► GLSL ES 3.0 (Mobile/AR)
+        │    └── iOS ARKit, Android ARCore
+        │
+        ├──► HLSL (Unreal Engine)
+        │    ├── Material Functions
+        │    └── Niagara particle systems
+        │
+        ├──► ShaderGraph (Unity)
+        │    ├── Custom Function nodes
+        │    └── VFX Graph integration
+        │
+        ├──► GDShader (Godot)
+        │    └── Godot 4.x visual shaders
+        │
+        └──► OSL (Blender/Arnold)
+             └── Cycles/EEVEE materials
+```
+
+### Plugin Architecture
+```
+┌─────────────────────────────────────────┐
+│           VIB3+ Core (C++/WASM)         │
+│  • Vec4, Rotor4D, Mat4x4, Projection    │
+│  • 24 geometry SDFs                      │
+│  • 6D rotation mathematics               │
+└─────────────────┬───────────────────────┘
+                  │
+    ┌─────────────┼─────────────┐
+    │             │             │
+    ▼             ▼             ▼
+┌───────┐   ┌─────────┐   ┌──────────┐
+│Unreal │   │  Unity  │   │ Blender  │
+│Plugin │   │ Package │   │ Addon    │
+├───────┤   ├─────────┤   ├──────────┤
+│C++ BP │   │ C# API  │   │Python API│
+│Nodes  │   │Shader   │   │Geo Nodes │
+│       │   │Graph    │   │Shader    │
+└───────┘   └─────────┘   └──────────┘
+```
+
+### Export Pipeline (New Feature)
+1. **Shader Transpiler**: Convert VIB3 GLSL → target language
+2. **Parameter Serialization**: JSON preset → engine-specific format
+3. **Texture Baking**: Real-time → static texture atlas
+4. **Animation Export**: Parameter keyframes → engine animation
+
+---
+
+## Part 9: Immediate Action Items
 
 ### Today
 1. [ ] Fix Faceted rendering (canvas ID issue)
