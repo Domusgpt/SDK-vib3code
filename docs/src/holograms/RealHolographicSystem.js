@@ -149,13 +149,22 @@ export class RealHolographicSystem {
         this.updateVariant(variant);
     }
     
+    /**
+     * Update multiple parameters at once - CRITICAL for slider updates
+     */
+    updateParameters(params) {
+        Object.keys(params).forEach(param => {
+            this.updateParameter(param, params[param]);
+        });
+    }
+
     updateParameter(param, value) {
         // Store custom parameter overrides
         if (!this.customParams) {
             this.customParams = {};
         }
         this.customParams[param] = value;
-        
+
         console.log(`🌌 Updating holographic ${param}: ${value} (${this.visualizers.length} visualizers)`);
         
         // CRITICAL FIX: Call updateParameters method on ALL visualizers for immediate render

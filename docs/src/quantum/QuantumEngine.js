@@ -457,6 +457,35 @@ export class QuantumEngine {
             this.updateParameter(param, params[param]);
         });
     }
+
+    /**
+     * Set variant (geometry) - CRITICAL for geometry button clicks
+     */
+    setVariant(variant) {
+        // Extract geometry from variant (0-29 -> geometry 0-7)
+        const geometry = Math.floor(variant / 4) % 8;
+        console.log(`🔮 Quantum setVariant: variant=${variant} -> geometry=${geometry}`);
+
+        // Update geometry parameter
+        this.updateParameter('geometry', geometry);
+
+        // Also update visualizers directly with variant info
+        this.visualizers.forEach(visualizer => {
+            if (visualizer.variant !== undefined) {
+                visualizer.variant = variant;
+            }
+            if (visualizer.variantParams) {
+                visualizer.variantParams.geometry = geometry;
+            }
+        });
+    }
+
+    /**
+     * Update variant (alias for setVariant)
+     */
+    updateVariant(variant) {
+        this.setVariant(variant);
+    }
     
     /**
      * Update mouse interaction

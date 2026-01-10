@@ -23,6 +23,25 @@ export class FacetedSystem {
             intensity: 0.7,
             dimension: 3.5
         };
+
+        // Auto-initialize on construction
+        this.initialize();
+    }
+
+    /**
+     * Set variant (geometry) - for consistency with other systems
+     */
+    setVariant(variant) {
+        const geometry = Math.floor(variant / 4) % 8;
+        console.log(`🔷 Faceted setVariant: variant=${variant} -> geometry=${geometry}`);
+        this.parameters.geometry = geometry;
+    }
+
+    /**
+     * Update variant (alias)
+     */
+    updateVariant(variant) {
+        this.setVariant(variant);
     }
 
     /**
