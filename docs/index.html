@@ -340,6 +340,386 @@
 
         .feature-icon { font-size: 18px; }
 
+        /* Core Type Selector */
+        .core-type-selector {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .core-type-btn {
+            flex: 1;
+            padding: 8px 4px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 9px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .core-type-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text);
+        }
+
+        .core-type-btn.active {
+            background: var(--accent-magenta);
+            border-color: var(--accent-magenta);
+            color: #000;
+        }
+
+        /* Randomize Buttons */
+        .randomize-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .randomize-btn {
+            flex: 1;
+            padding: 10px 8px;
+            background: linear-gradient(135deg, rgba(255,0,255,0.2), rgba(0,255,255,0.2));
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .randomize-btn:hover {
+            transform: scale(1.02);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(0,255,255,0.3);
+        }
+
+        .randomize-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Modal Base Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-panel);
+            border: 1px solid rgba(0,255,255,0.3);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 40px rgba(0,255,255,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .modal-close:hover {
+            color: var(--accent-magenta);
+        }
+
+        /* Export Modal */
+        .export-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .export-option {
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .export-option:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0,255,255,0.1);
+        }
+
+        .export-option-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .export-option-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .export-option-desc {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .export-preview {
+            background: #0a0a0f;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            max-height: 200px;
+            overflow: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            color: var(--accent-cyan);
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .export-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            border: none;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-magenta);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        /* Preset Modal */
+        .preset-input-group {
+            margin-bottom: 16px;
+        }
+
+        .preset-input-group label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .preset-input-group input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .preset-input-group input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .preset-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .preset-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-item:hover {
+            background: rgba(0,255,255,0.1);
+        }
+
+        .preset-item-name {
+            font-size: 12px;
+        }
+
+        .preset-item-meta {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* Panel handles - hidden on desktop */
+        .panel-handle {
+            display: none;
+        }
+
+        /* Mobile Responsive - Collapsible Panels */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr;
+            }
+
+            .panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: auto;
+                max-height: 50vh;
+                transform: translateY(calc(100% - 48px));
+                transition: transform 0.3s ease;
+                border-radius: 16px 16px 0 0;
+                border: 1px solid rgba(255,255,255,0.1);
+                border-bottom: none;
+                z-index: 100;
+            }
+
+            .panel:first-child {
+                left: 0;
+                width: 50%;
+                border-radius: 0 16px 0 0;
+            }
+
+            .panel:last-child {
+                left: 50%;
+                width: 50%;
+                border-radius: 16px 0 0 0;
+            }
+
+            .panel.expanded {
+                transform: translateY(0);
+            }
+
+            .panel-handle {
+                display: flex !important;
+                justify-content: center;
+                padding: 12px 8px;
+                cursor: grab;
+                background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent);
+            }
+
+            .panel-handle::before {
+                content: '';
+                width: 40px;
+                height: 4px;
+                background: rgba(255,255,255,0.4);
+                border-radius: 2px;
+            }
+
+            .panel-handle:active {
+                cursor: grabbing;
+            }
+
+            .panel-handle:active::before {
+                background: var(--accent-cyan);
+            }
+
+            .canvas-area {
+                height: calc(100vh - 56px);
+            }
+
+            .header {
+                padding: 8px 12px;
+            }
+
+            .system-tab {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+
+            .layer-indicator,
+            .status-bar {
+                display: none;
+            }
+
+            .canvas-overlay {
+                bottom: 60px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .panel:first-child,
+            .panel:last-child {
+                width: 100%;
+                left: 0;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .panel:first-child {
+                z-index: 101;
+            }
+
+            .panel:last-child {
+                z-index: 100;
+            }
+
+            .export-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Loading */
         .loading-overlay {
             position: fixed;
@@ -438,7 +818,8 @@
     <!-- Main Content -->
     <main class="main">
         <!-- Left Panel: Rotation Controls -->
-        <div class="panel">
+        <div class="panel" id="leftPanel">
+            <div class="panel-handle" onclick="this.parentElement.classList.toggle('expanded')"></div>
             <div class="panel-section">
                 <div class="panel-title">4D Rotation (Hyperspace)</div>
                 <div class="slider-group">
@@ -534,7 +915,8 @@
         </div>
 
         <!-- Right Panel: Geometry & Variants -->
-        <div class="panel">
+        <div class="panel" id="rightPanel">
+            <div class="panel-handle" onclick="this.parentElement.classList.toggle('expanded')"></div>
             <div class="panel-section">
                 <div class="variant-display">
                     <div class="variant-name" id="variantName">TETRAHEDRON LATTICE</div>
@@ -548,8 +930,26 @@
             </div>
 
             <div class="panel-section">
+                <div class="panel-title">Core Type (Polytope Archetype)</div>
+                <div class="core-type-selector">
+                    <button class="core-type-btn active" data-core="0">Base</button>
+                    <button class="core-type-btn" data-core="1">Hypersphere</button>
+                    <button class="core-type-btn" data-core="2">Hypertetra</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
                 <div class="panel-title">Geometry (8 Types)</div>
                 <div class="geometry-grid" id="geometryGrid"></div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">Randomize</div>
+                <div class="randomize-group">
+                    <button class="randomize-btn" id="randomizeAll">All</button>
+                    <button class="randomize-btn" id="randomizeLeft">Params</button>
+                    <button class="randomize-btn" id="randomizeRight">Visual</button>
+                </div>
             </div>
 
             <div class="panel-section">
@@ -572,7 +972,15 @@
                 <div class="panel-title">Features</div>
                 <button class="feature-btn" id="exportBtn">
                     <span class="feature-icon">#</span>
-                    <span>Export Trading Card</span>
+                    <span>Export Image</span>
+                </button>
+                <button class="feature-btn" id="shaderExportBtn">
+                    <span class="feature-icon">&lt;/&gt;</span>
+                    <span>Export Shader Code</span>
+                </button>
+                <button class="feature-btn" id="presetBtn">
+                    <span class="feature-icon">*</span>
+                    <span>Presets</span>
                 </button>
                 <button class="feature-btn" id="gyroBtn">
                     <span class="feature-icon">@</span>
@@ -581,6 +989,77 @@
             </div>
         </div>
     </main>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Export Shader Code</h2>
+                <button class="modal-close" onclick="closeExportModal()">&times;</button>
+            </div>
+            <div class="export-grid">
+                <div class="export-option" data-format="glsl">
+                    <div class="export-option-icon">GL</div>
+                    <div class="export-option-title">GLSL</div>
+                    <div class="export-option-desc">WebGL / OpenGL</div>
+                </div>
+                <div class="export-option" data-format="hlsl">
+                    <div class="export-option-icon">UE</div>
+                    <div class="export-option-title">HLSL</div>
+                    <div class="export-option-desc">Unreal Engine</div>
+                </div>
+                <div class="export-option" data-format="unity">
+                    <div class="export-option-icon">U3D</div>
+                    <div class="export-option-title">ShaderGraph</div>
+                    <div class="export-option-desc">Unity Custom Function</div>
+                </div>
+                <div class="export-option" data-format="godot">
+                    <div class="export-option-icon">GD</div>
+                    <div class="export-option-title">GDShader</div>
+                    <div class="export-option-desc">Godot 4.x</div>
+                </div>
+            </div>
+            <div id="exportPreviewContainer" style="display:none;">
+                <div class="panel-title">Preview</div>
+                <pre class="export-preview" id="exportPreview"></pre>
+            </div>
+            <div class="export-actions">
+                <button class="btn-secondary" onclick="closeExportModal()">Cancel</button>
+                <button class="btn-primary" id="copyExportBtn" style="display:none;">Copy to Clipboard</button>
+                <button class="btn-primary" id="downloadExportBtn" style="display:none;">Download File</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Modal -->
+    <div class="modal-overlay" id="presetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Presets</h2>
+                <button class="modal-close" onclick="closePresetModal()">&times;</button>
+            </div>
+            <div class="preset-input-group">
+                <label>Save Current as Preset</label>
+                <input type="text" id="presetNameInput" placeholder="Enter preset name...">
+            </div>
+            <div class="export-actions" style="margin-bottom: 20px;">
+                <button class="btn-primary" id="savePresetBtn">Save Preset</button>
+            </div>
+            <div class="panel-title">Saved Presets</div>
+            <div class="preset-list" id="presetList">
+                <div class="preset-item" style="color: var(--text-dim); text-align: center;">
+                    No presets saved yet
+                </div>
+            </div>
+            <div class="export-actions">
+                <button class="btn-secondary" id="importPresetBtn">Import JSON</button>
+                <button class="btn-secondary" id="exportPresetBtn">Export JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="presetFileInput" accept=".json" style="display:none;">
 
     <!-- Application Script using REAL VIB3 Engine with C++ WASM Core -->
     <script type="module">
@@ -594,8 +1073,29 @@
         import { QuantumEngine } from './src/quantum/QuantumEngine.js';
         import { FacetedSystem } from './src/faceted/FacetedSystem.js';
         import { RealHolographicSystem } from './src/holograms/RealHolographicSystem.js';
+        import { ShaderExporter, shaderExporter } from './src/export/ShaderExporter.js';
 
         console.log('VIB3+ Visualization systems imported');
+
+        // =================================================================
+        // GLOBAL MODAL FUNCTIONS (called from HTML onclick)
+        // =================================================================
+        let currentExportFormat = null;
+        let currentExportCode = null;
+        let savedPresets = JSON.parse(localStorage.getItem('vib3_presets') || '[]');
+
+        window.closeExportModal = function() {
+            document.getElementById('exportModal').classList.remove('visible');
+            document.getElementById('exportPreviewContainer').style.display = 'none';
+            document.getElementById('copyExportBtn').style.display = 'none';
+            document.getElementById('downloadExportBtn').style.display = 'none';
+            currentExportFormat = null;
+            currentExportCode = null;
+        };
+
+        window.closePresetModal = function() {
+            document.getElementById('presetModal').classList.remove('visible');
+        };
 
         // =================================================================
         // WASM CORE INITIALIZATION - Required, No Fallbacks
@@ -724,8 +1224,10 @@
         const state = {
             currentSystem: 'quantum',
             currentVariant: 0,
+            currentCoreType: 0,  // 0=Base, 1=Hypersphere, 2=Hypertetrahedron
+            currentBaseGeometry: 0,  // 0-7
             parameters: {
-                geometry: 0,
+                geometry: 0,  // Computed: coreType * 8 + baseGeometry
                 gridDensity: 15,
                 morphFactor: 1.0,
                 chaos: 0.2,
@@ -860,7 +1362,25 @@
                 btn.className = 'geo-btn' + (i === 0 ? ' active' : '');
                 btn.textContent = name;
                 btn.addEventListener('click', () => {
-                    updateVariant(i * 4);  // Jump to first variant of this geometry
+                    state.currentBaseGeometry = i;
+                    // Update geometry: coreType * 8 + baseGeometry
+                    state.parameters.geometry = state.currentCoreType * 8 + i;
+
+                    // Update UI
+                    document.querySelectorAll('.geo-btn').forEach((b, idx) => {
+                        b.classList.toggle('active', idx === i);
+                    });
+
+                    // Update variant display
+                    const coreNames = ['Base', 'Hypersphere Core', 'Hypertetrahedron Core'];
+                    const fullGeoNames = ['Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal'];
+                    document.getElementById('variantName').textContent =
+                        `${fullGeoNames[i]} + ${coreNames[state.currentCoreType]}`;
+                    document.getElementById('variantNumber').textContent =
+                        `Geometry ${state.parameters.geometry} / 24`;
+
+                    updateParameters();
+                    console.log(`Base Geometry: ${fullGeoNames[i]}, Total Geometry: ${state.parameters.geometry}`);
                 });
                 grid.appendChild(btn);
             });
@@ -928,15 +1448,384 @@
                 document.querySelector('.canvas-area').requestFullscreen?.();
             });
 
-            // Export button
+            // Export image button
             document.getElementById('exportBtn').addEventListener('click', () => {
                 if (currentEngine && currentEngine.exportToImage) {
                     currentEngine.exportToImage();
                 } else {
-                    console.log('Export not available for this system');
+                    // Fallback: capture canvas as image
+                    const canvas = document.querySelector('.visualization-canvas');
+                    if (canvas) {
+                        const link = document.createElement('a');
+                        link.download = `vib3-${state.currentSystem}-${Date.now()}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                    }
                 }
             });
+
+            // Core Type selector
+            document.querySelectorAll('.core-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const coreType = parseInt(btn.dataset.core);
+                    state.currentCoreType = coreType;
+
+                    // Update geometry: coreType * 8 + baseGeometry
+                    state.parameters.geometry = coreType * 8 + state.currentBaseGeometry;
+
+                    // Update UI
+                    document.querySelectorAll('.core-type-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Update variant display
+                    const coreNames = ['Base', 'Hypersphere Core', 'Hypertetrahedron Core'];
+                    const geoNames = ['Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal'];
+                    document.getElementById('variantName').textContent =
+                        `${geoNames[state.currentBaseGeometry]} + ${coreNames[coreType]}`;
+                    document.getElementById('variantNumber').textContent =
+                        `Geometry ${state.parameters.geometry} / 24`;
+
+                    updateParameters();
+                    console.log(`Core Type: ${coreNames[coreType]}, Geometry: ${state.parameters.geometry}`);
+                });
+            });
+
+            // Randomize All button
+            document.getElementById('randomizeAll').addEventListener('click', () => {
+                // Randomize system
+                const systems = ['quantum', 'faceted', 'holographic'];
+                const randomSystem = systems[Math.floor(Math.random() * systems.length)];
+
+                // Randomize all parameters
+                state.currentCoreType = Math.floor(Math.random() * 3);
+                state.currentBaseGeometry = Math.floor(Math.random() * 8);
+                state.parameters.geometry = state.currentCoreType * 8 + state.currentBaseGeometry;
+                state.parameters.rot4dXY = Math.random() * 6.28;
+                state.parameters.rot4dXZ = Math.random() * 6.28;
+                state.parameters.rot4dYZ = Math.random() * 6.28;
+                state.parameters.rot4dXW = Math.random() * 6.28;
+                state.parameters.rot4dYW = Math.random() * 6.28;
+                state.parameters.rot4dZW = Math.random() * 6.28;
+                state.parameters.gridDensity = 4 + Math.floor(Math.random() * 46);
+                state.parameters.morphFactor = Math.random() * 2;
+                state.parameters.chaos = Math.random();
+                state.parameters.speed = 0.1 + Math.random() * 2.9;
+                state.parameters.hue = Math.floor(Math.random() * 360);
+                state.parameters.saturation = Math.random();
+                state.parameters.intensity = Math.random();
+
+                updateAllSliders();
+                updateParameters();
+
+                // Switch system if different
+                if (randomSystem !== state.currentSystem) {
+                    document.querySelector(`.system-tab[data-system="${randomSystem}"]`).click();
+                }
+
+                console.log('Randomized all parameters');
+            });
+
+            // Randomize Left (rotation/visualization params)
+            document.getElementById('randomizeLeft').addEventListener('click', () => {
+                state.parameters.rot4dXY = Math.random() * 6.28;
+                state.parameters.rot4dXZ = Math.random() * 6.28;
+                state.parameters.rot4dYZ = Math.random() * 6.28;
+                state.parameters.rot4dXW = Math.random() * 6.28;
+                state.parameters.rot4dYW = Math.random() * 6.28;
+                state.parameters.rot4dZW = Math.random() * 6.28;
+                state.parameters.gridDensity = 4 + Math.floor(Math.random() * 46);
+                state.parameters.morphFactor = Math.random() * 2;
+                state.parameters.chaos = Math.random();
+                state.parameters.speed = 0.1 + Math.random() * 2.9;
+
+                updateAllSliders();
+                updateParameters();
+                console.log('Randomized rotation/visualization params');
+            });
+
+            // Randomize Right (geometry/color params)
+            document.getElementById('randomizeRight').addEventListener('click', () => {
+                state.currentCoreType = Math.floor(Math.random() * 3);
+                state.currentBaseGeometry = Math.floor(Math.random() * 8);
+                state.parameters.geometry = state.currentCoreType * 8 + state.currentBaseGeometry;
+                state.parameters.hue = Math.floor(Math.random() * 360);
+                state.parameters.saturation = Math.random();
+                state.parameters.intensity = Math.random();
+
+                // Update core type buttons
+                document.querySelectorAll('.core-type-btn').forEach((btn, i) => {
+                    btn.classList.toggle('active', i === state.currentCoreType);
+                });
+
+                // Update geometry buttons
+                document.querySelectorAll('.geo-btn').forEach((btn, i) => {
+                    btn.classList.toggle('active', i === state.currentBaseGeometry);
+                });
+
+                updateAllSliders();
+                updateParameters();
+                console.log('Randomized geometry/color params');
+            });
+
+            // Shader Export button
+            document.getElementById('shaderExportBtn').addEventListener('click', () => {
+                document.getElementById('exportModal').classList.add('visible');
+            });
+
+            // Export format options
+            document.querySelectorAll('.export-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const format = option.dataset.format;
+                    currentExportFormat = format;
+
+                    // Generate code based on format
+                    switch (format) {
+                        case 'glsl':
+                            currentExportCode = shaderExporter.exportGLSL(state.parameters, state.currentSystem);
+                            break;
+                        case 'hlsl':
+                            currentExportCode = shaderExporter.exportHLSL(state.parameters);
+                            break;
+                        case 'unity':
+                            currentExportCode = shaderExporter.exportUnityShaderGraph(state.parameters);
+                            break;
+                        case 'godot':
+                            currentExportCode = shaderExporter.exportGodot(state.parameters);
+                            break;
+                    }
+
+                    // Show preview
+                    document.getElementById('exportPreview').textContent = currentExportCode;
+                    document.getElementById('exportPreviewContainer').style.display = 'block';
+                    document.getElementById('copyExportBtn').style.display = 'block';
+                    document.getElementById('downloadExportBtn').style.display = 'block';
+                });
+            });
+
+            // Copy to clipboard
+            document.getElementById('copyExportBtn').addEventListener('click', async () => {
+                if (currentExportCode) {
+                    await navigator.clipboard.writeText(currentExportCode);
+                    document.getElementById('copyExportBtn').textContent = 'Copied!';
+                    setTimeout(() => {
+                        document.getElementById('copyExportBtn').textContent = 'Copy to Clipboard';
+                    }, 2000);
+                }
+            });
+
+            // Download file
+            document.getElementById('downloadExportBtn').addEventListener('click', () => {
+                if (currentExportCode && currentExportFormat) {
+                    const extensions = { glsl: 'glsl', hlsl: 'hlsl', unity: 'hlsl', godot: 'gdshader' };
+                    const blob = new Blob([currentExportCode], { type: 'text/plain' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `vib3-${state.currentSystem}-${Date.now()}.${extensions[currentExportFormat]}`;
+                    link.click();
+                }
+            });
+
+            // Preset button
+            document.getElementById('presetBtn').addEventListener('click', () => {
+                updatePresetList();
+                document.getElementById('presetModal').classList.add('visible');
+            });
+
+            // Save preset
+            document.getElementById('savePresetBtn').addEventListener('click', () => {
+                const name = document.getElementById('presetNameInput').value.trim();
+                if (!name) {
+                    alert('Please enter a preset name');
+                    return;
+                }
+
+                const preset = {
+                    id: Date.now(),
+                    name: name,
+                    system: state.currentSystem,
+                    created: new Date().toISOString(),
+                    parameters: { ...state.parameters },
+                    coreType: state.currentCoreType,
+                    baseGeometry: state.currentBaseGeometry
+                };
+
+                savedPresets.push(preset);
+                localStorage.setItem('vib3_presets', JSON.stringify(savedPresets));
+                document.getElementById('presetNameInput').value = '';
+                updatePresetList();
+                console.log('Preset saved:', name);
+            });
+
+            // Import preset
+            document.getElementById('importPresetBtn').addEventListener('click', () => {
+                document.getElementById('presetFileInput').click();
+            });
+
+            document.getElementById('presetFileInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (Array.isArray(imported)) {
+                                savedPresets = savedPresets.concat(imported);
+                            } else if (imported.parameters) {
+                                savedPresets.push(imported);
+                            }
+                            localStorage.setItem('vib3_presets', JSON.stringify(savedPresets));
+                            updatePresetList();
+                            alert('Preset(s) imported successfully!');
+                        } catch (err) {
+                            alert('Invalid preset file');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Export all presets
+            document.getElementById('exportPresetBtn').addEventListener('click', () => {
+                if (savedPresets.length === 0) {
+                    alert('No presets to export');
+                    return;
+                }
+                const blob = new Blob([JSON.stringify(savedPresets, null, 2)], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `vib3-presets-${Date.now()}.json`;
+                link.click();
+            });
+
+            // Mobile panel collapse/expand
+            if (window.innerWidth <= 900) {
+                document.querySelectorAll('.panel').forEach(panel => {
+                    // Add handle for mobile
+                    const handle = document.createElement('div');
+                    handle.className = 'panel-handle';
+                    panel.insertBefore(handle, panel.firstChild);
+
+                    handle.addEventListener('click', () => {
+                        panel.classList.toggle('expanded');
+                    });
+
+                    // Touch swipe support
+                    let startY = 0;
+                    panel.addEventListener('touchstart', (e) => {
+                        startY = e.touches[0].clientY;
+                    });
+
+                    panel.addEventListener('touchmove', (e) => {
+                        const currentY = e.touches[0].clientY;
+                        const diff = startY - currentY;
+
+                        if (diff > 50 && !panel.classList.contains('expanded')) {
+                            panel.classList.add('expanded');
+                        } else if (diff < -50 && panel.classList.contains('expanded')) {
+                            panel.classList.remove('expanded');
+                        }
+                    });
+                });
+            }
         }
+
+        // Helper function to update all sliders from state
+        function updateAllSliders() {
+            // Rotation sliders
+            ['XY', 'XZ', 'YZ', 'XW', 'YW', 'ZW'].forEach(plane => {
+                const slider = document.getElementById(`rot${plane}`);
+                const value = state.parameters[`rot4d${plane}`];
+                slider.value = value;
+                document.getElementById(`${plane.toLowerCase()}Val`).textContent = value.toFixed(2);
+            });
+
+            // Other sliders
+            const configs = [
+                { id: 'gridDensity', param: 'gridDensity', display: 'densityVal', decimals: 0 },
+                { id: 'morphFactor', param: 'morphFactor', display: 'morphVal', decimals: 1 },
+                { id: 'chaos', param: 'chaos', display: 'chaosVal', decimals: 2 },
+                { id: 'speed', param: 'speed', display: 'speedVal', decimals: 1 },
+                { id: 'hue', param: 'hue', display: 'hueVal', decimals: 0 },
+                { id: 'saturation', param: 'saturation', display: 'satVal', decimals: 1 },
+                { id: 'intensity', param: 'intensity', display: 'intVal', decimals: 1 }
+            ];
+
+            configs.forEach(config => {
+                const slider = document.getElementById(config.id);
+                const value = state.parameters[config.param];
+                slider.value = value;
+                document.getElementById(config.display).textContent = value.toFixed(config.decimals);
+            });
+
+            // Update core type and geometry buttons
+            document.querySelectorAll('.core-type-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === state.currentCoreType);
+            });
+            document.querySelectorAll('.geo-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === state.currentBaseGeometry);
+            });
+
+            // Update variant display
+            const coreNames = ['Base', 'Hypersphere Core', 'Hypertetrahedron Core'];
+            const geoNames = ['Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal'];
+            document.getElementById('variantName').textContent =
+                `${geoNames[state.currentBaseGeometry]} + ${coreNames[state.currentCoreType]}`;
+            document.getElementById('variantNumber').textContent =
+                `Geometry ${state.parameters.geometry} / 24`;
+        }
+
+        // Helper function to update preset list UI
+        function updatePresetList() {
+            const list = document.getElementById('presetList');
+
+            if (savedPresets.length === 0) {
+                list.innerHTML = '<div class="preset-item" style="color: var(--text-dim); text-align: center;">No presets saved yet</div>';
+                return;
+            }
+
+            list.innerHTML = savedPresets.map((preset, i) => `
+                <div class="preset-item" data-index="${i}">
+                    <div>
+                        <div class="preset-item-name">${preset.name}</div>
+                        <div class="preset-item-meta">${preset.system} - ${new Date(preset.created).toLocaleDateString()}</div>
+                    </div>
+                    <button class="btn-secondary" style="padding:4px 8px;font-size:10px;" onclick="event.stopPropagation();deletePreset(${i})">X</button>
+                </div>
+            `).join('');
+
+            // Add click handlers to load presets
+            list.querySelectorAll('.preset-item[data-index]').forEach(item => {
+                item.addEventListener('click', () => {
+                    const index = parseInt(item.dataset.index);
+                    loadPreset(savedPresets[index]);
+                });
+            });
+        }
+
+        // Load a preset
+        function loadPreset(preset) {
+            state.parameters = { ...preset.parameters };
+            state.currentCoreType = preset.coreType || 0;
+            state.currentBaseGeometry = preset.baseGeometry || 0;
+
+            updateAllSliders();
+            updateParameters();
+
+            // Switch system if different
+            if (preset.system && preset.system !== state.currentSystem) {
+                document.querySelector(`.system-tab[data-system="${preset.system}"]`).click();
+            }
+
+            closePresetModal();
+            console.log('Loaded preset:', preset.name);
+        }
+
+        // Delete preset (global for onclick)
+        window.deletePreset = function(index) {
+            savedPresets.splice(index, 1);
+            localStorage.setItem('vib3_presets', JSON.stringify(savedPresets));
+            updatePresetList();
+        };
 
         // =================================================================
         // FPS COUNTER
