@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "postToolUse": [
+      {
+        "matcher": "Bash",
+        "command": ".claude/hooks/verify-deploy.sh"
+      },
+      {
+        "matcher": "Bash",
+        "command": ".claude/hooks/redteam-tests.sh"
+      }
+    ],
+    "userPromptSubmit": [
+      {
+        "command": ".claude/hooks/read-github-docs.sh"
+      }
+    ]
+  }
+}
