@@ -987,6 +987,42 @@
                     <span>Gyroscope Control</span>
                 </button>
             </div>
+
+            <div class="panel-section">
+                <div class="panel-title">Choreography (Auto-Animate)</div>
+                <select id="choreographySelect" style="margin-bottom: 8px;">
+                    <option value="">Select Animation...</option>
+                    <option value="gentleSpin">Gentle Spin</option>
+                    <option value="reveal">Dramatic Reveal</option>
+                    <option value="pulse">Pulsing Intensity</option>
+                    <option value="colorSweep">Color Sweep</option>
+                    <option value="full4DRotation">Full 4D Rotation</option>
+                    <option value="chaosBurst">Chaos Burst</option>
+                </select>
+                <div class="randomize-group">
+                    <button class="randomize-btn" id="playChoreography">Play</button>
+                    <button class="randomize-btn" id="stopChoreography">Stop</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">Behavior</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Drag Sensitivity</span><span id="dragSensVal">1.5</span></div>
+                    <input type="range" id="dragSensitivity" min="0.5" max="5" step="0.1" value="1.5">
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
+                        <input type="checkbox" id="momentumToggle" checked> Momentum
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
+                        <input type="checkbox" id="autoAnimateToggle"> Auto-Animate
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
+                        <input type="checkbox" id="loopChoreography" checked> Loop
+                    </label>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -1074,6 +1110,7 @@
         import { FacetedSystem } from './src/faceted/FacetedSystem.js';
         import { RealHolographicSystem } from './src/holograms/RealHolographicSystem.js';
         import { ShaderExporter, shaderExporter } from './src/export/ShaderExporter.js';
+        import { InteractivityManager } from './src/core/InteractivityManager.js';
 
         console.log('VIB3+ Visualization systems imported');
 
@@ -1246,6 +1283,7 @@
 
         let canvasManager = null;
         let currentEngine = null;
+        let interactivityManager = null;
         let lastTime = 0;
         let frameCount = 0;
         let fps = 0;
@@ -1313,6 +1351,59 @@
             if (currentEngine && currentEngine.updateParameters) {
                 currentEngine.updateParameters(state.parameters);
             }
+        }
+
+        /**
+         * Handle parameter updates from InteractivityManager
+         * @param {Object} params - Parameters to update
+         * @param {string} mode - 'delta' (add to current) or 'absolute' (set directly)
+         */
+        function handleInteractivityUpdate(params, mode = 'delta') {
+            for (const [key, value] of Object.entries(params)) {
+                if (key in state.parameters) {
+                    if (mode === 'delta') {
+                        state.parameters[key] += value;
+                        // Wrap rotation values
+                        if (key.startsWith('rot4d')) {
+                            state.parameters[key] = state.parameters[key] % 6.28;
+                            if (state.parameters[key] < 0) state.parameters[key] += 6.28;
+                        }
+                        // Clamp other values
+                        if (key === 'morphFactor') {
+                            state.parameters[key] = Math.max(0, Math.min(2, state.parameters[key]));
+                        }
+                        if (key === 'intensity' || key === 'chaos' || key === 'saturation') {
+                            state.parameters[key] = Math.max(0, Math.min(1, state.parameters[key]));
+                        }
+                    } else {
+                        state.parameters[key] = value;
+                    }
+                }
+            }
+
+            // Update sliders to reflect changes
+            updateAllSliders();
+            updateParameters();
+        }
+
+        /**
+         * Initialize interactivity on canvas
+         */
+        function initInteractivity() {
+            const canvasArea = document.querySelector('.canvas-area');
+            if (!canvasArea) return;
+
+            interactivityManager = new InteractivityManager(canvasArea, handleInteractivityUpdate);
+
+            // Configure settings
+            interactivityManager.updateSettings({
+                dragSensitivity: 0.015,
+                gyroSensitivity: 0.025,
+                autoAnimate: false,
+                swipeMomentum: true
+            });
+
+            console.log('🎮 Interactivity initialized');
         }
 
         function updateVariant(newVariant) {
@@ -1727,6 +1818,101 @@
                     });
                 });
             }
+
+            // =========================================================
+            // GYROSCOPE CONTROL
+            // =========================================================
+            document.getElementById('gyroBtn').addEventListener('click', async () => {
+                if (!interactivityManager) return;
+
+                const btn = document.getElementById('gyroBtn');
+
+                if (interactivityManager.gyroEnabled) {
+                    interactivityManager.disableGyroscope();
+                    btn.classList.remove('active');
+                    btn.querySelector('span:last-child').textContent = 'Gyroscope Control';
+                } else {
+                    const success = await interactivityManager.enableGyroscope();
+                    if (success) {
+                        btn.classList.add('active');
+                        btn.querySelector('span:last-child').textContent = 'Gyroscope ON';
+                        // Calibrate after a moment
+                        setTimeout(() => interactivityManager.calibrateGyroscope(), 500);
+                    } else {
+                        alert('Gyroscope not available or permission denied');
+                    }
+                }
+            });
+
+            // =========================================================
+            // CHOREOGRAPHY CONTROLS
+            // =========================================================
+            document.getElementById('playChoreography').addEventListener('click', () => {
+                if (!interactivityManager) return;
+
+                const selected = document.getElementById('choreographySelect').value;
+                if (!selected) {
+                    alert('Please select a choreography animation first');
+                    return;
+                }
+
+                interactivityManager.loadPresetChoreography(selected);
+                interactivityManager.startChoreography();
+
+                document.getElementById('playChoreography').textContent = 'Playing...';
+                document.getElementById('playChoreography').style.background = 'var(--accent-quantum)';
+            });
+
+            document.getElementById('stopChoreography').addEventListener('click', () => {
+                if (!interactivityManager) return;
+
+                interactivityManager.stopChoreography();
+                document.getElementById('playChoreography').textContent = 'Play';
+                document.getElementById('playChoreography').style.background = '';
+            });
+
+            // =========================================================
+            // BEHAVIOR SETTINGS
+            // =========================================================
+            document.getElementById('dragSensitivity').addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                document.getElementById('dragSensVal').textContent = value.toFixed(1);
+
+                if (interactivityManager) {
+                    interactivityManager.updateSettings({
+                        dragSensitivity: value * 0.01
+                    });
+                }
+            });
+
+            document.getElementById('momentumToggle').addEventListener('change', (e) => {
+                if (interactivityManager) {
+                    interactivityManager.updateSettings({
+                        swipeMomentum: e.target.checked
+                    });
+                }
+            });
+
+            document.getElementById('autoAnimateToggle').addEventListener('change', (e) => {
+                if (interactivityManager) {
+                    interactivityManager.updateSettings({
+                        autoAnimate: e.target.checked
+                    });
+                    if (e.target.checked) {
+                        interactivityManager.startAutoAnimate();
+                    } else {
+                        interactivityManager.stopAutoAnimate();
+                    }
+                }
+            });
+
+            document.getElementById('loopChoreography').addEventListener('change', (e) => {
+                if (interactivityManager) {
+                    interactivityManager.updateSettings({
+                        choreographyLoop: e.target.checked
+                    });
+                }
+            });
         }
 
         // Helper function to update all sliders from state
@@ -1867,7 +2053,10 @@
                 document.getElementById('loadingText').textContent = 'Setting up controls...';
                 setupUI();
 
-                // Step 5: Start FPS counter
+                // Step 5: Initialize interactivity (touch, swipe, gyro, choreography)
+                initInteractivity();
+
+                // Step 6: Start FPS counter
                 lastTime = performance.now();
                 updateFPS();
 
