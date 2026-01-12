@@ -9,6 +9,7 @@ export class FacetedSystem {
         this.canvas = null;
         this.gl = null;
         this.program = null;
+        this.vertexBuffer = null;  // Store buffer reference
         this.isActive = false;
         this.time = 0;
         this.initAttempts = 0;
@@ -26,8 +27,8 @@ export class FacetedSystem {
             dimension: 3.5
         };
 
-        // Try to initialize - may need retry if canvas not ready yet
-        this.tryInitialize();
+        // Don't auto-initialize - wait for setActive
+        console.log('🔷 Faceted System created (waiting for setActive)');
     }
 
     /**
@@ -36,13 +37,14 @@ export class FacetedSystem {
     tryInitialize() {
         if (this.initialize()) {
             console.log('✅ Faceted System initialized successfully');
+            this.start();  // Start rendering after successful init
             return;
         }
 
         this.initAttempts++;
         if (this.initAttempts < this.maxInitAttempts) {
             console.log(`⏳ Faceted init attempt ${this.initAttempts}/${this.maxInitAttempts} - retrying...`);
-            setTimeout(() => this.tryInitialize(), 50);
+            setTimeout(() => this.tryInitialize(), 100);  // Longer delay
         } else {
             console.error('❌ Faceted System failed to initialize after max attempts');
         }
@@ -307,11 +309,14 @@ export class FacetedSystem {
         this.program = this.compileProgram(vertexShader, fragmentShader);
         if (!this.program) return false;
 
-        // Create fullscreen quad
+        // Create fullscreen quad - STORE buffer reference
         const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
-        const buffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+        this.vertexBuffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+
+        // Get and store attribute location
+        this.positionLocation = this.gl.getAttribLocation(this.program, 'a_position');
 
         return true;
     }
@@ -386,20 +391,19 @@ export class FacetedSystem {
      */
     setActive(active) {
         if (active) {
-            // Ensure we're initialized before starting
-            if (!this.gl || !this.program) {
-                console.log('⚠️ Faceted not initialized yet, attempting init...');
-                this.initAttempts = 0;
-                this.tryInitialize();
-                // Delay start until init completes
-                setTimeout(() => {
-                    if (this.gl && this.program) {
-                        this.start();
-                    }
-                }, 100);
-            } else {
-                this.start();
-            }
+            // Always try to initialize fresh when activated
+            console.log('🔷 Faceted setActive(true) - initializing...');
+            this.initAttempts = 0;
+
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                if (this.initialize()) {
+                    this.start();
+                } else {
+                    // Retry a few times
+                    this.tryInitialize();
+                }
+            }, 50);
         } else {
             this.stop();
         }
@@ -409,7 +413,7 @@ export class FacetedSystem {
      * Render loop
      */
     render() {
-        if (!this.isActive || !this.gl || !this.program) return;
+        if (!this.isActive || !this.gl || !this.program || !this.vertexBuffer) return;
 
         this.time += 0.016 * this.parameters.speed;
 
@@ -450,10 +454,10 @@ export class FacetedSystem {
             }
         });
 
-        // Draw fullscreen quad
-        const posLocation = this.gl.getAttribLocation(this.program, 'a_position');
-        this.gl.enableVertexAttribArray(posLocation);
-        this.gl.vertexAttribPointer(posLocation, 2, this.gl.FLOAT, false, 0, 0);
+        // Draw fullscreen quad - bind buffer first!
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+        this.gl.enableVertexAttribArray(this.positionLocation);
+        this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
 
         requestAnimationFrame(() => this.render());
