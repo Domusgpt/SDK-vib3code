@@ -1,0 +1,610 @@
+openapi: 3.0.3
+info:
+  title: VIB3+ Procedural 4D Visualization API
+  version: 1.0.0
+  description: |
+    Generate unique 4D geometric visualizations programmatically. Creates abstract backgrounds,
+    textures, patterns, and shader code using mathematical geometry that cannot be found in stock libraries.
+
+    ## Features
+    - True 4D rotation mathematics (6 rotation planes)
+    - 24 unique geometries (8 base × 3 core types)
+    - 3 visualization systems (quantum, faceted, holographic)
+    - Export to game engine shaders (GLSL, HLSL, Unity, Godot)
+    - Natural language generation
+    - Batch variation generation
+  contact:
+    name: VIB3+ API Support
+    email: api@vib3.dev
+    url: https://vib3.dev
+  license:
+    name: BSL 1.1
+    url: https://vib3.dev/license
+
+servers:
+  - url: https://api.vib3.dev/v1
+    description: Production server
+  - url: http://localhost:3000/v1
+    description: Local development
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+tags:
+  - name: Generation
+    description: Create visualizations
+  - name: Export
+    description: Export to various formats
+  - name: Scene
+    description: Manipulate scene parameters
+  - name: Discovery
+    description: API discovery and capabilities
+
+paths:
+  /generate:
+    post:
+      operationId: generateVisualization
+      summary: Generate a 4D visualization with specific parameters
+      tags: [Generation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+            examples:
+              simple:
+                summary: Simple generation
+                value:
+                  style: quantum
+                  geometry: 2
+              full:
+                summary: Full parameters
+                value:
+                  style: faceted
+                  geometry: hypercube
+                  core: hypersphere
+                  color:
+                    hue: 200
+                    saturation: 0.8
+                    intensity: 0.7
+                  rotation:
+                    xw: 0.5
+                    yw: 0.3
+                  output:
+                    format: png
+                    width: 2048
+                    height: 2048
+      responses:
+        '200':
+          description: Generated visualization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /generate/natural:
+    post:
+      operationId: generateFromPrompt
+      summary: Generate visualization from natural language description
+      description: |
+        Interprets mood, color, and style preferences from natural language.
+        Best for quick generation when you don't know specific parameters.
+      tags: [Generation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt:
+                  type: string
+                  description: Natural language description
+                  example: "calm blue geometric sphere for website background"
+                output_format:
+                  type: string
+                  enum: [png, webp, svg]
+                  default: png
+      responses:
+        '200':
+          description: Generated visualization
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/GenerationResult'
+                  - type: object
+                    properties:
+                      interpreted_as:
+                        type: object
+                        description: How the prompt was interpreted
+                      original_prompt:
+                        type: string
+
+  /export/shader:
+    post:
+      operationId: exportShader
+      summary: Export visualization as shader code
+      description: |
+        Generates ready-to-use shader code for game engines.
+        Supports GLSL, HLSL (Unreal), Unity ShaderGraph, and Godot GDShader.
+      tags: [Export]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target]
+              properties:
+                target:
+                  type: string
+                  enum: [glsl, hlsl_unreal, unity_shadergraph, godot]
+                  description: Target platform/format
+                parameters:
+                  type: object
+                  description: VIB3+ parameters to bake into shader
+                include_uniforms:
+                  type: boolean
+                  default: true
+                  description: Include uniform declarations
+      responses:
+        '200':
+          description: Shader code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  target:
+                    type: string
+                  format:
+                    type: string
+                  code:
+                    type: string
+                  uniforms:
+                    type: array
+                    items:
+                      type: string
+                  instructions:
+                    type: string
+                  lines:
+                    type: integer
+            text/plain:
+              schema:
+                type: string
+                description: Raw shader code (when ?raw=true)
+
+  /batch:
+    post:
+      operationId: batchGenerate
+      summary: Generate multiple variations at once
+      description: |
+        Efficiently creates asset packs, color variations, or exploration sets.
+        Uses 0.8× credits per image (20% discount for batch operations).
+      tags: [Generation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [variations]
+              properties:
+                base_params:
+                  type: object
+                  description: Base parameters to vary from
+                variations:
+                  type: array
+                  items:
+                    type: object
+                    required: [vary, count]
+                    properties:
+                      vary:
+                        type: string
+                        enum: [hue, geometry, rotation, chaos, intensity, all]
+                      count:
+                        type: integer
+                        minimum: 1
+                        maximum: 10
+                      range:
+                        type: object
+                        properties:
+                          min:
+                            type: number
+                          max:
+                            type: number
+                output_format:
+                  type: string
+                  enum: [png, webp]
+                  default: webp
+      responses:
+        '200':
+          description: Batch generation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  output_format:
+                    type: string
+                  variations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                        variation_type:
+                          type: string
+                        parameters:
+                          type: object
+                        preview_url:
+                          type: string
+                  credits_used:
+                    type: number
+
+  /scene:
+    post:
+      operationId: createScene
+      summary: Create a new 4D visualization scene
+      tags: [Scene]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                system:
+                  type: string
+                  enum: [quantum, faceted, holographic]
+                geometry_index:
+                  type: integer
+                  minimum: 0
+                  maximum: 23
+      responses:
+        '200':
+          description: Scene created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneState'
+
+  /scene/rotation:
+    post:
+      operationId: setRotation
+      summary: Set 6D rotation angles
+      description: |
+        Sets rotation across all six rotation planes.
+        XY/XZ/YZ are 3D rotations, XW/YW/ZW are 4D hyperspace rotations.
+      tags: [Scene]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                XY:
+                  type: number
+                  minimum: -6.28
+                  maximum: 6.28
+                XZ:
+                  type: number
+                  minimum: -6.28
+                  maximum: 6.28
+                YZ:
+                  type: number
+                  minimum: -6.28
+                  maximum: 6.28
+                XW:
+                  type: number
+                  minimum: -6.28
+                  maximum: 6.28
+                  description: 4D hyperspace rotation
+                YW:
+                  type: number
+                  minimum: -6.28
+                  maximum: 6.28
+                  description: 4D hyperspace rotation
+                ZW:
+                  type: number
+                  minimum: -6.28
+                  maximum: 6.28
+                  description: 4D hyperspace rotation
+      responses:
+        '200':
+          description: Rotation updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rotation_state:
+                    type: object
+
+  /scene/state:
+    get:
+      operationId: getState
+      summary: Get current scene state
+      tags: [Scene]
+      responses:
+        '200':
+          description: Current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneState'
+
+  /geometries:
+    get:
+      operationId: listGeometries
+      summary: List available geometries
+      tags: [Discovery]
+      parameters:
+        - name: core_type
+          in: query
+          schema:
+            type: string
+            enum: [base, hypersphere, hypertetrahedron, all]
+            default: all
+      responses:
+        '200':
+          description: Geometry list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  geometries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                        base_type:
+                          type: string
+                        core_type:
+                          type: string
+                        description:
+                          type: string
+
+  /capabilities:
+    get:
+      operationId: getCapabilities
+      summary: Get API capabilities and pricing
+      tags: [Discovery]
+      parameters:
+        - name: examples
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: API capabilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capabilities'
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      tags: [Discovery]
+      security: []
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  version:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token (same as API key)
+
+  schemas:
+    GenerateRequest:
+      type: object
+      properties:
+        style:
+          type: string
+          enum: [quantum, faceted, holographic]
+          description: Visualization system
+        geometry:
+          oneOf:
+            - type: integer
+              minimum: 0
+              maximum: 23
+            - type: string
+              enum: [tetrahedron, hypercube, sphere, torus, klein, fractal, wave, crystal]
+          description: Geometry index (0-23) or name
+        core:
+          type: string
+          enum: [base, hypersphere, hypertetrahedron]
+          default: base
+        color:
+          type: object
+          properties:
+            hue:
+              type: integer
+              minimum: 0
+              maximum: 360
+            saturation:
+              type: number
+              minimum: 0
+              maximum: 1
+            intensity:
+              type: number
+              minimum: 0
+              maximum: 1
+        rotation:
+          type: object
+          properties:
+            xw:
+              type: number
+            yw:
+              type: number
+            zw:
+              type: number
+        output:
+          type: object
+          properties:
+            format:
+              type: string
+              enum: [png, webp, svg]
+              default: png
+            width:
+              type: integer
+              minimum: 256
+              maximum: 4096
+              default: 1024
+            height:
+              type: integer
+              minimum: 256
+              maximum: 4096
+              default: 1024
+
+    GenerationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        url:
+          type: string
+          format: uri
+          description: CDN URL to generated image
+        data:
+          type: string
+          description: Base64 encoded image (when format is base64)
+        expires_at:
+          type: string
+          format: date-time
+        parameters:
+          type: object
+        render_time_ms:
+          type: number
+        credits_used:
+          type: integer
+
+    SceneState:
+      type: object
+      properties:
+        scene_id:
+          type: string
+        system:
+          type: string
+        geometry:
+          type: object
+          properties:
+            index:
+              type: integer
+            base_type:
+              type: string
+            core_type:
+              type: string
+        rotation_state:
+          type: object
+        visual:
+          type: object
+
+    Capabilities:
+      type: object
+      properties:
+        version:
+          type: string
+        name:
+          type: string
+        systems:
+          type: array
+          items:
+            type: object
+        geometries:
+          type: object
+        rotation:
+          type: object
+        tools:
+          type: array
+          items:
+            type: object
+        pricing:
+          type: object
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [type, code, message]
+          properties:
+            type:
+              type: string
+            code:
+              type: string
+            message:
+              type: string
+            suggestion:
+              type: string
+            retry_possible:
+              type: boolean
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: string
+            format: date-time
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

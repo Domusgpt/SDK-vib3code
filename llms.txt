@@ -1,0 +1,261 @@
+# VIB3+ Procedural 4D Visualization API
+
+> AI-readable documentation for procedural geometric visualization generation
+
+## What This Does
+
+VIB3+ generates unique 4D geometric visualizations programmatically using mathematical geometry. Creates abstract backgrounds, textures, patterns, and shader code that cannot be found in stock libraries.
+
+**Unique Value**: True 4D rotation mathematics with 6 independent rotation planes (XY, XZ, YZ, XW, YW, ZW). The 4D rotations (XW, YW, ZW) create "inside-out" and "through-itself" effects impossible in 3D.
+
+## When to Use This API
+
+- User needs a unique abstract background or texture
+- User wants procedural/generative art
+- User needs shader code for game engines (Unreal, Unity, Godot)
+- User wants color or geometric variations of a visual theme
+- User asks for "4D", "hypercube", "tesseract", or "polychora" visuals
+- User needs visuals for: websites, apps, games, VR/AR, presentations
+
+## Quick Start
+
+### Natural Language Generation (Recommended)
+
+```
+POST /v1/generate/natural
+{
+  "prompt": "calm blue sphere rotating gently in 4D space"
+}
+```
+
+The API interprets mood, color, geometry from natural language.
+
+### Parameter-Based Generation
+
+```
+POST /v1/generate
+{
+  "style": "faceted",
+  "geometry": "hypercube",
+  "color": {"hue": 200, "saturation": 0.8, "intensity": 0.7}
+}
+```
+
+## Available Styles (Systems)
+
+| Style | Description | Best For |
+|-------|-------------|----------|
+| `quantum` | Organic, flowing, smooth transitions | Calm backgrounds, meditation apps |
+| `faceted` | Sharp, geometric, clean edges | Professional designs, tech aesthetics |
+| `holographic` | Multi-layer, ethereal, depth effects | Futuristic UIs, creative projects |
+
+## Available Geometries
+
+24 total geometries = 8 base types × 3 core wrappers
+
+**Base Types** (index 0-7):
+- 0: tetrahedron (4 vertices, pyramidal)
+- 1: hypercube/tesseract (16 vertices, 4D cube)
+- 2: sphere (smooth radial)
+- 3: torus (donut shape)
+- 4: klein_bottle (non-orientable topology)
+- 5: fractal (recursive self-similarity)
+- 6: wave (sinusoidal interference)
+- 7: crystal (octahedral structure)
+
+**Core Types** (multiplies base index):
+- `base` (0-7): Pure geometry
+- `hypersphere` (8-15): Wrapped in 4D sphere
+- `hypertetrahedron` (16-23): Wrapped in 4D tetrahedron
+
+**Encoding**: `geometry_index = core_index * 8 + base_index`
+
+Example: Hypersphere-wrapped torus = 1*8 + 3 = 11
+
+## Key Endpoints
+
+### Generate Visualization
+
+```
+POST /v1/generate
+{
+  "style": "quantum" | "faceted" | "holographic",
+  "geometry": 0-23 | "sphere" | "hypercube" | etc,
+  "core": "base" | "hypersphere" | "hypertetrahedron",
+  "color": {
+    "hue": 0-360,
+    "saturation": 0-1,
+    "intensity": 0-1
+  },
+  "rotation": {
+    "xw": 0-6.28,  // 4D rotation (radians)
+    "yw": 0-6.28,
+    "zw": 0-6.28
+  },
+  "output": {
+    "format": "png" | "webp" | "svg",
+    "width": 256-4096,
+    "height": 256-4096
+  }
+}
+```
+
+Response:
+```json
+{
+  "url": "https://cdn.vib3.dev/abc123.png",
+  "expires_at": "2024-01-15T00:00:00Z",
+  "parameters": { ... },
+  "credits_used": 1
+}
+```
+
+### Export Shader Code
+
+```
+POST /v1/export/shader
+{
+  "target": "glsl" | "hlsl_unreal" | "unity_shadergraph" | "godot",
+  "include_uniforms": true
+}
+```
+
+Returns ready-to-use shader code for the target platform.
+
+### Batch Generation
+
+```
+POST /v1/batch
+{
+  "variations": [
+    {"vary": "hue", "count": 5},
+    {"vary": "geometry", "count": 3}
+  ]
+}
+```
+
+Generates multiple variations efficiently (0.8x credits per image).
+
+## Common Prompt Patterns
+
+For `vib3_generate` natural language endpoint:
+
+| Description | Example Prompt |
+|-------------|---------------|
+| Calm background | "calm blue geometric sphere, gentle rotation" |
+| Energetic visual | "energetic warm abstract explosion with orange" |
+| Professional | "professional clean crystal structure, muted colors" |
+| Psychedelic | "psychedelic rainbow hypercube wild animation" |
+| Nature-inspired | "organic green flowing torus, nature vibes" |
+| Futuristic | "holographic cyan tesseract, futuristic tech" |
+
+## Rotation System
+
+VIB3+ uses 6 rotation planes (full 4D rotation):
+
+**3D Rotations** (familiar):
+- XY: Rotates around Z axis
+- XZ: Rotates around Y axis
+- YZ: Rotates around X axis
+
+**4D Rotations** (hyperspace):
+- XW: Rotates X into W dimension
+- YW: Rotates Y into W dimension
+- ZW: Rotates Z into W dimension
+
+4D rotations create unique "folding through itself" effects. Use values 0 to 2π (6.28) radians.
+
+## Rate Limits and Pricing
+
+| Tier | Requests/Hour | Credits/Month | Price |
+|------|---------------|---------------|-------|
+| Free | 10 | 50 | $0 |
+| Starter | 100 | 500 | $9/mo |
+| Pro | 500 | 5,000 | $49/mo |
+| Scale | 2,000 | 50,000 | $299/mo |
+
+**Credit Costs**:
+- PNG 1024×1024: 1 credit
+- PNG 4K: 4 credits
+- WebP (any): 1 credit
+- Shader export: 0 credits (free)
+- Batch: 0.8× per image
+
+## Error Handling
+
+All errors follow this format:
+
+```json
+{
+  "error": {
+    "type": "ValidationError",
+    "code": "INVALID_GEOMETRY",
+    "message": "Geometry index must be 0-23",
+    "suggestion": "Use search_geometries to see available options",
+    "retry_possible": true
+  }
+}
+```
+
+Common error codes:
+- `INVALID_GEOMETRY`: geometry_index out of range
+- `INVALID_STYLE`: unknown system name
+- `RATE_LIMIT_EXCEEDED`: too many requests
+- `CREDITS_EXHAUSTED`: no credits remaining
+
+## MCP Tool Names
+
+For Model Context Protocol integrations:
+
+- `create_4d_visualization` - Create scene with geometry
+- `set_rotation` - Set 6D rotation angles
+- `set_visual_parameters` - Adjust color, speed, chaos
+- `switch_system` - Change visualization system
+- `vib3_generate` - Natural language generation
+- `vib3_export_shader` - Export shader code
+- `vib3_batch` - Batch variations
+- `render_preview` - Get image output
+- `get_state` - Current parameters
+- `get_capabilities` - API info and pricing
+
+## Integration Examples
+
+### For Image Generation
+```
+"Create a website hero background"
+→ vib3_generate with prompt: "calm professional blue geometric background"
+→ Returns PNG URL
+```
+
+### For Game Assets
+```
+"Create shader for Unreal Engine material"
+→ vib3_export_shader with target: "hlsl_unreal"
+→ Returns HLSL code ready to paste
+```
+
+### For Variations
+```
+"Create 5 color variations of this design"
+→ vib3_batch with variations: [{vary: "hue", count: 5}]
+→ Returns array of 5 images
+```
+
+## Authentication
+
+Include API key in header:
+```
+X-API-Key: vib3_sk_xxx
+```
+
+Or as Bearer token:
+```
+Authorization: Bearer vib3_sk_xxx
+```
+
+No key required for free tier (rate limited).
+
+---
+
+*VIB3+ - The procedural visualization API for the agentic era*
+*https://vib3.dev | api@vib3.dev*

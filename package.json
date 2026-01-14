@@ -136,6 +136,12 @@
     "./agent/mcp": {
       "import": "./src/agent/mcp/index.js"
     },
+    "./agent/api": {
+      "import": "./src/agent/api/index.js"
+    },
+    "./agent/api/openapi": {
+      "import": "./src/agent/api/openapi.yaml"
+    },
     "./agent/cli": {
       "import": "./src/agent/cli/index.js"
     },

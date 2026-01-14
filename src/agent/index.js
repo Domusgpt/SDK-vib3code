@@ -68,6 +68,13 @@ export {
     createStreamingCLI
 } from './cli/index.js';
 
+// REST API
+export {
+    RestAPIServer,
+    restApiServer
+} from './api/index.js';
+
 // Default exports
 export { telemetry } from './telemetry/index.js';
 export { mcpServer } from './mcp/index.js';
+export { restApiServer } from './api/index.js';

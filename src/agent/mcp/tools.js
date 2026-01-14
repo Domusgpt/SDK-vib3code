@@ -217,6 +217,200 @@ export const toolDefinitions = {
             type: 'object',
             properties: {}
         }
+    },
+
+    // === AGENTIC SAAS TOOLS ===
+
+    // Natural language generation
+    vib3_generate: {
+        name: 'vib3_generate',
+        description: 'Generate visualization from natural language description. Interprets mood, color, and style preferences automatically. Best for quick generation without knowing specific parameters.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                prompt: {
+                    type: 'string',
+                    description: 'Natural language description like "calm blue geometric pattern" or "energetic warm abstract explosion" or "professional clean crystal structure"'
+                },
+                output_format: {
+                    type: 'string',
+                    enum: ['png', 'webp', 'svg', 'json'],
+                    default: 'png',
+                    description: 'Output format for the generated visualization'
+                },
+                resolution: {
+                    type: 'object',
+                    properties: {
+                        width: { type: 'integer', minimum: 256, maximum: 4096, default: 1024 },
+                        height: { type: 'integer', minimum: 256, maximum: 4096, default: 1024 }
+                    },
+                    description: 'Output resolution'
+                }
+            },
+            required: ['prompt']
+        }
+    },
+
+    // Shader export
+    vib3_export_shader: {
+        name: 'vib3_export_shader',
+        description: 'Export current or specified visualization as shader code for game engines. Supports GLSL, HLSL (Unreal), Unity ShaderGraph, and Godot GDShader.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                target: {
+                    type: 'string',
+                    enum: ['glsl', 'hlsl_unreal', 'unity_shadergraph', 'godot'],
+                    description: 'Target platform/shader format'
+                },
+                parameters: {
+                    type: 'object',
+                    description: 'Optional VIB3+ parameters to bake into the shader. Uses current state if not provided.'
+                },
+                include_uniforms: {
+                    type: 'boolean',
+                    default: true,
+                    description: 'Include uniform declarations for runtime parameter control'
+                },
+                optimize: {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Apply shader optimization (removes unused code paths)'
+                }
+            },
+            required: ['target']
+        }
+    },
+
+    // Batch generation
+    vib3_batch: {
+        name: 'vib3_batch',
+        description: 'Generate multiple variations at once. Efficient for creating asset packs, color variations, or exploration. Returns array of image URLs.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                base_params: {
+                    type: 'object',
+                    description: 'Base parameters to start from (uses current state if not provided)'
+                },
+                variations: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            vary: {
+                                type: 'string',
+                                enum: ['hue', 'geometry', 'rotation', 'chaos', 'intensity', 'all'],
+                                description: 'Which parameter(s) to vary'
+                            },
+                            count: {
+                                type: 'integer',
+                                minimum: 1,
+                                maximum: 10,
+                                description: 'Number of variations to generate'
+                            },
+                            range: {
+                                type: 'object',
+                                properties: {
+                                    min: { type: 'number' },
+                                    max: { type: 'number' }
+                                },
+                                description: 'Value range for the variation'
+                            }
+                        },
+                        required: ['vary', 'count']
+                    },
+                    description: 'List of variation specifications'
+                },
+                output_format: {
+                    type: 'string',
+                    enum: ['png', 'webp'],
+                    default: 'webp',
+                    description: 'Output format (webp recommended for batch)'
+                }
+            },
+            required: ['variations']
+        }
+    },
+
+    // Render/export image
+    render_preview: {
+        name: 'render_preview',
+        description: 'Renders current visualization and returns image data. Use after setting parameters to get visual output.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                format: {
+                    type: 'string',
+                    enum: ['png', 'webp', 'base64', 'url'],
+                    default: 'base64',
+                    description: 'Output format: base64 for inline, url for CDN link'
+                },
+                width: {
+                    type: 'integer',
+                    minimum: 256,
+                    maximum: 4096,
+                    default: 1024,
+                    description: 'Output width in pixels'
+                },
+                height: {
+                    type: 'integer',
+                    minimum: 256,
+                    maximum: 4096,
+                    default: 1024,
+                    description: 'Output height in pixels'
+                },
+                include_metadata: {
+                    type: 'boolean',
+                    default: true,
+                    description: 'Include parameters in image metadata'
+                }
+            }
+        }
+    },
+
+    // Start/stop animation
+    animate: {
+        name: 'animate',
+        description: 'Control animation playback. Start, stop, or set animation parameters.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                action: {
+                    type: 'string',
+                    enum: ['start', 'stop', 'toggle', 'set_speed'],
+                    description: 'Animation control action'
+                },
+                speed: {
+                    type: 'number',
+                    minimum: 0.1,
+                    maximum: 5.0,
+                    description: 'Animation speed multiplier (for set_speed action)'
+                },
+                choreography: {
+                    type: 'string',
+                    enum: ['gentle_spin', 'reveal', 'pulse', 'color_sweep', 'full_4d_rotation', 'chaos_burst'],
+                    description: 'Optional choreography preset to apply'
+                }
+            },
+            required: ['action']
+        }
+    },
+
+    // Get capabilities and usage info
+    get_capabilities: {
+        name: 'get_capabilities',
+        description: 'Returns full API capabilities, available tools, usage limits, and pricing information for the current session.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                include_examples: {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Include usage examples for each tool'
+                }
+            }
+        }
     }
 };
 
