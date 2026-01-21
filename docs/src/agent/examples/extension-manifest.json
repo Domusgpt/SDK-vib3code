@@ -1,0 +1,37 @@
+{
+  "manifest_version": "1.0.0",
+  "id": "vib3.motion-pack",
+  "name": "VIB3 Motion Pack",
+  "version": "0.1.0",
+  "vendor": {
+    "name": "VIB3 Labs",
+    "url": "https://vib3.dev",
+    "support_email": "support@vib3.dev"
+  },
+  "capabilities": {
+    "renderers": false,
+    "geometry": false,
+    "ui": true,
+    "agent_tools": true,
+    "telemetry": false
+  },
+  "entrypoints": {
+    "runtime": "./dist/runtime.js",
+    "ui": "./dist/ui.js",
+    "toolpack": "./dist/toolpack.json"
+  },
+  "compatibility": {
+    "core_version": ">=1.9.0",
+    "renderer_contract": "v1",
+    "feature_flags": ["toolpack", "ui-tokens"]
+  },
+  "marketplace": {
+    "title": "VIB3 Motion Pack",
+    "summary": "Curated motion presets for 4D visuals inside partner design suites.",
+    "categories": ["motion", "presets"],
+    "tags": ["vib3", "motion", "presets", "4d"],
+    "preview_images": [
+      "https://cdn.vib3.dev/previews/motion-pack-01.png"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "vib3.motion-pack.tools",
+  "name": "VIB3 Motion Pack Tools",
+  "version": "0.1.0",
+  "description": "Tool pack for motion presets and preview workflows.",
+  "tools": [
+    {
+      "name": "set_rotation",
+      "description": "Apply curated rotation presets."
+    },
+    {
+      "name": "set_visual_parameters",
+      "description": "Apply tuned visual parameters for motion effects."
+    }
+  ],
+  "capabilities": ["rotation", "visual-presets"],
+  "marketplace": {
+    "listing_id": "vib3-motion-pack",
+    "categories": ["motion", "automation"]
+  }
+}
