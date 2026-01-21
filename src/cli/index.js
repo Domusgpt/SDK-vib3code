@@ -107,6 +107,15 @@ function output(data, isJson) {
     }
 }
 
+function wrapResponse(operation, data = {}, success = true) {
+    return {
+        success,
+        operation,
+        timestamp: new Date().toISOString(),
+        ...data
+    };
+}
+
 /**
  * Format data for human-readable output
  */
@@ -249,7 +258,7 @@ async function handleSet(parsed) {
         return await mcpServer.handleToolCall('set_visual_parameters', args);
     }
 
-    return {
+    return wrapResponse('set_parameters', {
         error: {
             type: 'ValidationError',
             code: 'INVALID_SUBCOMMAND',
@@ -257,7 +266,7 @@ async function handleSet(parsed) {
             valid_options: ['rotation', 'visual'],
             suggestion: 'Use "set rotation" or "set visual"'
         }
-    };
+    }, false);
 }
 
 /**
@@ -278,7 +287,7 @@ async function handleGeometry(parsed) {
         return await mcpServer.handleToolCall('change_geometry', { geometry_index: index });
     }
 
-    return {
+    return wrapResponse('change_geometry', {
         error: {
             type: 'ValidationError',
             code: 'INVALID_SUBCOMMAND',
@@ -286,7 +295,7 @@ async function handleGeometry(parsed) {
             valid_options: ['list', 'set', '<index>'],
             suggestion: 'Use "geometry list" or "geometry <index>"'
         }
-    };
+    }, false);
 }
 
 /**
@@ -296,7 +305,7 @@ async function handleSystem(parsed) {
     const system = parsed.subcommand || parsed.options.system;
 
     if (!system) {
-        return {
+        return wrapResponse('switch_system', {
             error: {
                 type: 'ValidationError',
                 code: 'MISSING_SYSTEM',
@@ -304,7 +313,7 @@ async function handleSystem(parsed) {
                 valid_options: ['quantum', 'faceted', 'holographic'],
                 suggestion: 'Use "system quantum", "system faceted", or "system holographic"'
             }
-        };
+        }, false);
     }
 
     return await mcpServer.handleToolCall('switch_system', { system });
@@ -335,12 +344,10 @@ async function handleTools(parsed) {
     const includeSchemas = parsed.options.schemas === 'true' || parsed.options.full === 'true';
     const tools = mcpServer.listTools(includeSchemas);
 
-    return {
-        success: true,
-        operation: 'list_tools',
+    return wrapResponse('list_tools', {
         count: tools.length,
         tools
-    };
+    });
 }
 
 /**
@@ -391,7 +398,7 @@ async function main() {
                 result = await handleTools(parsed);
                 break;
             default:
-                result = {
+                result = wrapResponse('get_state', {
                     error: {
                         type: 'NotFoundError',
                         code: 'UNKNOWN_COMMAND',
@@ -399,29 +406,29 @@ async function main() {
                         valid_options: ['create', 'state', 'set', 'geometry', 'system', 'randomize', 'reset', 'tools'],
                         suggestion: 'Run "vib3 --help" for available commands'
                     }
-                };
+                }, false);
         }
     } catch (error) {
-        result = {
+        result = wrapResponse(parsed.command || 'get_state', {
             error: {
                 type: 'SystemError',
                 code: 'EXECUTION_ERROR',
                 message: error.message,
                 suggestion: 'Check your command syntax and try again'
             }
-        };
+        }, false);
     }
 
     // Output result
     output(result, parsed.flags.json);
 
     // Exit with appropriate code
-    if (result.error) {
+    if (result.error || result.success === false) {
         const code = {
             'ValidationError': ExitCode.VALIDATION_ERROR,
             'NotFoundError': ExitCode.NOT_FOUND,
             'SystemError': ExitCode.ERROR
-        }[result.error.type] || ExitCode.ERROR;
+        }[result.error?.type] || ExitCode.ERROR;
 
         process.exit(code);
     }
