@@ -14,5 +14,3 @@ export {
     generateRainbowColors,
     buildGeometryBuffers
 } from './BufferBuilder.js';
-
-export { default as buildGeometryBuffers } from './BufferBuilder.js';
