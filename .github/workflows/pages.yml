@@ -1,0 +1,105 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master, 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create pages directory
+        run: |
+          mkdir -p _site
+
+          # Copy examples
+          cp -r examples _site/examples
+
+          # Copy src for the real SDK demo
+          cp -r src _site/src
+
+          # Create index.html that redirects to demos
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>VIB3+ Demos</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                background: #000;
+                color: #fff;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+                padding: 20px;
+              }
+              h1 { color: #00FF88; margin-bottom: 30px; }
+              .links { display: flex; flex-direction: column; gap: 15px; }
+              a {
+                color: #0FF;
+                font-size: 18px;
+                text-decoration: none;
+                padding: 15px 30px;
+                border: 2px solid #0FF;
+                border-radius: 10px;
+                transition: all 0.2s;
+              }
+              a:hover {
+                background: rgba(0,255,255,0.2);
+              }
+              .desc { color: #888; font-size: 12px; margin-top: 5px; }
+            </style>
+          </head>
+          <body>
+            <h1>VIB3+ Demos</h1>
+            <div class="links">
+              <div>
+                <a href="examples/vib3-real-demo.html">Real SDK Demo</a>
+                <div class="desc">Uses actual VIB3Engine with full 6D rotation</div>
+              </div>
+              <div>
+                <a href="examples/vib3-demo-standalone.html">Standalone Demo</a>
+                <div class="desc">Canvas2D preview (no SDK)</div>
+              </div>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

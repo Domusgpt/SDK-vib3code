@@ -458,8 +458,8 @@ class _Vib3DemoScreenState extends State<Vib3DemoScreen>
               });
             },
             style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
+              backgroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
                   return const Color(0xFF00FF88).withOpacity(0.2);
                 }
                 return Colors.transparent;
