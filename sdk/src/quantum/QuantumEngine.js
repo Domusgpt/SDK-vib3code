@@ -457,7 +457,17 @@ export class QuantumEngine {
             this.updateParameter(param, params[param]);
         });
     }
-    
+
+    /**
+     * Set variant (0-29) - maps to geometry (0-7)
+     * Each geometry has 4 sub-variants
+     */
+    setVariant(variant) {
+        const geometry = Math.floor(variant / 4);
+        this.updateParameter('geometry', geometry);
+        console.log(`🔮 Quantum variant ${variant} → geometry ${geometry}`);
+    }
+
     /**
      * Update mouse interaction
      */

@@ -329,6 +329,13 @@ export class FacetedSystem {
      * Start rendering
      */
     start() {
+        // Initialize if not already done
+        if (!this.gl || !this.program) {
+            if (!this.initialize()) {
+                console.error('❌ FacetedSystem failed to initialize on start');
+                return;
+            }
+        }
         this.isActive = true;
         this.render();
         console.log('🔷 Faceted System started');
@@ -412,5 +419,15 @@ export class FacetedSystem {
      */
     updateParameters(params) {
         Object.assign(this.parameters, params);
+    }
+
+    /**
+     * Set variant (0-29) - maps to geometry (0-7)
+     * Each geometry has 4 sub-variants
+     */
+    setVariant(variant) {
+        const geometry = Math.floor(variant / 4);
+        this.parameters.geometry = geometry;
+        console.log(`🔷 Faceted variant ${variant} → geometry ${geometry}`);
     }
 }

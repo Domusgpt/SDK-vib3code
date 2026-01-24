@@ -816,6 +816,16 @@
         function updateVariant(newVariant) {
             state.currentVariant = ((newVariant % 30) + 30) % 30;  // Wrap 0-29
 
+            // CRITICAL FIX: Update geometry parameter based on variant
+            // Variants 0-3 = geometry 0, 4-7 = geometry 1, etc.
+            const geoIndex = Math.floor(state.currentVariant / 4);
+            state.parameters.geometry = geoIndex;
+
+            // Push geometry change to engine via updateParameters
+            if (currentEngine && currentEngine.updateParameters) {
+                currentEngine.updateParameters({ geometry: geoIndex });
+            }
+            // Also try legacy methods
             if (currentEngine) {
                 if (currentEngine.setVariant) {
                     currentEngine.setVariant(state.currentVariant);
@@ -829,10 +839,11 @@
             document.getElementById('variantNumber').textContent = `Variant ${state.currentVariant} / 30`;
 
             // Update geometry button
-            const geoIndex = Math.floor(state.currentVariant / 4);
             document.querySelectorAll('.geo-btn').forEach((btn, i) => {
                 btn.classList.toggle('active', i === geoIndex);
             });
+
+            console.log(`🔄 Variant ${state.currentVariant} → Geometry ${geoIndex}`);
         }
 
         // =================================================================
