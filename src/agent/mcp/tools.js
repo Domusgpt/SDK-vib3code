@@ -217,6 +217,54 @@ export const toolDefinitions = {
             type: 'object',
             properties: {}
         }
+    },
+
+    // Onboarding Tools
+    get_sdk_context: {
+        name: 'get_sdk_context',
+        description: 'Returns essential SDK context for agent onboarding. Call this first to understand the system.',
+        inputSchema: {
+            type: 'object',
+            properties: {}
+        }
+    },
+
+    verify_knowledge: {
+        name: 'verify_knowledge',
+        description: 'Verifies agent has absorbed SDK context. Submit answers to the knowledge quiz.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                rotation_planes: {
+                    type: 'integer',
+                    description: 'How many rotation planes does the system support?'
+                },
+                geometry_formula: {
+                    type: 'string',
+                    description: 'What is the geometry encoding formula?'
+                },
+                canvas_layers: {
+                    type: 'integer',
+                    description: 'How many canvas layers does each visualization system use?'
+                },
+                systems: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'List the 4 visualization systems'
+                },
+                core_types: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'List the 3 core warp types'
+                },
+                base_geometries: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'List the 8 base geometry types'
+                }
+            },
+            required: ['rotation_planes', 'canvas_layers', 'systems']
+        }
     }
 };
 

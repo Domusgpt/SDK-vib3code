@@ -136,6 +136,12 @@ export class MCPServer {
                 case 'get_parameter_schema':
                     result = this.getParameterSchema();
                     break;
+                case 'get_sdk_context':
+                    result = this.getSDKContext();
+                    break;
+                case 'verify_knowledge':
+                    result = this.verifyKnowledge(args);
+                    break;
                 default:
                     throw new Error(`Unknown tool: ${toolName}`);
             }
@@ -492,6 +498,169 @@ export class MCPServer {
             usage: 'Validate parameters using this schema before setting them',
             suggested_next_actions: ['set_rotation', 'set_visual_parameters']
         };
+    }
+
+    /**
+     * Get SDK context for agent onboarding
+     */
+    getSDKContext() {
+        return {
+            sdk_name: 'VIB3+ SDK',
+            version: '1.9.0',
+            purpose: 'General-purpose 4D rotation visualization SDK for plugins, extensions, wearables, and agentic use',
+
+            quick_reference: {
+                visualization_systems: 4,
+                rotation_planes: 6,
+                base_geometries: 8,
+                core_warp_types: 3,
+                total_geometries: 24,
+                canvas_layers_per_system: 5
+            },
+
+            systems: [
+                { name: 'quantum', description: 'Complex quantum lattice visualizations' },
+                { name: 'faceted', description: 'Clean 2D geometric patterns' },
+                { name: 'holographic', description: '5-layer audio-reactive holographic effects' },
+                { name: 'polychora', description: '4D polytopes with glassmorphic effects and physics' }
+            ],
+
+            geometry_encoding: {
+                formula: 'geometry_index = core_index * 8 + base_index',
+                base_geometries: ['tetrahedron', 'hypercube', 'sphere', 'torus', 'klein_bottle', 'fractal', 'wave', 'crystal'],
+                core_types: ['base (0)', 'hypersphere (1)', 'hypertetrahedron (2)'],
+                example: 'geometry 10 = hypersphere(2) because 1*8+2=10 → hypersphere core + sphere base'
+            },
+
+            rotation_planes: {
+                '3D_space': ['XY', 'XZ', 'YZ'],
+                '4D_hyperspace': ['XW', 'YW', 'ZW'],
+                range: '-6.28 to 6.28 radians (±2π)'
+            },
+
+            canvas_layers: ['background', 'shadow', 'content', 'highlight', 'accent'],
+
+            knowledge_quiz: {
+                description: 'Verify understanding by calling verify_knowledge with answers',
+                questions: [
+                    'Q1: How many rotation planes? (integer)',
+                    'Q2: What is the geometry encoding formula? (string)',
+                    'Q3: How many canvas layers per system? (integer)',
+                    'Q4: List the 4 visualization systems (array)',
+                    'Q5: List the 3 core warp types (array)',
+                    'Q6: List the 8 base geometry types (array)'
+                ]
+            },
+
+            suggested_next_actions: ['verify_knowledge', 'create_4d_visualization', 'search_geometries']
+        };
+    }
+
+    /**
+     * Verify agent knowledge of SDK
+     */
+    verifyKnowledge(answers) {
+        const expected = {
+            rotation_planes: 6,
+            canvas_layers: 5,
+            systems: ['quantum', 'faceted', 'holographic', 'polychora'],
+            core_types: ['base', 'hypersphere', 'hypertetrahedron'],
+            base_geometries: ['tetrahedron', 'hypercube', 'sphere', 'torus', 'klein_bottle', 'fractal', 'wave', 'crystal']
+        };
+
+        const results = {
+            passed: true,
+            score: 0,
+            max_score: 6,
+            details: []
+        };
+
+        // Check rotation planes
+        if (answers.rotation_planes === expected.rotation_planes) {
+            results.score++;
+            results.details.push({ question: 'rotation_planes', correct: true });
+        } else {
+            results.passed = false;
+            results.details.push({
+                question: 'rotation_planes',
+                correct: false,
+                expected: expected.rotation_planes,
+                received: answers.rotation_planes
+            });
+        }
+
+        // Check canvas layers
+        if (answers.canvas_layers === expected.canvas_layers) {
+            results.score++;
+            results.details.push({ question: 'canvas_layers', correct: true });
+        } else {
+            results.passed = false;
+            results.details.push({
+                question: 'canvas_layers',
+                correct: false,
+                expected: expected.canvas_layers,
+                received: answers.canvas_layers
+            });
+        }
+
+        // Check systems (array comparison)
+        const systemsCorrect = answers.systems &&
+            answers.systems.length === 4 &&
+            expected.systems.every(s => answers.systems.includes(s));
+        if (systemsCorrect) {
+            results.score++;
+            results.details.push({ question: 'systems', correct: true });
+        } else {
+            results.passed = false;
+            results.details.push({
+                question: 'systems',
+                correct: false,
+                expected: expected.systems,
+                received: answers.systems
+            });
+        }
+
+        // Check geometry formula (partial match)
+        if (answers.geometry_formula) {
+            const formulaLower = answers.geometry_formula.toLowerCase();
+            if (formulaLower.includes('core') && formulaLower.includes('8') && formulaLower.includes('base')) {
+                results.score++;
+                results.details.push({ question: 'geometry_formula', correct: true });
+            } else {
+                results.passed = false;
+                results.details.push({
+                    question: 'geometry_formula',
+                    correct: false,
+                    expected: 'geometry = coreIndex * 8 + baseIndex',
+                    received: answers.geometry_formula
+                });
+            }
+        }
+
+        // Check core types (optional but scored)
+        if (answers.core_types && answers.core_types.length === 3) {
+            results.score++;
+            results.details.push({ question: 'core_types', correct: true });
+        }
+
+        // Check base geometries (optional but scored)
+        if (answers.base_geometries && answers.base_geometries.length === 8) {
+            results.score++;
+            results.details.push({ question: 'base_geometries', correct: true });
+        }
+
+        results.percentage = Math.round((results.score / results.max_score) * 100);
+        results.status = results.percentage >= 50 ? 'ready_to_proceed' : 'needs_review';
+
+        if (results.status === 'needs_review') {
+            results.suggestion = 'Review DOCS/SYSTEM_INVENTORY.md for complete SDK context';
+        }
+
+        results.suggested_next_actions = results.status === 'ready_to_proceed'
+            ? ['create_4d_visualization', 'get_state']
+            : ['get_sdk_context'];
+
+        return results;
     }
 
     /**
