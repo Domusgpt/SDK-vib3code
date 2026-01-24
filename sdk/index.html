@@ -548,8 +548,18 @@
             </div>
 
             <div class="panel-section">
-                <div class="panel-title">Geometry (8 Types)</div>
+                <div class="panel-title">Core Type (4D Warp)</div>
+                <select id="coreType">
+                    <option value="0">Base (No Warp)</option>
+                    <option value="1">Hypersphere Core</option>
+                    <option value="2">Hypertetrahedron Core</option>
+                </select>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">Base Geometry (8 Types)</div>
                 <div class="geometry-grid" id="geometryGrid"></div>
+                <div class="variant-number" id="geometryIndex" style="margin-top:8px">Geometry 0 / 24</div>
             </div>
 
             <div class="panel-section">
@@ -724,8 +734,10 @@
         const state = {
             currentSystem: 'quantum',
             currentVariant: 0,
+            coreType: 0,      // 0=Base, 1=Hypersphere, 2=Hypertetrahedron
+            baseGeometry: 0,  // 0-7 (Tet, Cube, Sphere, Torus, Klein, Fractal, Wave, Crystal)
             parameters: {
-                geometry: 0,
+                geometry: 0,  // Full geometry index: coreType * 8 + baseGeometry (0-23)
                 gridDensity: 15,
                 morphFactor: 1.0,
                 chaos: 0.2,
@@ -813,26 +825,35 @@
             }
         }
 
+        // Calculate full geometry index from coreType and baseGeometry
+        // Formula: geometry = coreType * 8 + baseGeometry (gives 0-23)
+        function updateFullGeometry() {
+            const fullGeometry = state.coreType * 8 + state.baseGeometry;
+            state.parameters.geometry = fullGeometry;
+
+            // Update geometry display
+            const geoIndex = document.getElementById('geometryIndex');
+            if (geoIndex) {
+                geoIndex.textContent = `Geometry ${fullGeometry} / 24`;
+            }
+
+            // Push to engine
+            if (currentEngine && currentEngine.updateParameters) {
+                currentEngine.updateParameters({ geometry: fullGeometry });
+            }
+
+            console.log(`🔮 Geometry: core=${state.coreType} + base=${state.baseGeometry} → ${fullGeometry}`);
+        }
+
         function updateVariant(newVariant) {
             state.currentVariant = ((newVariant % 30) + 30) % 30;  // Wrap 0-29
 
-            // CRITICAL FIX: Update geometry parameter based on variant
-            // Variants 0-3 = geometry 0, 4-7 = geometry 1, etc.
-            const geoIndex = Math.floor(state.currentVariant / 4);
-            state.parameters.geometry = geoIndex;
+            // Map variant to base geometry (0-7)
+            // Variants 0-3 = base 0, 4-7 = base 1, etc.
+            state.baseGeometry = Math.floor(state.currentVariant / 4) % 8;
 
-            // Push geometry change to engine via updateParameters
-            if (currentEngine && currentEngine.updateParameters) {
-                currentEngine.updateParameters({ geometry: geoIndex });
-            }
-            // Also try legacy methods
-            if (currentEngine) {
-                if (currentEngine.setVariant) {
-                    currentEngine.setVariant(state.currentVariant);
-                } else if (currentEngine.updateVariant) {
-                    currentEngine.updateVariant(state.currentVariant);
-                }
-            }
+            // Update full geometry (coreType * 8 + baseGeometry)
+            updateFullGeometry();
 
             // Update display
             document.getElementById('variantName').textContent = variantNames[state.currentVariant] || `Variant ${state.currentVariant}`;
@@ -840,10 +861,10 @@
 
             // Update geometry button
             document.querySelectorAll('.geo-btn').forEach((btn, i) => {
-                btn.classList.toggle('active', i === geoIndex);
+                btn.classList.toggle('active', i === state.baseGeometry);
             });
 
-            console.log(`🔄 Variant ${state.currentVariant} → Geometry ${geoIndex}`);
+            console.log(`🔄 Variant ${state.currentVariant} → Base ${state.baseGeometry}`);
         }
 
         // =================================================================
@@ -863,7 +884,14 @@
                 });
             });
 
-            // Geometry grid
+            // Core type selector (for 24 geometry support)
+            const coreTypeSelect = document.getElementById('coreType');
+            coreTypeSelect.addEventListener('change', () => {
+                state.coreType = parseInt(coreTypeSelect.value);
+                updateFullGeometry();
+            });
+
+            // Geometry grid - now sets baseGeometry directly
             const grid = document.getElementById('geometryGrid');
             const geoNames = ['Tet', 'Cube', 'Sph', 'Tor', 'Kln', 'Frc', 'Wav', 'Cry'];
             geoNames.forEach((name, i) => {
@@ -871,7 +899,18 @@
                 btn.className = 'geo-btn' + (i === 0 ? ' active' : '');
                 btn.textContent = name;
                 btn.addEventListener('click', () => {
-                    updateVariant(i * 4);  // Jump to first variant of this geometry
+                    // Update base geometry
+                    state.baseGeometry = i;
+                    // Update button states
+                    document.querySelectorAll('.geo-btn').forEach((b, j) => {
+                        b.classList.toggle('active', j === i);
+                    });
+                    // Recalculate full geometry
+                    updateFullGeometry();
+                    // Update variant display (variant = base * 4 for first sub-variant)
+                    state.currentVariant = i * 4;
+                    document.getElementById('variantName').textContent = variantNames[state.currentVariant] || `Variant ${state.currentVariant}`;
+                    document.getElementById('variantNumber').textContent = `Variant ${state.currentVariant} / 30`;
                 });
                 grid.appendChild(btn);
             });
