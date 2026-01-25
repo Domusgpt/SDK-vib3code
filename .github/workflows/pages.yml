@@ -42,11 +42,16 @@ jobs:
 
       - name: Set launcher as index
         run: |
+          # Rename original index.html to vib3-engine.html (for main VIB3 Engine link)
+          if [ -f dist/index.html ]; then
+            mv dist/index.html dist/vib3-engine.html
+          fi
           # Copy launcher.html as the main index.html
           if [ -f dist/launcher.html ]; then
             cp dist/launcher.html dist/index.html
           fi
           # List output for debugging
+          echo "=== dist/ contents ==="
           ls -la dist/
 
       - name: Upload artifact
