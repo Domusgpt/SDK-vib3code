@@ -40,6 +40,15 @@ jobs:
       - name: Build with Vite
         run: pnpm run build:web
 
+      - name: Set launcher as index
+        run: |
+          # Copy launcher.html as the main index.html
+          if [ -f dist/launcher.html ]; then
+            cp dist/launcher.html dist/index.html
+          fi
+          # List output for debugging
+          ls -la dist/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
