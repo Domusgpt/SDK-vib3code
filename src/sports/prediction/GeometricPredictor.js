@@ -38,6 +38,11 @@ export class GeometricPredictor {
         this.trainingStats = null;
         this.deltaRE = new DeltaRunExpectancy();
 
+        // CRITICAL FIX: Seeded random number generator for reproducibility
+        // This ensures identical results across backtest runs with same data
+        this._randomSeed = config.randomSeed || 42;
+        this._randomState = this._randomSeed;
+
         // Feature names for tracking
         this.featureNames = [
             'home_arsenal_volume', 'home_arsenal_spread', 'home_cluster_separation',
@@ -379,30 +384,78 @@ export class GeometricPredictor {
 
     /**
      * Convert features object to vector
+     * @param {Object} features - Feature object
+     * @returns {Array} Feature vector with NaN handling and warnings
      */
     featuresToVector(features) {
-        return this.featureNames.map(name => {
+        // CRITICAL FIX: Warn about missing features (silent 0 replacement was hiding data issues)
+        let missingCount = 0;
+
+        const vector = this.featureNames.map(name => {
             const value = features[name];
-            return value !== undefined && value !== null && !isNaN(value) ? value : 0;
+            if (value === undefined || value === null || isNaN(value)) {
+                missingCount++;
+                return 0; // Still return 0, but track it
+            }
+            return value;
         });
+
+        // Log warning if too many features are missing (indicates data problem)
+        if (missingCount > this.featureNames.length * 0.3) {
+            console.warn(`featuresToVector: ${missingCount}/${this.featureNames.length} features missing - check data pipeline`);
+        }
+
+        return vector;
     }
 
     // === Utility Methods ===
 
+    /**
+     * Seeded pseudo-random number generator (Linear Congruential Generator)
+     * CRITICAL FIX: Replaces Math.random() for reproducible results
+     * @returns {number} Random number in [0, 1)
+     */
+    _seededRandom() {
+        // LCG parameters (same as glibc)
+        const a = 1103515245;
+        const c = 12345;
+        const m = 2147483648; // 2^31
+
+        this._randomState = (a * this._randomState + c) % m;
+        return this._randomState / m;
+    }
+
+    /**
+     * Reset random seed (call before training for reproducibility)
+     * @param {number} seed - New seed value
+     */
+    setSeed(seed) {
+        this._randomSeed = seed;
+        this._randomState = seed;
+    }
+
+    /**
+     * Shuffle array using seeded RNG
+     * CRITICAL FIX: Uses seeded random for reproducible shuffles
+     */
     shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+            const j = Math.floor(this._seededRandom() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
     }
 
+    /**
+     * Subsample data using seeded RNG
+     * CRITICAL FIX: Uses seeded random for reproducible subsampling
+     */
     subsample(X, y) {
         const n = Math.floor(X.length * this.config.subsampleRate);
         const indices = [];
 
         for (let i = 0; i < n; i++) {
-            indices.push(Math.floor(Math.random() * X.length));
+            indices.push(Math.floor(this._seededRandom() * X.length));
         }
 
         return {
@@ -412,13 +465,17 @@ export class GeometricPredictor {
         };
     }
 
+    /**
+     * Sample features using seeded RNG
+     * CRITICAL FIX: Uses seeded random for reproducible feature selection
+     */
     sampleFeatures(numFeatures) {
         const n = Math.floor(numFeatures * this.config.featureSubsampleRate);
         const indices = [];
         const available = Array.from({ length: numFeatures }, (_, i) => i);
 
         for (let i = 0; i < n; i++) {
-            const idx = Math.floor(Math.random() * available.length);
+            const idx = Math.floor(this._seededRandom() * available.length);
             indices.push(available[idx]);
             available.splice(idx, 1);
         }
@@ -468,15 +525,29 @@ export class GeometricPredictor {
 
     /**
      * Export model for serialization
+     * @returns {Object} Serializable model data
      */
     exportModel() {
+        // CRITICAL FIX: Validate model is trained before export
+        if (this.trees.length === 0) {
+            console.warn('exportModel called on untrained model');
+        }
+
         return {
             version: this.version,
             config: this.config,
             trees: this.trees,
             featureImportance: this.featureImportance,
             featureNames: this.featureNames,
-            trainingStats: this.trainingStats
+            trainingStats: this.trainingStats || {
+                numTrees: 0,
+                finalTrainLoss: null,
+                finalValLoss: null,
+                trainSize: 0,
+                valSize: 0,
+                warning: 'Model not yet trained'
+            },
+            randomSeed: this._randomSeed
         };
     }
 

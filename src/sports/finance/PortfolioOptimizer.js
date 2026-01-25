@@ -330,63 +330,118 @@ export class PortfolioOptimizer {
     /**
      * Build covariance matrix from bet relationships
      * Sigma[i][j] = Cov(return_i, return_j)
+     * @param {Array} opportunities - Bet opportunities
+     * @returns {Array} Covariance matrix (positive semi-definite)
      */
     buildCovarianceMatrix(opportunities) {
         const n = opportunities.length;
         const sigma = Array.from({ length: n }, () => new Array(n).fill(0));
 
+        // Pre-calculate variances to avoid redundant computation
+        const variances = opportunities.map(opp => {
+            const v = this.calculateSingleBetVariance(opp);
+            // CRITICAL FIX: Ensure variance is non-negative
+            return Math.max(0, v);
+        });
+
         for (let i = 0; i < n; i++) {
             const oppI = opportunities[i];
-            const varI = this.calculateSingleBetVariance(oppI);
+            const varI = variances[i];
 
             for (let j = 0; j < n; j++) {
-                const oppJ = opportunities[j];
-
                 if (i === j) {
                     // Diagonal: variance of bet i
                     sigma[i][j] = varI;
                 } else {
                     // Off-diagonal: covariance between bets i and j
-                    const varJ = this.calculateSingleBetVariance(oppJ);
+                    const oppJ = opportunities[j];
+                    const varJ = variances[j];
                     const correlation = this.estimateCorrelation(oppI, oppJ);
 
                     // Cov(i,j) = ρ * σ_i * σ_j
-                    sigma[i][j] = correlation * Math.sqrt(varI) * Math.sqrt(varJ);
+                    // CRITICAL FIX: Handle zero/negative variance edge cases
+                    const stdI = Math.sqrt(Math.max(0, varI));
+                    const stdJ = Math.sqrt(Math.max(0, varJ));
+                    sigma[i][j] = correlation * stdI * stdJ;
                 }
             }
         }
+
+        // Validate matrix is valid (symmetric with non-negative diagonal)
+        this.validateCovarianceMatrix(sigma);
 
         return sigma;
     }
 
     /**
+     * Validate covariance matrix properties
+     * @param {Array} sigma - Covariance matrix to validate
+     */
+    validateCovarianceMatrix(sigma) {
+        const n = sigma.length;
+
+        for (let i = 0; i < n; i++) {
+            // Diagonal must be non-negative
+            if (sigma[i][i] < 0) {
+                console.warn(`Negative variance at position [${i}][${i}], setting to 0`);
+                sigma[i][i] = 0;
+            }
+
+            // Matrix must be symmetric
+            for (let j = i + 1; j < n; j++) {
+                const diff = Math.abs(sigma[i][j] - sigma[j][i]);
+                if (diff > 1e-10) {
+                    // Enforce symmetry by averaging
+                    const avg = (sigma[i][j] + sigma[j][i]) / 2;
+                    sigma[i][j] = avg;
+                    sigma[j][i] = avg;
+                }
+            }
+        }
+    }
+
+    /**
      * Estimate correlation between two bets based on their characteristics
+     * @param {Object} oppA - First bet opportunity
+     * @param {Object} oppB - Second bet opportunity
+     * @returns {number} Correlation coefficient in range [-1, 1]
      */
     estimateCorrelation(oppA, oppB) {
+        // Input validation
+        if (!oppA || !oppB) {
+            return 0;
+        }
+
+        let correlation = 0;
+
         // Same game = highly correlated
-        if (oppA.gameId === oppB.gameId) {
+        if (oppA.gameId && oppB.gameId && oppA.gameId === oppB.gameId) {
             // Same side of same game = very high correlation
             if (oppA.side === oppB.side || oppA.team === oppB.team) {
-                return this.config.sameGameCorrelation;
+                correlation = this.config.sameGameCorrelation;
             }
-
             // Opposite sides of same game (e.g., ML vs spread on same team)
-            if (oppA.team === oppB.team) {
-                return this.config.sameGameCorrelation * 0.8;
+            else if (oppA.team === oppB.team) {
+                correlation = this.config.sameGameCorrelation * 0.8;
             }
-
             // Different bets on same game (e.g., home ML and total over)
             // These have moderate correlation - both benefit from high scoring
-            return this.config.sameGameCorrelation * 0.5;
+            else {
+                correlation = this.config.sameGameCorrelation * 0.5;
+            }
         }
-
         // Same team, different game = slight correlation
-        if (oppA.team === oppB.team) {
-            return this.config.sameTeamCorrelation;
+        else if (oppA.team && oppB.team && oppA.team === oppB.team) {
+            correlation = this.config.sameTeamCorrelation;
+        }
+        // Different teams, different games = essentially independent
+        else {
+            correlation = 0;
         }
 
-        // Different teams, different games = essentially independent
-        return 0;
+        // CRITICAL FIX: Clamp correlation to valid range [-1, 1]
+        // This ensures covariance matrix remains positive semi-definite
+        return Math.max(-1, Math.min(1, correlation));
     }
 
     /**
@@ -457,23 +512,42 @@ export class PortfolioOptimizer {
         const phi = (1 + Math.sqrt(5)) / 2;
         let a = 0;
         let b = maxFraction;
-        let c = b - (b - a) / phi;
-        let d = a + (b - a) / phi;
+
+        // CRITICAL FIX: Prevent infinite loop with max iterations
+        const maxGoldenIterations = 100;
+        let iterations = 0;
 
         const evaluate = (f) => {
             const testFractions = [...fractions];
             testFractions[idx] = f;
-            return this.calculateRiskAdjustedGrowth(opportunities, testFractions, sigma);
+            const result = this.calculateRiskAdjustedGrowth(opportunities, testFractions, sigma);
+            // Handle NaN/Infinity
+            if (!isFinite(result)) {
+                return -Infinity;
+            }
+            return result;
         };
 
-        while (Math.abs(b - a) > this.config.stepSize) {
-            if (evaluate(c) > evaluate(d)) {
+        let c = b - (b - a) / phi;
+        let d = a + (b - a) / phi;
+
+        while (Math.abs(b - a) > this.config.stepSize && iterations < maxGoldenIterations) {
+            iterations++;
+
+            const evalC = evaluate(c);
+            const evalD = evaluate(d);
+
+            if (evalC > evalD) {
                 b = d;
             } else {
                 a = c;
             }
             c = b - (b - a) / phi;
             d = a + (b - a) / phi;
+        }
+
+        if (iterations >= maxGoldenIterations) {
+            console.warn(`Golden section search hit max iterations for index ${idx}`);
         }
 
         return (a + b) / 2;

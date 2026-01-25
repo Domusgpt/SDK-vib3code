@@ -227,15 +227,31 @@ export class StatcastIntegration {
 
                     const spinVector = this.invertMagnusForce(pitch, physics);
 
-                    if (needsSpinRate && spinVector.magnitude !== null) {
-                        imputed.release_spin_rate = spinVector.magnitude;
-                    }
-                    if (needsSpinAxis && spinVector.axis !== null) {
-                        imputed.spin_axis = spinVector.axis;
-                    }
+                    // CRITICAL FIX: Properly handle null spin results
+                    if (spinVector) {
+                        if (needsSpinRate && spinVector.magnitude !== null && !isNaN(spinVector.magnitude)) {
+                            imputed.release_spin_rate = spinVector.magnitude;
+                            imputed._spin_imputed = true;
+                        } else if (needsSpinRate) {
+                            // Fallback to league average when physics inversion fails
+                            imputed.release_spin_rate = this._getLeagueAverageSpinRate(pitch.pitch_type);
+                            imputed._spin_fallback = true;
+                        }
 
-                    // Mark as physics-imputed for transparency
-                    imputed._imputation = 'physics';
+                        if (needsSpinAxis && spinVector.axis !== null && !isNaN(spinVector.axis)) {
+                            imputed.spin_axis = spinVector.axis;
+                        }
+
+                        // Mark as physics-imputed for transparency
+                        imputed._imputation = 'physics';
+                    } else {
+                        // Physics inversion completely failed - use fallbacks
+                        if (needsSpinRate) {
+                            imputed.release_spin_rate = this._getLeagueAverageSpinRate(pitch.pitch_type);
+                            imputed._spin_fallback = true;
+                        }
+                        imputed._imputation = 'fallback';
+                    }
                 }
             }
 
@@ -590,5 +606,31 @@ if __name__ == '__main__':
         }
         const parsed = parseFloat(value);
         return isNaN(parsed) ? null : parsed;
+    }
+
+    /**
+     * Get league average spin rate by pitch type (fallback when imputation fails)
+     * Values based on 2023 MLB averages from Baseball Savant
+     * @param {string} pitchType - Pitch type code
+     * @returns {number} Average spin rate in RPM
+     */
+    _getLeagueAverageSpinRate(pitchType) {
+        const averages = {
+            'FF': 2300,  // Four-seam fastball
+            'SI': 2150,  // Sinker
+            'FC': 2350,  // Cutter
+            'SL': 2450,  // Slider
+            'CU': 2650,  // Curveball
+            'KC': 2500,  // Knuckle-curve
+            'CH': 1750,  // Changeup
+            'FS': 1450,  // Splitter
+            'KN': 350,   // Knuckleball
+            'EP': 1500,  // Eephus
+            'SC': 1600,  // Screwball
+            'ST': 2400,  // Sweeper
+            'SV': 2550   // Slurve
+        };
+
+        return averages[pitchType] || 2200; // Default to fastball-ish average
     }
 }

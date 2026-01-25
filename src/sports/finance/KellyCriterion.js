@@ -43,9 +43,27 @@ export class KellyCriterion {
      * @returns {number} Fraction of bankroll to bet
      */
     calculateSingleKelly(prob, odds) {
+        // Input validation
+        if (prob === null || prob === undefined || isNaN(prob)) {
+            return 0;
+        }
+        if (odds === null || odds === undefined || isNaN(odds)) {
+            return 0;
+        }
+
+        // Validate probability is in valid range
+        if (prob <= 0 || prob >= 1) {
+            return 0;
+        }
+
         // Convert American to decimal
         const decimal = this.americanToDecimal(odds);
         const b = decimal - 1; // Net odds
+
+        // CRITICAL FIX: Prevent division by zero when b = 0 (odds = -100)
+        if (b <= 0) {
+            return 0; // No edge possible with zero or negative net odds
+        }
 
         const q = 1 - prob;
 
@@ -74,8 +92,20 @@ export class KellyCriterion {
 
     /**
      * Calculate implied probability from odds
+     * @param {number} odds - American odds
+     * @returns {number} Implied probability (0-1)
      */
     impliedProbability(odds) {
+        // Input validation
+        if (odds === null || odds === undefined || isNaN(odds)) {
+            return 0.5; // Return neutral probability for invalid odds
+        }
+
+        // CRITICAL FIX: Handle edge case where odds = 0 (invalid)
+        if (odds === 0) {
+            return 0.5; // No valid implied probability
+        }
+
         if (odds > 0) {
             return 100 / (odds + 100);
         } else {
@@ -85,11 +115,24 @@ export class KellyCriterion {
 
     /**
      * Calculate no-vig probability (true odds)
+     * @param {number} odds1 - American odds for outcome 1
+     * @param {number} odds2 - American odds for outcome 2
+     * @returns {Object} No-vig probabilities and vig amount
      */
     noVigProbability(odds1, odds2) {
         const p1 = this.impliedProbability(odds1);
         const p2 = this.impliedProbability(odds2);
         const totalImplied = p1 + p2;
+
+        // CRITICAL FIX: Prevent division by zero
+        if (totalImplied <= 0 || isNaN(totalImplied)) {
+            return {
+                prob1: 0.5,
+                prob2: 0.5,
+                vig: 0,
+                error: 'Invalid odds resulted in zero total implied probability'
+            };
+        }
 
         return {
             prob1: p1 / totalImplied,

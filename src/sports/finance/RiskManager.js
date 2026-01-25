@@ -78,28 +78,61 @@ export class RiskManager {
 
     /**
      * Validate a single bet
+     * @param {Object} bet - Bet to validate
+     * @returns {boolean} True if bet passes validation
      */
     validateBet(bet) {
-        // Check confidence bounds
-        if (bet.confidence < this.config.minConfidence) {
+        // CRITICAL FIX: Null/undefined check
+        if (!bet || typeof bet !== 'object') {
+            return false;
+        }
+
+        // Validate required fields exist
+        const confidence = bet.confidence;
+        const edge = bet.edge;
+        const modelProb = bet.modelProb;
+
+        // Check confidence bounds (with null handling)
+        if (confidence === null || confidence === undefined || isNaN(confidence)) {
+            bet.rejectionReason = 'missing_confidence';
+            return false;
+        }
+
+        if (confidence < this.config.minConfidence) {
             bet.rejectionReason = 'confidence_too_low';
             return false;
         }
 
-        if (bet.confidence > this.config.maxConfidence) {
+        if (confidence > this.config.maxConfidence) {
             bet.rejectionReason = 'confidence_suspiciously_high';
             return false;
         }
 
-        // Check edge
-        if (bet.edge <= 0) {
+        // Check edge (with null handling)
+        if (edge === null || edge === undefined || isNaN(edge)) {
+            bet.rejectionReason = 'missing_edge';
+            return false;
+        }
+
+        if (edge <= 0) {
             bet.rejectionReason = 'negative_edge';
             return false;
         }
 
-        // Check probability bounds
-        if (bet.modelProb < 0.1 || bet.modelProb > 0.9) {
+        // Check probability bounds (with null handling)
+        if (modelProb === null || modelProb === undefined || isNaN(modelProb)) {
+            bet.rejectionReason = 'missing_probability';
+            return false;
+        }
+
+        if (modelProb < 0.1 || modelProb > 0.9) {
             bet.rejectionReason = 'extreme_probability';
+            return false;
+        }
+
+        // Validate gameId for exposure tracking
+        if (!bet.gameId) {
+            bet.rejectionReason = 'missing_game_id';
             return false;
         }
 
@@ -167,15 +200,21 @@ export class RiskManager {
 
             // Adjust bet to fit within limits
             const adjustedBet = { ...bet };
-            if (adjustedBet.fraction) {
-                adjustedBet.fraction = Math.min(adjustedBet.fraction, maxAllowed);
+
+            // CRITICAL FIX: Safely handle undefined/NaN fraction
+            let fractionValue = adjustedBet.fraction;
+            if (fractionValue === null || fractionValue === undefined || isNaN(fractionValue)) {
+                fractionValue = 0;
             }
+
+            adjustedBet.fraction = Math.min(Math.max(0, fractionValue), maxAllowed);
 
             approved.push(adjustedBet);
 
-            // Update tracking
-            remainingDailyBudget -= adjustedBet.fraction || 0;
-            gameExposure.set(bet.gameId, currentGameExposure + (adjustedBet.fraction || 0));
+            // Update tracking with validated fraction
+            const trackedFraction = adjustedBet.fraction || 0;
+            remainingDailyBudget -= trackedFraction;
+            gameExposure.set(bet.gameId, currentGameExposure + trackedFraction);
         }
 
         return approved;

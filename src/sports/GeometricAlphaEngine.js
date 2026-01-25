@@ -134,56 +134,107 @@ export class GeometricAlphaEngine {
      * @returns {Object} Computed geometric features
      */
     computeFeatures(matchup) {
-        const { pitcherId, batterId, umpireId, venueId, lineupIds } = matchup;
-
-        // Get pitcher arsenal polytope
-        const arsenal = this.featureEngine.getArsenalPolytope(pitcherId);
-
-        // Get tunnel scores between all pitch pairs
-        const tunnelScores = this.featureEngine.computeTunnelScores(
-            this.dataLake.getPitcherData(pitcherId)
-        );
-
-        // Get umpire zone convex hull
-        const umpireHull = this.featureEngine.computeUmpireHull(
-            this.dataLake.getUmpireData(umpireId)
-        );
-
-        // Get defensive Voronoi if lineup provided
-        let defensiveVoronoi = null;
-        if (lineupIds) {
-            defensiveVoronoi = this.featureEngine.computeDefensiveVoronoi(
-                lineupIds,
-                this.dataLake.getFielderData(lineupIds)
-            );
+        // CRITICAL FIX: Validate matchup object
+        if (!matchup || typeof matchup !== 'object') {
+            console.warn('computeFeatures called with invalid matchup');
+            return this._getDefaultFeatures();
         }
 
-        // Get batter spray chart
-        const sprayChart = this.featureEngine.computeSprayChart(
-            this.dataLake.getBatterData(batterId)
-        );
+        const { pitcherId, batterId, umpireId, venueId, lineupIds } = matchup;
 
-        // Get environmental adjustments
-        const environmental = this.featureEngine.getEnvironmentalFactors(
-            venueId,
-            matchup.temperature,
-            matchup.windSpeed,
-            matchup.windDirection
-        );
+        // CRITICAL FIX: Null checks with safe defaults
+        let arsenal = null;
+        let tunnelScores = [];
+        let umpireHull = null;
+        let defensiveVoronoi = null;
+        let sprayChart = null;
+        let environmental = null;
+
+        try {
+            // Get pitcher arsenal polytope (with null check)
+            if (pitcherId) {
+                arsenal = this.featureEngine.getArsenalPolytope(pitcherId);
+                const pitcherData = this.dataLake.getPitcherData(pitcherId);
+                if (pitcherData && pitcherData.length > 0) {
+                    tunnelScores = this.featureEngine.computeTunnelScores(pitcherData) || [];
+                }
+            }
+
+            // Get umpire zone convex hull (with null check)
+            if (umpireId) {
+                const umpireData = this.dataLake.getUmpireData(umpireId);
+                if (umpireData && umpireData.length > 0) {
+                    umpireHull = this.featureEngine.computeUmpireHull(umpireData);
+                }
+            }
+
+            // Get defensive Voronoi if lineup provided
+            if (lineupIds && Array.isArray(lineupIds) && lineupIds.length > 0) {
+                const fielderData = this.dataLake.getFielderData(lineupIds);
+                if (fielderData) {
+                    defensiveVoronoi = this.featureEngine.computeDefensiveVoronoi(
+                        lineupIds,
+                        fielderData
+                    );
+                }
+            }
+
+            // Get batter spray chart (with null check)
+            if (batterId) {
+                const batterData = this.dataLake.getBatterData(batterId);
+                if (batterData && batterData.length > 0) {
+                    sprayChart = this.featureEngine.computeSprayChart(batterData);
+                }
+            }
+
+            // Get environmental adjustments (always available)
+            environmental = this.featureEngine.getEnvironmentalFactors(
+                venueId,
+                matchup.temperature,
+                matchup.windSpeed,
+                matchup.windDirection
+            );
+        } catch (error) {
+            console.error('Error computing features for matchup:', error);
+        }
+
+        // Provide safe defaults for null values
+        const safeArsenal = arsenal || { sampleSize: 0, volume: 0, spread: 0 };
+        const safeUmpireHull = umpireHull || { expansionFactor: 1.0, centroid: { x: 0, z: 2.5 } };
+        const safeEnvironmental = environmental || { isExtreme: false, parkFactor: 1.0 };
 
         return {
-            arsenal,
+            arsenal: safeArsenal,
             tunnelScores,
-            umpireHull,
+            umpireHull: safeUmpireHull,
             defensiveVoronoi,
             sprayChart,
-            environmental,
-            // Derived metrics
+            environmental: safeEnvironmental,
+            // Derived metrics (with null safety)
             tunnelEfficiency: this.computeTunnelEfficiency(tunnelScores),
-            zoneExpansion: umpireHull.expansionFactor,
-            zoneCentroid: umpireHull.centroid,
-            defensiveSeamExposure: defensiveVoronoi ?
+            zoneExpansion: safeUmpireHull.expansionFactor || 1.0,
+            zoneCentroid: safeUmpireHull.centroid || { x: 0, z: 2.5 },
+            defensiveSeamExposure: (defensiveVoronoi && sprayChart) ?
                 this.computeSeamExposure(sprayChart, defensiveVoronoi) : null
+        };
+    }
+
+    /**
+     * Get default features when matchup data is unavailable
+     * @returns {Object} Default feature object
+     */
+    _getDefaultFeatures() {
+        return {
+            arsenal: { sampleSize: 0, volume: 0, spread: 0 },
+            tunnelScores: [],
+            umpireHull: { expansionFactor: 1.0, centroid: { x: 0, z: 2.5 } },
+            defensiveVoronoi: null,
+            sprayChart: null,
+            environmental: { isExtreme: false, parkFactor: 1.0 },
+            tunnelEfficiency: 0,
+            zoneExpansion: 1.0,
+            zoneCentroid: { x: 0, z: 2.5 },
+            defensiveSeamExposure: null
         };
     }
 
@@ -496,17 +547,35 @@ export class GeometricAlphaEngine {
     }
 
     computeSeamExposure(sprayChart, voronoi) {
+        // CRITICAL FIX: Validate inputs
+        if (!sprayChart || !sprayChart.points || sprayChart.points.length === 0) {
+            return 0;
+        }
+        if (!voronoi || typeof voronoi.distanceToNearestEdge !== 'function') {
+            return 0;
+        }
+
         // Compute overlap between spray density and Voronoi edges
         let seamExposure = 0;
 
         for (const point of sprayChart.points) {
+            if (!point) continue;
+
             const distToEdge = voronoi.distanceToNearestEdge(point);
+
+            // CRITICAL FIX: Validate distToEdge result
+            if (distToEdge === null || distToEdge === undefined || isNaN(distToEdge)) {
+                continue;
+            }
+
             if (distToEdge < 15) { // Within 15 feet of a seam
-                seamExposure += sprayChart.density[point.idx] * (1 - distToEdge / 15);
+                const density = (sprayChart.density && sprayChart.density[point.idx]) || 0;
+                seamExposure += density * (1 - distToEdge / 15);
             }
         }
 
-        return seamExposure / sprayChart.points.length;
+        // CRITICAL FIX: Prevent division by zero
+        return sprayChart.points.length > 0 ? seamExposure / sprayChart.points.length : 0;
     }
 
     deltaREToWinProbability(deltaRE) {

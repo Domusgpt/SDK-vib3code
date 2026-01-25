@@ -222,9 +222,14 @@ export class BacktestEngine {
                 }
             } else if (bet.betType === 'total') {
                 // Total bet
-                const total = result.totalRuns;
+                // CRITICAL FIX: Handle missing totalRuns
+                const total = result.totalRuns ?? (result.homeScore + result.awayScore);
 
-                if (bet.side === 'over') {
+                if (total === null || total === undefined || isNaN(total)) {
+                    // Cannot settle without total - refund
+                    payout = bet.amount;
+                    won = null;
+                } else if (bet.side === 'over') {
                     won = total > bet.line;
                 } else {
                     won = total < bet.line;
@@ -344,22 +349,55 @@ export class BacktestEngine {
 
     /**
      * Compute annualized Sharpe ratio from daily returns
+     * @param {Array} dailyReturns - Array of daily P&L values
+     * @returns {number} Annualized Sharpe ratio (0 if insufficient data)
      */
     computeSharpeRatio(dailyReturns) {
-        if (dailyReturns.length < 2) return 0;
+        // CRITICAL FIX: Validate input
+        if (!dailyReturns || !Array.isArray(dailyReturns)) {
+            return 0;
+        }
 
-        const mean = dailyReturns.reduce((s, r) => s + r, 0) / dailyReturns.length;
-        const variance = dailyReturns.reduce((s, r) => s + (r - mean) ** 2, 0) /
-            (dailyReturns.length - 1);
+        // Filter out any NaN/null values
+        const validReturns = dailyReturns.filter(r =>
+            r !== null && r !== undefined && !isNaN(r) && isFinite(r)
+        );
+
+        if (validReturns.length < 2) return 0;
+
+        const mean = validReturns.reduce((s, r) => s + r, 0) / validReturns.length;
+        const variance = validReturns.reduce((s, r) => s + (r - mean) ** 2, 0) /
+            (validReturns.length - 1);
+
+        // CRITICAL FIX: Protect against negative variance (floating point errors)
+        if (variance <= 0) return 0;
+
         const stdDev = Math.sqrt(variance);
 
-        if (stdDev === 0) return 0;
+        // CRITICAL FIX: Protect against division by zero/very small stdDev
+        const minStdDev = 1e-10;
+        if (stdDev < minStdDev) {
+            // If returns are constant, Sharpe is undefined (return 0)
+            return 0;
+        }
 
         // Annualize (assuming ~180 betting days per season)
         const annualizedMean = mean * 180;
         const annualizedStdDev = stdDev * Math.sqrt(180);
 
-        return annualizedMean / annualizedStdDev;
+        // CRITICAL FIX: Final safety check
+        if (!isFinite(annualizedStdDev) || annualizedStdDev < minStdDev) {
+            return 0;
+        }
+
+        const sharpe = annualizedMean / annualizedStdDev;
+
+        // Clamp to reasonable bounds to flag suspicious results
+        if (!isFinite(sharpe)) {
+            return 0;
+        }
+
+        return sharpe;
     }
 
     /**

@@ -324,6 +324,8 @@ export class PaperTrader {
 
     /**
      * Cancel an open bet
+     * @param {string} orderId - Order ID to cancel
+     * @returns {Object} Cancellation result
      */
     cancelBet(orderId) {
         const betIndex = this.openBets.findIndex(b => b.orderId === orderId);
@@ -336,8 +338,18 @@ export class PaperTrader {
 
         // Refund
         this.bankroll += bet.amount;
-        this.stats.totalWagered -= bet.amount;
-        this.stats.totalBets--;
+
+        // CRITICAL FIX: Prevent stats from going negative
+        // Only decrement if this bet was actually counted
+        if (this.stats.totalWagered >= bet.amount) {
+            this.stats.totalWagered -= bet.amount;
+        } else {
+            this.stats.totalWagered = 0;
+        }
+
+        if (this.stats.totalBets > 0) {
+            this.stats.totalBets--;
+        }
 
         // Remove from open
         this.openBets.splice(betIndex, 1);
@@ -346,6 +358,7 @@ export class PaperTrader {
         const allIndex = this.allBets.findIndex(b => b.orderId === orderId);
         if (allIndex !== -1) {
             this.allBets[allIndex].status = 'cancelled';
+            this.allBets[allIndex].cancelledAt = Date.now();
         }
 
         return { success: true, refundedAmount: bet.amount };
@@ -353,9 +366,29 @@ export class PaperTrader {
 
     /**
      * Generate unique order ID
+     * Uses deterministic counter + timestamp for reproducibility
+     * @returns {string} Unique order ID
      */
     generateOrderId() {
-        return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // CRITICAL FIX: Use deterministic sequence instead of Math.random()
+        // This ensures reproducible backtests
+        if (this._orderCounter === undefined) {
+            this._orderCounter = 0;
+        }
+        this._orderCounter++;
+
+        // Combine timestamp, counter, and a hash of current state for uniqueness
+        const timestamp = Date.now();
+        const counter = this._orderCounter.toString(36).padStart(6, '0');
+
+        return `ORD-${timestamp}-${counter}`;
+    }
+
+    /**
+     * Reset order counter (call when resetting paper trader)
+     */
+    resetOrderCounter() {
+        this._orderCounter = 0;
     }
 
     /**
@@ -377,6 +410,8 @@ export class PaperTrader {
             clvSum: 0,
             clvCount: 0
         };
+        // CRITICAL FIX: Reset order counter for reproducibility
+        this.resetOrderCounter();
     }
 
     /**

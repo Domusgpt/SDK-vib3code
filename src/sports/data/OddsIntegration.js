@@ -58,13 +58,29 @@ export class OddsIntegration {
 
         try {
             const response = await fetch(`${url}?${params}`);
+
+            // CRITICAL FIX: Check response status before parsing
+            if (!response.ok) {
+                const errorMsg = `Odds API returned status ${response.status}: ${response.statusText}`;
+                console.error(errorMsg);
+                throw new Error(errorMsg);
+            }
+
             const data = await response.json();
+
+            // CRITICAL FIX: Validate response structure
+            if (!Array.isArray(data)) {
+                const errorMsg = 'Odds API returned invalid response format (expected array)';
+                console.error(errorMsg, data);
+                throw new Error(errorMsg);
+            }
 
             // Parse and normalize
             return this.parseOddsResponse(data);
         } catch (error) {
+            // CRITICAL FIX: Throw instead of silent return - let caller handle
             console.error('Error fetching odds:', error);
-            return [];
+            throw new Error(`Failed to fetch live odds: ${error.message}`);
         }
     }
 
@@ -85,11 +101,26 @@ export class OddsIntegration {
 
         try {
             const response = await fetch(`${url}?${params}`);
+
+            // CRITICAL FIX: Check response status
+            if (!response.ok) {
+                const errorMsg = `Historical odds API returned status ${response.status}: ${response.statusText}`;
+                console.error(errorMsg);
+                throw new Error(errorMsg);
+            }
+
             const data = await response.json();
+
+            // CRITICAL FIX: Validate response structure
+            if (!data || typeof data !== 'object') {
+                throw new Error('Historical odds API returned invalid response format');
+            }
+
             return this.parseOddsResponse(data.data || []);
         } catch (error) {
+            // CRITICAL FIX: Throw instead of silent return
             console.error('Error fetching historical odds:', error);
-            return [];
+            throw new Error(`Failed to fetch historical odds: ${error.message}`);
         }
     }
 

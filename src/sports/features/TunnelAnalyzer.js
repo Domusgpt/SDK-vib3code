@@ -170,7 +170,9 @@ export class TunnelAnalyzer {
 
         // Angular Tunnel Score: ratio of plate angle to tunnel angle
         // High ratio = pitches appear identical early but separate late
-        const angularTunnelScore = plateAngle / (tunnelAngle + 0.001);
+        // CRITICAL FIX: Use epsilon relative to foveal resolution for precision
+        const epsilon = this.config.foveaResolution * 0.01; // 0.002 degrees
+        const angularTunnelScore = plateAngle / (tunnelAngle + epsilon);
 
         // Also compute physical distances for reference
         const tunnelDistance = this.euclideanDistance3D(tunnelA, tunnelB);
