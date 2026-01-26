@@ -1,0 +1,13 @@
+{
+  "id": "phase5-e2e-pack",
+  "name": "Phase 5 E2E Pack",
+  "version": "1.0.0",
+  "createdAt": "2026-01-22T19:08:44Z",
+  "tags": ["e2e", "phase5"],
+  "scenes": [
+    { "id": "scene-1", "name": "Faceted Baseline" },
+    { "id": "scene-2", "name": "Quantum Drift" },
+    { "id": "scene-3", "name": "Holographic Pulse" },
+    { "id": "scene-4", "name": "Polychora Cascade" }
+  ]
+}

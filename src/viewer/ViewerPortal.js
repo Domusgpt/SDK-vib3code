@@ -185,14 +185,14 @@ export class ViewerPortal extends EventEmitter {
 
     captureFrame(format = 'png', quality = 0.92) {
         if (!this.canvas) return null;
-        return this.canvas.toDataURL(\`image/\${format}\`, quality);
+        return this.canvas.toDataURL(`image/${format}`, quality);
     }
 
     downloadFrame(filename = 'vib3-capture', format = 'png') {
         const dataUrl = this.captureFrame(format);
         if (!dataUrl) return;
         const link = document.createElement('a');
-        link.download = \`\${filename}.\${format}\`;
+        link.download = `${filename}.${format}`;
         link.href = dataUrl;
         link.click();
     }
