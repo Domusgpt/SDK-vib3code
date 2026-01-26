@@ -704,8 +704,9 @@ export class MCPServer {
     setReactivityConfig(args) {
         const { audio, tilt, interaction } = args;
 
-        // Update via global reactivity manager if available
-        if (window?.reactivityManager) {
+        // Update via global reactivity manager if available (browser only)
+        const isBrowser = typeof window !== 'undefined';
+        if (isBrowser && window.reactivityManager) {
             if (audio) {
                 if (audio.enabled !== undefined) window.audioEnabled = audio.enabled;
                 if (audio.globalSensitivity !== undefined) {
@@ -738,21 +739,22 @@ export class MCPServer {
      * Get current reactivity configuration
      */
     getReactivityConfig() {
+        const isBrowser = typeof window !== 'undefined';
         return {
             config: {
                 audio: {
-                    enabled: window?.audioEnabled || false,
-                    globalSensitivity: window?.reactivityManager?.audioSensitivity || 1.0
+                    enabled: isBrowser ? (window.audioEnabled || false) : false,
+                    globalSensitivity: isBrowser ? (window.reactivityManager?.audioSensitivity || 1.0) : 1.0
                 },
                 tilt: {
-                    enabled: window?.deviceTiltHandler?.isEnabled || false,
-                    dramaticMode: window?.dramaticMode || false
+                    enabled: isBrowser ? (window.deviceTiltHandler?.isEnabled || false) : false,
+                    dramaticMode: isBrowser ? (window.dramaticMode || false) : false
                 },
                 interaction: {
-                    enabled: window?.interactivityEnabled !== false,
-                    mouseMode: window?.currentMouseMode || 'rotation',
-                    clickMode: window?.currentClickMode || 'burst',
-                    scrollMode: window?.currentScrollMode || 'cycle'
+                    enabled: isBrowser ? (window.interactivityEnabled !== false) : true,
+                    mouseMode: isBrowser ? (window.currentMouseMode || 'rotation') : 'rotation',
+                    clickMode: isBrowser ? (window.currentClickMode || 'burst') : 'burst',
+                    scrollMode: isBrowser ? (window.currentScrollMode || 'cycle') : 'cycle'
                 }
             },
             suggested_next_actions: ['set_reactivity_config', 'configure_audio_band', 'apply_behavior_preset']
@@ -765,7 +767,8 @@ export class MCPServer {
     configureAudioBand(args) {
         const { band, enabled, sensitivity, targets } = args;
 
-        if (window?.reactivityManager?.configureAudioBand) {
+        const isBrowser = typeof window !== 'undefined';
+        if (isBrowser && window.reactivityManager?.configureAudioBand) {
             window.reactivityManager.configureAudioBand(band, { enabled, sensitivity, targets });
         }
 
@@ -788,7 +791,8 @@ export class MCPServer {
         const { name, description, includeReactivity = true, includeEmbed = true, format = 'json' } = args;
 
         const visualParams = this.getState()?.parameters || {};
-        const system = window?.currentSystem || 'quantum';
+        const isBrowser = typeof window !== 'undefined';
+        const system = isBrowser ? (window.currentSystem || 'quantum') : 'quantum';
         const reactivityConfig = includeReactivity ? this.getReactivityConfig().config : null;
 
         const package_ = {
