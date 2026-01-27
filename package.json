@@ -213,7 +213,6 @@
     },
     "./quaternion": "./src/ui/adaptive/renderers/ShaderQuaternionSynchronizer.js",
     "./sensors": "./src/ui/adaptive/SensoryInputBridge.js",
-    "./polychora": "./src/core/PolychoraSystem.js",
     "./core/quaternion": {
       "types": "./src/core/quaternion/index.ts",
       "default": "./src/core/quaternion/index.ts"
