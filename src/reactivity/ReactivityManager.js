@@ -450,6 +450,9 @@ export class ReactivityManager {
                     newValue = baseValue + delta.value;
             }
 
+            // Guard against NaN propagation
+            if (!Number.isFinite(newValue)) continue;
+
             // Apply the update
             this.updateParameter(param, newValue);
         }
@@ -461,10 +464,12 @@ export class ReactivityManager {
      * Update audio input values
      */
     setAudioInput(bass, mid, high, energy = null) {
-        this.inputState.audio.bass = bass;
-        this.inputState.audio.mid = mid;
-        this.inputState.audio.high = high;
-        this.inputState.audio.energy = energy !== null ? energy : (bass + mid + high) / 3;
+        this.inputState.audio.bass = Number.isFinite(bass) ? Math.max(0, Math.min(1, bass)) : 0;
+        this.inputState.audio.mid = Number.isFinite(mid) ? Math.max(0, Math.min(1, mid)) : 0;
+        this.inputState.audio.high = Number.isFinite(high) ? Math.max(0, Math.min(1, high)) : 0;
+        this.inputState.audio.energy = (energy !== null && Number.isFinite(energy))
+            ? energy
+            : (this.inputState.audio.bass + this.inputState.audio.mid + this.inputState.audio.high) / 3;
     }
 
     /**
@@ -480,17 +485,17 @@ export class ReactivityManager {
      * Update mouse input values
      */
     setMouseInput(x, y, velocityX = 0, velocityY = 0) {
-        this.inputState.mouse.x = x;
-        this.inputState.mouse.y = y;
-        this.inputState.mouse.velocityX = velocityX;
-        this.inputState.mouse.velocityY = velocityY;
+        this.inputState.mouse.x = Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5;
+        this.inputState.mouse.y = Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.5;
+        this.inputState.mouse.velocityX = Number.isFinite(velocityX) ? velocityX : 0;
+        this.inputState.mouse.velocityY = Number.isFinite(velocityY) ? velocityY : 0;
     }
 
     /**
      * Trigger a click event
      */
     triggerClick(intensity = 1.0) {
-        this.inputState.click.intensity = intensity;
+        this.inputState.click.intensity = Number.isFinite(intensity) ? Math.max(0, Math.min(2, intensity)) : 1.0;
         this.inputState.click.lastTime = Date.now();
     }
 
@@ -498,7 +503,9 @@ export class ReactivityManager {
      * Update scroll delta
      */
     setScrollDelta(delta) {
-        this.inputState.scroll.delta += delta;
+        if (Number.isFinite(delta)) {
+            this.inputState.scroll.delta += delta;
+        }
     }
 
     /**

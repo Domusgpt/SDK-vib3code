@@ -460,6 +460,22 @@ export class FacetedSystem {
             return false;
         }
 
+        this._contextLost = false;
+
+        // WebGL context loss/restore handlers
+        this._onContextLost = (e) => {
+            e.preventDefault();
+            this._contextLost = true;
+            console.warn('Faceted: WebGL context lost');
+        };
+        this._onContextRestored = () => {
+            console.log('Faceted: WebGL context restored');
+            this._contextLost = false;
+            this.createShaderProgram();
+        };
+        this.canvas.addEventListener('webglcontextlost', this._onContextLost);
+        this.canvas.addEventListener('webglcontextrestored', this._onContextRestored);
+
         if (!this.createShaderProgram()) {
             console.error('Failed to create faceted shader program');
             return false;
@@ -615,7 +631,11 @@ export class FacetedSystem {
      * @private
      */
     _renderDirectFrame() {
-        if (!this.gl || !this.program) return;
+        if (!this.gl || !this.program || this._contextLost) return;
+        if (this.gl.isContextLost()) {
+            this._contextLost = true;
+            return;
+        }
 
         this.gl.useProgram(this.program);
         this.gl.enable(this.gl.BLEND);
@@ -735,15 +755,27 @@ export class FacetedSystem {
     dispose() {
         this.isActive = false;
 
+        // Remove context loss listeners
+        if (this.canvas) {
+            if (this._onContextLost) {
+                this.canvas.removeEventListener('webglcontextlost', this._onContextLost);
+            }
+            if (this._onContextRestored) {
+                this.canvas.removeEventListener('webglcontextrestored', this._onContextRestored);
+            }
+        }
+
         if (this._bridge) {
             this._bridge.dispose();
             this._bridge = null;
         }
 
-        if (this.gl && this.program) {
-            this.gl.deleteProgram(this.program);
-            this.program = null;
+        if (this.gl && !this.gl.isContextLost()) {
+            if (this.program) {
+                this.gl.deleteProgram(this.program);
+            }
         }
+        this.program = null;
 
         if (this.gl) {
             const loseContext = this.gl.getExtension('WEBGL_lose_context');
@@ -755,6 +787,7 @@ export class FacetedSystem {
 
         this.canvas = null;
         this._renderMode = 'direct';
+        this._contextLost = true;
         console.log('Faceted System disposed');
     }
 

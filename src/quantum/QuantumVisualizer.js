@@ -51,7 +51,26 @@ export class QuantumHolographicVisualizer {
         this.mouseIntensity = 0.0;
         this.clickIntensity = 0.0;
         this.startTime = Date.now();
-        
+        this._contextLost = false;
+
+        // WebGL context loss/restore handlers
+        this._onContextLost = (e) => {
+            e.preventDefault();
+            this._contextLost = true;
+            console.warn(`WebGL context lost for ${canvasId}`);
+        };
+        this._onContextRestored = () => {
+            console.log(`WebGL context restored for ${canvasId}`);
+            this._contextLost = false;
+            try {
+                this.init();
+            } catch (err) {
+                console.error(`Failed to reinit after context restore for ${canvasId}:`, err);
+            }
+        };
+        this.canvas.addEventListener('webglcontextlost', this._onContextLost);
+        this.canvas.addEventListener('webglcontextrestored', this._onContextRestored);
+
         // Default parameters
         this.params = {
             geometry: 0,
@@ -957,14 +976,12 @@ void main() {
      * Render frame
      */
     render() {
-        if (!this.program) {
-            if (window.mobileDebug && !this._noProgramWarned) {
-                window.mobileDebug.log(`❌ ${this.canvas?.id}: No WebGL program for render`);
-                this._noProgramWarned = true;
-            }
+        if (!this.program || this._contextLost) return;
+        if (!this.gl || this.gl.isContextLost()) {
+            this._contextLost = true;
             return;
         }
-        
+
         this.resize();
         this.gl.useProgram(this.program);
         
@@ -1041,11 +1058,29 @@ void main() {
      * Clean up WebGL resources
      */
     destroy() {
-        if (this.gl && this.program) {
-            this.gl.deleteProgram(this.program);
+        // Remove context loss listeners
+        if (this.canvas) {
+            if (this._onContextLost) {
+                this.canvas.removeEventListener('webglcontextlost', this._onContextLost);
+            }
+            if (this._onContextRestored) {
+                this.canvas.removeEventListener('webglcontextrestored', this._onContextRestored);
+            }
         }
-        if (this.gl && this.buffer) {
-            this.gl.deleteBuffer(this.buffer);
+
+        // Clean up WebGL resources (guard against lost context)
+        if (this.gl && !this.gl.isContextLost()) {
+            if (this.program) {
+                this.gl.deleteProgram(this.program);
+            }
+            if (this.buffer) {
+                this.gl.deleteBuffer(this.buffer);
+            }
         }
+
+        this.program = null;
+        this.buffer = null;
+        this.gl = null;
+        this._contextLost = true;
     }
 }

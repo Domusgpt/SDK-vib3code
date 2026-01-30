@@ -276,11 +276,12 @@ export class RealHolographicSystem {
             };
             
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            this._audioStream = stream;
             const source = this.audioContext.createMediaStreamSource(stream);
             source.connect(this.analyser);
-            
+
             this.audioEnabled = true;
-            console.log('🎵 REAL Holograms audio reactivity enabled');
+            console.log('REAL Holograms audio reactivity enabled');
         } catch (error) {
             console.error('REAL Holograms audio initialization failed:', error);
         }
@@ -290,14 +291,19 @@ export class RealHolographicSystem {
     disableAudio() {
         if (this.audioEnabled) {
             this.audioEnabled = false;
+            // Stop audio stream tracks to release microphone
+            if (this._audioStream) {
+                this._audioStream.getTracks().forEach(track => track.stop());
+                this._audioStream = null;
+            }
             if (this.audioContext) {
-                this.audioContext.close();
+                this.audioContext.close().catch(() => {});
                 this.audioContext = null;
             }
             this.analyser = null;
             this.frequencyData = null;
             this.audioData = { bass: 0, mid: 0, high: 0 };
-            console.log('🎵 REAL Holograms audio reactivity disabled');
+            console.log('REAL Holograms audio reactivity disabled');
         }
     }
     

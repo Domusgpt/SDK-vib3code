@@ -437,7 +437,19 @@ export function validateToolInput(toolName, input) {
         };
     }
 
-    // Basic validation - full validation would use AJV
+    if (!input || typeof input !== 'object') {
+        return {
+            valid: false,
+            error: {
+                type: 'ValidationError',
+                code: 'INVALID_INPUT',
+                message: 'Input must be a non-null object',
+                suggestion: 'Provide a valid JSON object as input'
+            }
+        };
+    }
+
+    // Check required fields
     const required = tool.inputSchema.required || [];
     for (const field of required) {
         if (!(field in input)) {
@@ -452,6 +464,45 @@ export function validateToolInput(toolName, input) {
                 }
             };
         }
+    }
+
+    // Validate property types and ranges against schema
+    const properties = tool.inputSchema.properties || {};
+    const errors = [];
+    for (const [key, value] of Object.entries(input)) {
+        const propSchema = properties[key];
+        if (!propSchema) continue; // Skip unknown properties
+
+        if (propSchema.type === 'number' || propSchema.type === 'integer') {
+            const num = Number(value);
+            if (!Number.isFinite(num)) {
+                errors.push(`${key}: must be a finite number`);
+                continue;
+            }
+            if (propSchema.minimum !== undefined && num < propSchema.minimum) {
+                errors.push(`${key}: ${num} is below minimum ${propSchema.minimum}`);
+            }
+            if (propSchema.maximum !== undefined && num > propSchema.maximum) {
+                errors.push(`${key}: ${num} exceeds maximum ${propSchema.maximum}`);
+            }
+        }
+        if (propSchema.type === 'string' && propSchema.enum) {
+            if (!propSchema.enum.includes(value)) {
+                errors.push(`${key}: '${value}' is not one of [${propSchema.enum.join(', ')}]`);
+            }
+        }
+    }
+
+    if (errors.length > 0) {
+        return {
+            valid: false,
+            error: {
+                type: 'ValidationError',
+                code: 'INVALID_PARAMETERS',
+                message: errors.join('; '),
+                suggestion: 'Use get_parameter_schema to see valid ranges'
+            }
+        };
     }
 
     return { valid: true };

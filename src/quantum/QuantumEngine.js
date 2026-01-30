@@ -122,13 +122,19 @@ export class QuantumEngine {
         if (enabled && this.isActive && !this.audioEnabled) {
             this.enableAudio();
         } else if (!enabled && this.audioEnabled) {
-            // Disable audio
             this.audioEnabled = false;
+            // Stop audio stream tracks to release microphone
+            if (this._audioStream) {
+                this._audioStream.getTracks().forEach(track => track.stop());
+                this._audioStream = null;
+            }
             if (this.audioContext) {
-                this.audioContext.close();
+                this.audioContext.close().catch(() => {});
                 this.audioContext = null;
             }
-            console.log('🔇 Quantum audio reactivity disabled');
+            this.analyser = null;
+            this.frequencyData = null;
+            console.log('Quantum audio reactivity disabled');
         }
     }
     
@@ -412,12 +418,15 @@ export class QuantumEngine {
             this.analyser.smoothingTimeConstant = 0.8;
             this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
             
+            // Store stream reference for cleanup
+            this._audioStream = stream;
+
             // Connect microphone to analyser
             const source = this.audioContext.createMediaStreamSource(stream);
             source.connect(this.analyser);
-            
+
             this.audioEnabled = true;
-            console.log('🎵 Quantum audio reactivity enabled');
+            console.log('Quantum audio reactivity enabled');
             
         } catch (error) {
             console.error('❌ Failed to enable Quantum audio:', error);
@@ -572,18 +581,36 @@ export class QuantumEngine {
      * Clean up resources
      */
     destroy() {
+        this.isActive = false;
+
         // Disconnect from universal reactivity
         if (window.universalReactivity) {
             window.universalReactivity.disconnectSystem('quantum');
         }
 
+        // Stop audio stream tracks to release microphone
+        if (this._audioStream) {
+            this._audioStream.getTracks().forEach(track => track.stop());
+            this._audioStream = null;
+        }
+
+        // Close audio context
+        if (this.audioContext) {
+            this.audioContext.close().catch(() => {});
+            this.audioContext = null;
+        }
+        this.audioEnabled = false;
+        this.analyser = null;
+        this.frequencyData = null;
+
+        // Destroy all visualizers
         this.visualizers.forEach(visualizer => {
             if (visualizer.destroy) {
                 visualizer.destroy();
             }
         });
         this.visualizers = [];
-        console.log('🧹 Quantum Engine destroyed');
+        console.log('Quantum Engine destroyed');
     }
 
     // ============================================
@@ -638,14 +665,6 @@ export class QuantumEngine {
      * Alias for destroy() for contract compliance
      */
     dispose() {
-        // Clean up audio
-        if (this.audioContext) {
-            this.audioContext.close();
-            this.audioContext = null;
-        }
-        this.audioEnabled = false;
-
-        // Call existing destroy
         this.destroy();
     }
 }

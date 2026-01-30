@@ -434,15 +434,19 @@ export class VIB3Engine {
      * Import state
      */
     async importState(state) {
-        if (state.system) {
+        if (!state || typeof state !== 'object') {
+            console.warn('VIB3Engine: importState received invalid state');
+            return;
+        }
+        if (state.system && typeof state.system === 'string') {
             await this.switchSystem(state.system);
         }
-        if (state.parameters) {
+        if (state.parameters && typeof state.parameters === 'object') {
             this.parameters.setParameters(state.parameters);
             this.reactivity.setBaseParameters(state.parameters);
             this.updateCurrentSystemParameters();
         }
-        if (state.reactivity) {
+        if (state.reactivity && typeof state.reactivity === 'object') {
             this.reactivity.loadConfig(state.reactivity);
         }
         if (state.reactivityActive) {
