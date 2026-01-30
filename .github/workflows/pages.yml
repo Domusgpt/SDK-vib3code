@@ -29,11 +29,14 @@ jobs:
           # Deploy the VIB3+ visualizations and test pages
           mkdir -p _site/docs/vib3-exports
 
-          # Root index (redirects to docs/)
+          # Disable Jekyll processing (required for ES module paths)
+          touch _site/.nojekyll
+
+          # Root index (redirects to WebGPU live page)
           cp index.html _site/
 
-          # Gallery and all 13 standalone visualizations
-          cp docs/.nojekyll _site/
+          # Gallery, WebGPU live page, test hub, and all standalone visualizations
+          cp docs/.nojekyll _site/docs/ 2>/dev/null || true
           cp docs/index.html _site/docs/
           cp docs/*.html _site/docs/ 2>/dev/null || true
 
@@ -44,12 +47,17 @@ jobs:
           mkdir -p _site/tests
           cp tests/e2e-harness.html _site/tests/ 2>/dev/null || true
 
-          # Source modules (needed by test harness)
+          # Source modules (needed by WebGPU live page and test harness)
+          # The live page imports ES modules from ../src/ relative to docs/
           cp -r src/ _site/src/
 
           echo "=== Deployed files ==="
           find _site -name "*.html" | sort
           echo "Total HTML files: $(find _site -name '*.html' | wc -l)"
+          echo ""
+          echo "=== WebGPU Live Page ==="
+          ls -la _site/docs/webgpu-live.html 2>/dev/null && echo "WebGPU live page: OK" || echo "WebGPU live page: MISSING"
+          echo "Source modules: $(find _site/src -name '*.js' | wc -l) JS files"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

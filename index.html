@@ -3,19 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIB3+ Avant-Garde</title>
-    <meta http-equiv="refresh" content="3; url=docs/index.html">
+    <title>VIB3+ CORE</title>
+    <meta http-equiv="refresh" content="3; url=docs/webgpu-live.html">
     <style>
-        body { background: #0a0a12; color: #e0e0e0; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; gap: 16px; }
-        a { display: block; padding: 14px 24px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #0ff; text-decoration: none; font-size: 14px; min-width: 280px; text-align: center; }
-        a:active { background: rgba(0,255,255,0.1); }
-        .dim { color: #666; font-size: 11px; margin-top: 8px; }
+        body { background: #0a0a12; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; gap: 12px; padding: 20px; }
+        h1 { font-size: 18px; color: #0ff; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 8px; font-weight: 300; }
+        a { display: block; padding: 14px 24px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #0ff; text-decoration: none; font-size: 13px; min-width: 320px; text-align: center; transition: all 0.2s; }
+        a:hover, a:active { background: rgba(0,255,255,0.08); border-color: rgba(0,255,255,0.4); }
+        a.primary { border-color: rgba(0,255,100,0.4); color: #0f6; background: rgba(0,255,100,0.06); font-weight: bold; }
+        a.primary:hover { background: rgba(0,255,100,0.12); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 9px; letter-spacing: 1px; margin-right: 6px; vertical-align: middle; }
+        .badge.gpu { background: rgba(0,255,100,0.2); color: #0f6; }
+        .badge.gl { background: rgba(255,200,0,0.2); color: #fc0; }
+        .dim { color: #555; font-size: 10px; margin-top: 8px; }
     </style>
 </head>
 <body>
+    <h1>VIB3+ CORE</h1>
+    <a class="primary" href="docs/webgpu-live.html"><span class="badge gpu">WebGPU</span> Live 4D Visualization Engine</a>
     <a href="docs/index.html">Gallery &mdash; Algorithmic Avant-Garde</a>
     <a href="docs/test-hub.html">Test Hub &mdash; GPU Diagnostics + All Visualizations</a>
     <a href="docs/vib3-exports/index.html">Shader Exports &mdash; Real WebGL Renders</a>
-    <p class="dim">Auto-redirecting to gallery in 3s...</p>
+    <p class="dim">Auto-redirecting to WebGPU live in 3s...</p>
 </body>
 </html>
