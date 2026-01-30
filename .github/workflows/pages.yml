@@ -26,9 +26,30 @@ jobs:
 
       - name: Create pages directory
         run: |
-          # Deploy the VIB3+ SDK
-          mkdir -p _site
-          cp -r sdk/* _site/
+          # Deploy the VIB3+ visualizations and test pages
+          mkdir -p _site/docs/vib3-exports
+
+          # Root index (redirects to docs/)
+          cp index.html _site/
+
+          # Gallery and all 13 standalone visualizations
+          cp docs/.nojekyll _site/
+          cp docs/index.html _site/docs/
+          cp docs/*.html _site/docs/ 2>/dev/null || true
+
+          # 9 shader export visualizations
+          cp docs/vib3-exports/*.html _site/docs/vib3-exports/
+
+          # E2E test harness (for manual testing on devices)
+          mkdir -p _site/tests
+          cp tests/e2e-harness.html _site/tests/ 2>/dev/null || true
+
+          # Source modules (needed by test harness)
+          cp -r src/ _site/src/
+
+          echo "=== Deployed files ==="
+          find _site -name "*.html" | sort
+          echo "Total HTML files: $(find _site -name '*.html' | wc -l)"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
