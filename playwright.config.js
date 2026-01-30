@@ -3,7 +3,44 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * VIB3+ SDK Playwright Configuration
  * @see https://playwright.dev/docs/test-configuration
+ *
+ * Environment variables:
+ *   VIB3_GPU=1              - Enable GPU-accelerated rendering (requires real GPU)
+ *   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH - Override Chromium path
  */
+
+const GPU_ENABLED = process.env.VIB3_GPU === '1';
+
+// Chrome flags for headless without GPU (SwiftShader software rendering)
+const HEADLESS_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--enable-unsafe-swiftshader',
+  '--use-gl=swiftshader',
+  '--disable-software-rasterizer',
+  '--disable-extensions',
+  '--disable-background-networking',
+  `--crash-dumps-dir=${process.env.TMPDIR || '/home/user/tmp'}`,
+];
+
+// Chrome flags for GPU-accelerated rendering (requires NVIDIA GPU + drivers)
+const GPU_ARGS = [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--headless=new',
+  '--enable-gpu',
+  '--ignore-gpu-blocklist',
+  '--enable-features=Vulkan',
+  '--use-angle=vulkan',
+  '--enable-unsafe-webgpu',
+  '--disable-extensions',
+  '--disable-background-networking',
+  `--crash-dumps-dir=${process.env.TMPDIR || '/tmp'}`,
+];
+
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.js',
@@ -52,20 +89,9 @@ export default defineConfig({
             '/root/.cache/ms-playwright/chromium-1194/chrome-linux/chrome',
           env: {
             ...process.env,
-            TMPDIR: '/home/user/tmp',
+            TMPDIR: process.env.TMPDIR || '/home/user/tmp',
           },
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--enable-unsafe-swiftshader',
-            '--use-gl=swiftshader',
-            '--disable-software-rasterizer',
-            '--disable-extensions',
-            '--disable-background-networking',
-            `--crash-dumps-dir=/home/user/tmp`,
-          ],
+          args: GPU_ENABLED ? GPU_ARGS : HEADLESS_ARGS,
         },
       },
     },
