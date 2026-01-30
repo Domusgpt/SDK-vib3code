@@ -1,6 +1,6 @@
 # CLAUDE.md - VIB3+ CORE Technical Reference
 
-**VIB3+ Unified 4D Visualization Engine**
+**VIB3+ Unified 4D Visualization Engine — v2.0.0**
 
 ---
 
@@ -11,6 +11,10 @@ VIB3+ is a **4D visualization engine** with three rendering systems (Quantum, Fa
 - **C++ WASM Core** - Mathematically rigorous 4D geometric algebra
 - **WebGL/WebGPU Shaders** - GPU-accelerated rendering
 - **MCP Protocol** - Agentic/programmatic control
+- **SpatialInputSystem** - Universal spatial input (tilt, gyroscope, gamepad, perspective, MIDI, audio)
+- **Creative Tooling** - Color presets, transitions, post-processing, parameter timeline
+- **Platform Integrations** - React, Vue, Svelte, Figma, Three.js, TouchDesigner, OBS
+- **Advanced Features** - WebXR, WebGPU compute, MIDI controller, AI presets, OffscreenCanvas worker
 
 **Active Systems**: Quantum, Faceted, Holographic
 **Polychora**: TBD placeholder (not production ready)
@@ -267,8 +271,9 @@ const pipeline = device.createRenderPipeline({
 **Characteristics**:
 - Precise geometric patterns
 - 24 geometry variants
-- Clean visual aesthetic
-- Mouse/touch interaction
+- Clean visual aesthetic with HSL color (hue + saturation)
+- Audio reactivity (bass/mid/high uniforms)
+- Mouse/touch/click interaction
 
 ### 3. Holographic System (`src/holograms/`)
 
@@ -430,7 +435,7 @@ Vib3-CORE-Documented01-/
 │
 ├── src/
 │   ├── core/                    # Engine core
-│   │   ├── VIB3Engine.js        # Main VIB3+ engine
+│   │   ├── VIB3Engine.js        # Main VIB3+ engine (+ SpatialInputSystem integration)
 │   │   ├── CanvasManager.js     # Canvas lifecycle
 │   │   ├── ParameterMapper.js   # Parameter mapping
 │   │   ├── Parameters.js        # Parameter definitions
@@ -440,7 +445,7 @@ Vib3-CORE-Documented01-/
 │   │   ├── QuantumEngine.js
 │   │   └── QuantumVisualizer.js
 │   │
-│   ├── faceted/                 # Faceted system
+│   ├── faceted/                 # Faceted system (with audio + saturation)
 │   │   └── FacetedSystem.js
 │   │
 │   ├── holograms/               # Holographic system
@@ -458,24 +463,51 @@ Vib3-CORE-Documented01-/
 │   │       ├── WebGLBackend.js
 │   │       └── WebGPUBackend.js
 │   │
-│   ├── reactivity/              # Reactivity config
+│   ├── reactivity/              # Reactivity & spatial input
 │   │   ├── ReactivityConfig.js
-│   │   └── ReactivityManager.js
+│   │   ├── ReactivityManager.js
+│   │   └── SpatialInputSystem.js  # Universal spatial input (v2.0.0)
 │   │
-│   └── export/                  # Export system
-│       ├── VIB3PackageExporter.js
-│       └── TradingCardGenerator.js
+│   ├── creative/                # Creative tooling (v2.0.0)
+│   │   ├── ColorPresetsSystem.js  # 22 themed color presets
+│   │   ├── TransitionAnimator.js  # 14 easing functions, sequencing
+│   │   ├── PostProcessingPipeline.js  # 14 effects, 7 preset chains
+│   │   └── ParameterTimeline.js   # Keyframe animation with BPM sync
+│   │
+│   ├── integrations/            # Platform integrations (v2.0.0)
+│   │   ├── frameworks/
+│   │   │   ├── Vib3React.js     # React component + useVib3() hook
+│   │   │   ├── Vib3Vue.js       # Vue 3 component + composable
+│   │   │   └── Vib3Svelte.js    # Svelte component + store
+│   │   ├── FigmaPlugin.js       # Figma plugin manifest + code
+│   │   ├── ThreeJsPackage.js    # Three.js ShaderMaterial
+│   │   ├── TouchDesignerExport.js  # GLSL TOP export
+│   │   └── OBSMode.js           # Transparent background + browser source
+│   │
+│   ├── advanced/                # Advanced features (v2.0.0)
+│   │   ├── WebXRRenderer.js     # WebXR VR/AR with 6DOF
+│   │   ├── WebGPUCompute.js     # WGSL particle + FFT compute
+│   │   ├── MIDIController.js    # Web MIDI with learn mode
+│   │   ├── AIPresetGenerator.js # Text-to-preset + mutation
+│   │   └── OffscreenWorker.js   # Worker rendering + SharedArrayBuffer
+│   │
+│   ├── export/                  # Export system
+│   │   ├── VIB3PackageExporter.js
+│   │   └── TradingCardGenerator.js
+│   │
+│   └── agent/mcp/               # MCP agentic interface
+│       ├── MCPServer.js
+│       └── tools.js
 │
-├── src/agent/mcp/               # MCP agentic interface
-│   ├── MCPServer.js
-│   └── tools.js
+├── tools/                        # Tooling
+│   └── shader-sync-verify.js    # Shader sync verification (v2.0.0)
 │
 ├── js/                          # UI layer
 │   ├── core/app.js
 │   ├── controls/
 │   └── gallery/
 │
-├── tests/                       # Playwright tests
+├── tests/                       # Test suite
 │   ├── sdk-browser.spec.js
 │   └── e2e/
 │
@@ -532,6 +564,95 @@ cd cpp && ./build.sh
 | Ctrl+S | Save to gallery |
 | Ctrl+G | Open gallery |
 | Alt+1/2/3 | Core type (Base/Hypersphere/Hypertetra) |
+
+---
+
+## SpatialInputSystem (`src/reactivity/SpatialInputSystem.js`)
+
+Universal spatial input mapping that decouples "card tilting" from physical device orientation. Any input source maps to a normalized spatial state, which then maps to any visualization parameter.
+
+### Input Sources (8 types)
+| Source | Description |
+|--------|-------------|
+| `deviceTilt` | Physical device orientation (DeviceOrientationEvent) |
+| `mousePosition` | Mouse X/Y → pitch/yaw |
+| `gyroscope` | GyroscopeSensor API |
+| `gamepad` | GamepadAPI analog sticks |
+| `perspective` | Wearable/XR viewing angle |
+| `programmatic` | API-driven spatial data |
+| `audio` | Audio-reactive spatial simulation |
+| `midi` | MIDI CC → spatial axes |
+
+### Built-in Profiles (6)
+| Profile | Use Case |
+|---------|----------|
+| `cardTilt` | Traditional card tilting (default) |
+| `wearablePerspective` | User perspective/viewing angle on wearables |
+| `gameAsset` | Character holding position in games |
+| `vjAudioSpatial` | Audio-reactive spatial movement for VJ/music |
+| `uiElement` | UI element spatial behavior without physical bending |
+| `immersiveXR` | Full 6DOF WebXR spatial tracking |
+
+### Engine Integration
+```javascript
+const engine = new VIB3Engine({ spatialProfile: 'cardTilt' });
+engine.enableSpatialInput('vjAudioSpatial');
+engine.feedSpatialInput({ pitch: 0.5, yaw: -0.3, roll: 0.1 });
+engine.setSpatialSensitivity(2.0);
+engine.setSpatialDramaticMode(true); // 8x amplification
+```
+
+---
+
+## Creative Tooling (`src/creative/`)
+
+### ColorPresetsSystem (980 lines)
+22 themed color presets (Ocean, Lava, Neon, Monochrome, etc.) with group parameter application.
+
+### TransitionAnimator (683 lines)
+14 easing functions with smooth interpolation between states, sequencing support.
+
+### PostProcessingPipeline (1,113 lines)
+14 composable effects (bloom, chromatic aberration, vignette, film grain, etc.) with 7 preset chains.
+
+### ParameterTimeline (1,061 lines)
+Keyframe-based parameter animation with BPM sync for music-driven sequences.
+
+---
+
+## Platform Integrations (`src/integrations/`)
+
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| `frameworks/Vib3React.js` | 591 | `<Vib3Canvas>` React component + `useVib3()` hook |
+| `frameworks/Vib3Vue.js` | 628 | Vue 3 component + composable |
+| `frameworks/Vib3Svelte.js` | 654 | Svelte component + store |
+| `FigmaPlugin.js` | 854 | Figma plugin manifest, code, and UI generator |
+| `ThreeJsPackage.js` | 660 | Three.js ShaderMaterial with 4D rotation uniforms |
+| `TouchDesignerExport.js` | 552 | GLSL TOP export for TouchDesigner |
+| `OBSMode.js` | 754 | Transparent background + OBS browser source mode |
+
+---
+
+## Advanced Features (`src/advanced/`)
+
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| `WebXRRenderer.js` | 680 | WebXR VR/AR with 6DOF spatial extraction |
+| `WebGPUCompute.js` | 1,051 | WGSL particle simulation + audio FFT compute shaders |
+| `MIDIController.js` | 703 | Web MIDI API with learn mode and CC mapping |
+| `AIPresetGenerator.js` | 777 | Text-to-preset via LLM + mutation/crossbreeding |
+| `OffscreenWorker.js` | 1,051 | OffscreenCanvas worker rendering + SharedArrayBuffer |
+
+---
+
+## Shader Sync Verification (`tools/shader-sync-verify.js`)
+
+937-line tool that verifies inline shaders in visualizer JS files match external shader files. Parses GLSL uniforms and WGSL struct fields, compares across all 3 systems, and produces color-coded console reports.
+
+```bash
+npm run verify:shaders
+```
 
 ---
 

@@ -3,7 +3,7 @@
 **General-purpose 4D rotation visualization SDK** for plugins, extensions, wearables, and agentic AI integration.
 
 [![Tests](https://img.shields.io/badge/tests-693%2B%20passing-brightgreen)](#testing)
-[![Version](https://img.shields.io/badge/version-1.9.0-blue)](#)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](#)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 
 ---
@@ -25,9 +25,17 @@
 - **3 Active Visualization Systems:** Quantum lattices, Faceted patterns, Holographic effects
 - **24 Geometry Variants:** 8 base shapes × 3 core warp types (Base, Hypersphere, Hypertetrahedron)
 - **6D Rotation:** Full control over 3D planes (XY/XZ/YZ) and 4D hyperspace planes (XW/YW/ZW)
-- **Audio Reactivity:** Real-time visualization response to audio input
+- **Audio Reactivity:** Real-time visualization response to audio input (all 3 systems)
 - **Agentic Integration:** MCP server with 14 tools for AI agent control
 - **Cross-Platform:** Web, WASM, Flutter support
+
+### New in v2.0.0
+
+- **Universal Spatial Input:** 8 input sources (tilt, gyroscope, gamepad, mouse, MIDI, audio, programmatic, perspective) with 6 built-in profiles (card tilt, wearable, game, VJ, UI, XR)
+- **Creative Tooling:** 22 color presets, 14 easing transitions, 14 post-processing effects, keyframe timeline with BPM sync
+- **Platform Integrations:** React, Vue, Svelte components; Figma plugin; Three.js ShaderMaterial; TouchDesigner GLSL export; OBS transparent background
+- **Advanced Features:** WebXR VR/AR, WebGPU compute shaders, MIDI controller mapping, AI preset generation, OffscreenCanvas worker rendering
+- **Shader Sync Tool:** Verifies inline shaders match external files across all systems
 
 ---
 
@@ -143,6 +151,40 @@ engine.randomizeAll();
 
 // Reset to defaults
 engine.resetAll();
+```
+
+### Spatial Input API (v2.0.0)
+
+```javascript
+// Enable spatial input with a profile
+engine.enableSpatialInput('cardTilt');       // Traditional card tilt
+engine.enableSpatialInput('vjAudioSpatial'); // Audio-reactive spatial
+
+// Feed external spatial data
+engine.feedSpatialInput({ pitch: 0.5, yaw: -0.3, roll: 0.1 });
+
+// Adjust sensitivity and dramatic mode
+engine.setSpatialSensitivity(2.0);
+engine.setSpatialDramaticMode(true); // 8x amplification
+
+// Available profiles: cardTilt, wearablePerspective, gameAsset,
+//                     vjAudioSpatial, uiElement, immersiveXR
+```
+
+### Framework Integration (v2.0.0)
+
+```javascript
+// React
+import { Vib3Canvas, useVib3 } from '@vib3/sdk/integrations/react';
+
+// Vue
+import { Vib3Canvas } from '@vib3/sdk/integrations/vue';
+
+// Svelte
+import { Vib3Canvas } from '@vib3/sdk/integrations/svelte';
+
+// Three.js
+import { Vib3ShaderMaterial } from '@vib3/sdk/integrations/threejs';
 ```
 
 ### Parameter Reference
@@ -270,10 +312,10 @@ echo 'geometry 10' | node src/cli/index.js
 ```
 ├── src/                      # Core SDK
 │   ├── core/                 # Engine orchestration
-│   │   ├── VIB3Engine.js     # Main unified engine
+│   │   ├── VIB3Engine.js     # Main unified engine (+ SpatialInput)
 │   │   └── RendererContracts.js
 │   ├── quantum/              # Quantum visualization
-│   ├── faceted/              # Faceted visualization
+│   ├── faceted/              # Faceted visualization (+ audio/saturation)
 │   ├── holograms/            # Holographic visualization
 │   ├── geometry/             # 24-geometry system
 │   ├── math/                 # 4D math utilities
@@ -282,12 +324,18 @@ echo 'geometry 10' | node src/cli/index.js
 │   │   ├── mcp/              # MCP server
 │   │   ├── cli/              # CLI interface
 │   │   └── telemetry/        # Instrumentation
-│   └── export/               # Export generators
+│   ├── export/               # Export generators
+│   ├── reactivity/           # Reactivity + SpatialInputSystem (v2.0.0)
+│   ├── creative/             # Color presets, transitions, post-FX, timeline (v2.0.0)
+│   ├── integrations/         # React, Vue, Svelte, Figma, Three.js, TD, OBS (v2.0.0)
+│   └── advanced/             # WebXR, WebGPU compute, MIDI, AI, Worker (v2.0.0)
+├── tools/                    # Tooling (+ shader-sync-verify.js)
 ├── cpp/                      # C++ math core (WASM)
 ├── js/                       # Client-side integration
 ├── tests/                    # Test suite (693+ tests)
 ├── DOCS/                     # Documentation
 │   ├── SYSTEM_INVENTORY.md   # Complete system reference
+│   ├── SYSTEM_AUDIT_2026-01-30.md  # Full system audit
 │   ├── CLI_ONBOARDING.md     # Agent CLI setup
 │   └── CONTROL_REFERENCE.md  # UI parameters
 └── types/                    # TypeScript definitions
@@ -316,11 +364,13 @@ npm test -- tests/agent/AgentCLI.test.js
 
 | Document | Description |
 |----------|-------------|
-| [`DOCS/SYSTEM_INVENTORY.md`](DOCS/SYSTEM_INVENTORY.md) | Complete technical reference |
+| [`DOCS/SYSTEM_INVENTORY.md`](DOCS/SYSTEM_INVENTORY.md) | Complete technical reference (v2.0.0) |
+| [`DOCS/SYSTEM_AUDIT_2026-01-30.md`](DOCS/SYSTEM_AUDIT_2026-01-30.md) | Full system audit (v2.0.0) |
 | [`DOCS/CLI_ONBOARDING.md`](DOCS/CLI_ONBOARDING.md) | Agent CLI setup guide |
 | [`DOCS/CONTROL_REFERENCE.md`](DOCS/CONTROL_REFERENCE.md) | UI parameter reference |
 | [`24-GEOMETRY-6D-ROTATION-SUMMARY.md`](24-GEOMETRY-6D-ROTATION-SUMMARY.md) | Geometry encoding details |
 | [`DOCS/GPU_DISPOSAL_GUIDE.md`](DOCS/GPU_DISPOSAL_GUIDE.md) | Resource management |
+| [`CLAUDE.md`](CLAUDE.md) | AI/Developer technical reference (v2.0.0) |
 
 ---
 

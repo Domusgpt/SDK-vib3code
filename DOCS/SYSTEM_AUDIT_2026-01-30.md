@@ -1,7 +1,7 @@
 # VIB3+ CORE System Audit
 
 **Date**: January 30, 2026
-**Version**: 1.9.0 (`@vib3/sdk`)
+**Version**: 2.0.0 (`@vib3/sdk`)
 **Branch**: `claude/phase-5-hardening-a4Wzn`
 **Auditor**: Automated codebase review
 **Owner**: Clear Seas Solutions LLC
@@ -10,10 +10,21 @@
 
 ## 1. Executive Summary
 
-VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Faceted, Holographic), a C++ WASM math core, dual GPU backends (WebGL + WebGPU), an MCP agentic control layer, a multi-format export pipeline, and cross-platform targets (browser, CLI, Flutter). The codebase contains ~80,000+ lines across 550+ files.
+VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Faceted, Holographic), a C++ WASM math core, dual GPU backends (WebGL + WebGPU), an MCP agentic control layer, a multi-format export pipeline, cross-platform targets (browser, CLI, Flutter), and as of v2.0.0: a universal spatial input system, creative tooling, platform integrations (React/Vue/Svelte/Figma/Three.js/TouchDesigner/OBS), and advanced features (WebXR/WebGPU Compute/MIDI/AI Presets/OffscreenWorker). The codebase contains ~95,000+ lines across 570+ files.
 
-**Issues Fixed This Session**:
-- Quantum system color control restored — `u_hue` and `u_saturation` now drive actual HSL color output instead of being misused/ignored
+**Issues Fixed in v2.0.0**:
+- Quantum system color control restored — `u_hue` and `u_saturation` now drive actual HSL color output
+- Faceted system saturation wired — full `hsl2rgb()` pipeline added to GLSL + WGSL shaders
+- Faceted system audio reactivity wired — bass/mid/high uniforms driving density/morph/hue
+- `clickIntensity` uniform bug fixed — was mapping to `u_mouseIntensity`, now correctly maps to `u_clickIntensity`
+- Shader sync verification tooling added — `npm run verify:shaders`
+
+**New in v2.0.0** (18 new files, 15,512 lines):
+- SpatialInputSystem (1,783 lines) — 8 input sources, 6 profiles, integrated into VIB3Engine
+- Creative Tooling (3,837 lines) — color presets, transitions, post-processing, timeline
+- Platform Integrations (4,693 lines) — React, Vue, Svelte, Figma, Three.js, TouchDesigner, OBS
+- Advanced Features (4,262 lines) — WebXR, WebGPU compute, MIDI, AI presets, OffscreenWorker
+- Shader Sync Tool (937 lines) — uniform verification across systems
 
 ---
 
@@ -45,12 +56,14 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 | **Files** | `src/faceted/FacetedSystem.js` (826 lines) | Single-file system |
 | **24 geometries** | Working | |
 | **6D rotation** | Working | |
-| **Color control** | Partial | `u_hue` works (0-360 cosine RGB). `u_saturation` declared in WGSL but unused in GLSL |
+| **Color control** | **Fixed (v2.0.0)** | Full HSL via `hsl2rgb()` in GLSL + `hsl2rgb_w()` in WGSL |
+| **u_saturation** | **Fixed (v2.0.0)** | Fully wired as uniform, affects HSL lightness/saturation |
 | **u_intensity** | Working | Controls alpha |
-| **Audio reactivity** | Not implemented | No audio uniform wiring |
-| **WebGPU path** | Defined | WGSL shader present but WebGPU pipeline not actively tested |
+| **Audio reactivity** | **Fixed (v2.0.0)** | `u_bass`, `u_mid`, `u_high` uniforms wired; bass→density, mid→morph, high→hue shift |
+| **Click intensity** | **Fixed (v2.0.0)** | `u_clickIntensity` uniform with boost multiplier |
+| **WebGPU path** | Defined | WGSL shader updated with matching audio/saturation support |
 
-**Note**: Color is computed via cosine wave (`0.5 + 0.5 * cos(hue * TAU)`) which produces pastel-ish results. Saturation has no effect. This is functional but less controllable than a proper HSL approach.
+**v2.0.0 Fix**: Replaced cosine-wave color with proper `hsl2rgb()` function. Saturation now controls HSL saturation. Added 7 new uniforms: `u_saturation`, `u_speed`, `u_mouseIntensity`, `u_clickIntensity`, `u_bass`, `u_mid`, `u_high`. Audio reactivity reads from `window.audioReactive` global.
 
 ---
 
@@ -260,7 +273,7 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 
 | File | Purpose |
 |------|---------|
-| `package.json` | NPM config, v1.9.0, @vib3/sdk |
+| `package.json` | NPM config, v2.0.0, @vib3/sdk |
 | `vite.config.js` | Dev server + build |
 | `vitest.config.js` | Unit test config |
 | `playwright.config.js` | E2E test config |
@@ -276,16 +289,23 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 
 ## 3. Known Issues & Technical Debt
 
+### Resolved in v2.0.0
+| # | Severity | Area | Description | Resolution |
+|---|----------|------|-------------|------------|
+| 1 | ~~Medium~~ | Faceted | ~~`u_saturation` not used in GLSL shader~~ | **FIXED**: Added `hsl2rgb()` function, full HSL pipeline |
+| 2 | ~~Low~~ | Shaders | ~~Inline shaders can drift from external files~~ | **MITIGATED**: `tools/shader-sync-verify.js` added |
+| 3 | ~~Low~~ | Quantum | ~~`clickIntensity` maps to `u_mouseIntensity`~~ | **FIXED**: Now maps to `u_clickIntensity` |
+| 4 | ~~Low~~ | Faceted | ~~No audio reactivity wiring~~ | **FIXED**: bass/mid/high uniforms wired |
+
+### Remaining Issues
 | # | Severity | Area | Description |
 |---|----------|------|-------------|
-| 1 | Medium | Faceted | `u_saturation` declared in WGSL but not used in GLSL shader. Saturation control does nothing. |
-| 2 | Low | Shaders | Inline shaders in visualizer JS files can drift from external `src/shaders/` files. No sync mechanism. |
-| 3 | Low | Quantum | `clickIntensity` uniform maps to `u_mouseIntensity` location (line 782) — likely a copy-paste bug |
-| 4 | Low | Faceted | No audio reactivity wiring (Quantum and Holographic both have it) |
 | 5 | Info | WebGPU | WebGPU backend present and functional but not actively tested in CI with real GPU |
 | 6 | Info | Polychora | System archived, not production-ready. TBD placeholder. |
 | 7 | Info | Export | Export system (15K lines) is the largest subsystem — may benefit from modularization |
 | 8 | Info | Archive | 15 directories of archived code still in repo |
+| 9 | Low | v2.0.0 | New modules (creative, integrations, advanced) need test coverage |
+| 10 | Low | v2.0.0 | Platform integration components need validation with real framework apps |
 
 ---
 
@@ -416,32 +436,48 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 
 ## 6. Priority Roadmap
 
-### Phase A — Parity & Polish (Current)
+### Phase A — Parity & Polish ✅ COMPLETE (v2.0.0)
 - [x] Restore Quantum color control
-- [ ] Wire saturation into Faceted system
-- [ ] Fix clickIntensity uniform bug
-- [ ] Add audio reactivity to Faceted
-- [ ] Shader sync verification tooling
+- [x] Wire saturation into Faceted system (`hsl2rgb()` in GLSL + WGSL)
+- [x] Fix clickIntensity uniform bug (QuantumVisualizer.js:792)
+- [x] Add audio reactivity to Faceted (bass/mid/high uniforms)
+- [x] Shader sync verification tooling (`tools/shader-sync-verify.js`)
 
-### Phase B — Creative Tooling
-- [ ] Color presets/themes system
-- [ ] Transition animations between states
-- [ ] Post-processing composable FX pipeline
-- [ ] Parameter animation keyframes/timeline
+### Phase B — Creative Tooling ✅ COMPLETE (v2.0.0)
+- [x] Color presets/themes system (`src/creative/ColorPresetsSystem.js` — 980 lines, 22 presets)
+- [x] Transition animations between states (`src/creative/TransitionAnimator.js` — 683 lines, 14 easings)
+- [x] Post-processing composable FX pipeline (`src/creative/PostProcessingPipeline.js` — 1,113 lines, 14 effects)
+- [x] Parameter animation keyframes/timeline (`src/creative/ParameterTimeline.js` — 1,061 lines, BPM sync)
 
-### Phase C — Platform Integrations
-- [ ] React/Vue/Svelte component wrappers (NPM)
-- [ ] Figma plugin
-- [ ] Three.js ShaderMaterial package
-- [ ] TouchDesigner GLSL TOP export
-- [ ] OBS transparent background mode
+### Phase C — Platform Integrations ✅ COMPLETE (v2.0.0)
+- [x] React component + `useVib3()` hook (`src/integrations/frameworks/Vib3React.js` — 591 lines)
+- [x] Vue 3 component + composable (`src/integrations/frameworks/Vib3Vue.js` — 628 lines)
+- [x] Svelte component + store (`src/integrations/frameworks/Vib3Svelte.js` — 654 lines)
+- [x] Figma plugin (`src/integrations/FigmaPlugin.js` — 854 lines)
+- [x] Three.js ShaderMaterial package (`src/integrations/ThreeJsPackage.js` — 660 lines)
+- [x] TouchDesigner GLSL TOP export (`src/integrations/TouchDesignerExport.js` — 552 lines)
+- [x] OBS transparent background mode (`src/integrations/OBSMode.js` — 754 lines)
 
-### Phase D — Advanced
-- [ ] WebXR immersive rendering
-- [ ] WebGPU compute shaders for particles/audio FFT
-- [ ] MIDI controller mapping
-- [ ] AI preset generation via MCP + LLM
-- [ ] OffscreenCanvas worker rendering
+### Phase D — Advanced ✅ COMPLETE (v2.0.0)
+- [x] WebXR immersive rendering (`src/advanced/WebXRRenderer.js` — 680 lines)
+- [x] WebGPU compute shaders for particles/audio FFT (`src/advanced/WebGPUCompute.js` — 1,051 lines)
+- [x] MIDI controller mapping (`src/advanced/MIDIController.js` — 703 lines)
+- [x] AI preset generation via MCP + LLM (`src/advanced/AIPresetGenerator.js` — 777 lines)
+- [x] OffscreenCanvas worker rendering (`src/advanced/OffscreenWorker.js` — 1,051 lines)
+
+### SpatialInputSystem ✅ COMPLETE (v2.0.0)
+- [x] Universal spatial input system (`src/reactivity/SpatialInputSystem.js` — 1,783 lines)
+- [x] 8 input source types (deviceTilt, mouse, gyroscope, gamepad, perspective, programmatic, audio, MIDI)
+- [x] 6 built-in profiles (cardTilt, wearablePerspective, gameAsset, vjAudioSpatial, uiElement, immersiveXR)
+- [x] Integrated into VIB3Engine with 7 new methods
+- [x] Full serialization (exportConfig/importConfig)
+
+### Phase E — Next (Planned)
+- [ ] Add test coverage for all v2.0.0 modules
+- [ ] Validate platform integrations with real framework apps
+- [ ] Publish @vib3/sdk v2.0.0 to NPM registry
+- [ ] Production-harden WebGPU shader pipeline
+- [ ] Create example apps for each framework integration
 
 ---
 
@@ -451,7 +487,7 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 | File | Purpose |
 |------|---------|
 | `index.html` | Main entry point |
-| `package.json` | NPM config v1.9.0 |
+| `package.json` | NPM config v2.0.0 |
 | `vite.config.js` | Build config |
 | `vitest.config.js` | Test config |
 | `playwright.config.js` | E2E config |
@@ -607,11 +643,50 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 | `telemetry/Instrumentation.js` | 618 | Profiling |
 | `telemetry/TelemetryExporters.js` | 427 | Export |
 
-### `src/reactivity/` — Reactivity System (1,178 lines)
+### `src/reactivity/` — Reactivity & Spatial Input (2,961 lines)
 | File | Lines | Purpose |
 |------|-------|---------|
 | `ReactivityManager.js` | 586 | Reactivity orchestrator |
 | `ReactivityConfig.js` | 499 | Config/ranges |
+| `SpatialInputSystem.js` | 1,783 | **NEW v2.0.0** — Universal spatial input (8 sources, 6 profiles) |
+| `index.js` | 93 | Module exports |
+
+### `src/creative/` — Creative Tooling (3,837 lines) — **NEW v2.0.0**
+| File | Lines | Purpose |
+|------|-------|---------|
+| `ColorPresetsSystem.js` | 980 | 22 themed color presets |
+| `TransitionAnimator.js` | 683 | 14 easing functions, state sequencing |
+| `PostProcessingPipeline.js` | 1,113 | 14 composable effects, 7 preset chains |
+| `ParameterTimeline.js` | 1,061 | Keyframe animation with BPM sync |
+
+### `src/integrations/` — Platform Integrations (4,693 lines) — **NEW v2.0.0**
+| File | Lines | Purpose |
+|------|-------|---------|
+| `frameworks/Vib3React.js` | 591 | React component + `useVib3()` hook |
+| `frameworks/Vib3Vue.js` | 628 | Vue 3 component + composable |
+| `frameworks/Vib3Svelte.js` | 654 | Svelte component + store |
+| `FigmaPlugin.js` | 854 | Figma plugin manifest + code + UI |
+| `ThreeJsPackage.js` | 660 | Three.js ShaderMaterial wrapper |
+| `TouchDesignerExport.js` | 552 | GLSL TOP export for TouchDesigner |
+| `OBSMode.js` | 754 | Transparent background + browser source |
+
+### `src/advanced/` — Advanced Features (4,262 lines) — **NEW v2.0.0**
+| File | Lines | Purpose |
+|------|-------|---------|
+| `WebXRRenderer.js` | 680 | WebXR VR/AR with 6DOF extraction |
+| `WebGPUCompute.js` | 1,051 | WGSL particle + FFT compute shaders |
+| `MIDIController.js` | 703 | Web MIDI with learn mode |
+| `AIPresetGenerator.js` | 777 | Text-to-preset + mutation/crossbreeding |
+| `OffscreenWorker.js` | 1,051 | Worker rendering + SharedArrayBuffer |
+
+### `tools/` — Tooling (includes new v2.0.0)
+| File | Lines | Purpose |
+|------|-------|---------|
+| `shader-sync-verify.js` | 937 | **NEW v2.0.0** — Shader uniform sync verification |
+| `agentic/mcpTools.js` | — | MCP helper scripts |
+| `cli/agent-cli.js` | — | Agent CLI tooling |
+| `export/formats.js` | — | Export pipeline tools |
+| `telemetry/manifestPipeline.js` | — | Telemetry manifest |
 
 ### `src/viewer/` — Viewer UI (~3,382 lines)
 | File | Lines | Purpose |
@@ -660,4 +735,4 @@ Old SDK, demos, duplicates, experimental code, polychora, physics.
 
 ---
 
-*End of audit — January 30, 2026*
+*End of audit — January 30, 2026 — Updated for v2.0.0*

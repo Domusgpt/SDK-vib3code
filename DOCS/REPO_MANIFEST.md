@@ -49,15 +49,19 @@ each folder. Use it as a navigation guide when onboarding or auditing the codeba
   - `src/agent/cli/` — Agent CLI interface
   - `src/agent/mcp/` — MCP server and tools (MCPServer.js, tools.js)
   - `src/agent/telemetry/` — Telemetry services and exporters
+- `src/advanced/` — **NEW v2.0.0** Advanced features
+  - WebXRRenderer.js, WebGPUCompute.js, MIDIController.js, AIPresetGenerator.js, OffscreenWorker.js
 - `src/benchmarks/` — Performance benchmarks
 - `src/cli/` — CLI entry points
 - `src/config/` — Configuration helpers
 - `src/core/` — Core engine orchestration
-  - VIB3Engine.js, CanvasManager.js, ParameterMapper.js, Parameters.js
+  - VIB3Engine.js (+ SpatialInputSystem integration), CanvasManager.js, ParameterMapper.js, Parameters.js
+- `src/creative/` — **NEW v2.0.0** Creative tooling
+  - ColorPresetsSystem.js, TransitionAnimator.js, PostProcessingPipeline.js, ParameterTimeline.js
 - `src/export/` — Export pipeline
   - TradingCardGenerator, VIB3PackageExporter, SVGExporter, LottieExporter
   - `src/export/systems/` — System-specific card generators
-- `src/faceted/` — Faceted visualization system (FacetedSystem.js)
+- `src/faceted/` — Faceted visualization system (FacetedSystem.js — with audio + saturation v2.0.0)
 - `src/features/` — Feature flags and optional subsystems
 - `src/gallery/` — Gallery rendering and orchestration
 - `src/geometry/` — Geometry generation and definitions
@@ -66,11 +70,15 @@ each folder. Use it as a navigation guide when onboarding or auditing the codeba
   - `src/geometry/warp/` — Core warps (HypersphereCore, HypertetraCore)
 - `src/holograms/` — Holographic visualization system
   - RealHolographicSystem.js, HolographicVisualizer.js
+- `src/integrations/` — **NEW v2.0.0** Platform integrations
+  - `src/integrations/frameworks/` — Vib3React.js, Vib3Vue.js, Vib3Svelte.js
+  - FigmaPlugin.js, ThreeJsPackage.js, TouchDesignerExport.js, OBSMode.js
 - `src/llm/` — LLM integrations (LLMParameterInterface, LLMParameterUI)
 - `src/math/` — Math primitives (Vec4, Mat4x4, Rotor4D, Projection)
 - `src/quantum/` — Quantum visualization system
   - QuantumEngine.js, QuantumVisualizer.js
-- `src/reactivity/` — Reactivity configuration and management
+- `src/reactivity/` — Reactivity configuration, management, and spatial input
+  - ReactivityConfig.js, ReactivityManager.js, SpatialInputSystem.js (**NEW v2.0.0**)
 - `src/render/` — Rendering backends and registries
   - `src/render/backends/` — WebGL and WebGPU backends
   - `src/render/commands/` — Render command buffer
@@ -110,4 +118,4 @@ each folder. Use it as a navigation guide when onboarding or auditing the codeba
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-01-30 (v2.0.0)*

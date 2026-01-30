@@ -1,7 +1,7 @@
 # VIB3+ SDK System Inventory
 
-**Document Version:** 1.0.0
-**Last Updated:** 2026-01-24
+**Document Version:** 2.0.0
+**Last Updated:** 2026-01-30
 **Purpose:** Complete technical inventory for developers and AI agents
 
 ---
@@ -14,7 +14,7 @@ VIB3+ is a **general-purpose 4D rotation visualization SDK** designed for:
 - Agentic AI integration (MCP protocol)
 - Cross-platform deployment (Web, Flutter, WASM)
 
-The SDK provides 4 visualization systems with shared 6D rotation mathematics, unified rendering contracts, and comprehensive telemetry for monitoring and automation.
+The SDK provides 3 active visualization systems with shared 6D rotation mathematics, unified rendering contracts, comprehensive telemetry, a universal spatial input system, creative tooling, cross-platform framework integrations, and advanced features including WebXR, WebGPU compute, and MIDI.
 
 ---
 
@@ -22,6 +22,7 @@ The SDK provides 4 visualization systems with shared 6D rotation mathematics, un
 
 | Metric | Value |
 |--------|-------|
+| **SDK Version** | 2.0.0 |
 | **Visualization Systems** | 3 active (Quantum, Faceted, Holographic) + 1 archived (Polychora - TBD) |
 | **Rotation Planes** | 6 (XY, XZ, YZ for 3D; XW, YW, ZW for 4D) |
 | **Base Geometries** | 8 per system |
@@ -29,6 +30,11 @@ The SDK provides 4 visualization systems with shared 6D rotation mathematics, un
 | **Total Geometries** | 24 per system (8 base × 3 cores) |
 | **Canvas Layers** | 5 per system (background, shadow, content, highlight, accent) |
 | **MCP Tools** | 12 agent-accessible tools |
+| **Spatial Input Sources** | 8 (deviceTilt, mouse, gyroscope, gamepad, perspective, programmatic, audio, MIDI) |
+| **Spatial Profiles** | 6 built-in (cardTilt, wearablePerspective, gameAsset, vjAudioSpatial, uiElement, immersiveXR) |
+| **Creative Effects** | 14 post-processing effects, 22 color presets, 14 easing functions |
+| **Platform Integrations** | 7 (React, Vue, Svelte, Figma, Three.js, TouchDesigner, OBS) |
+| **Advanced Modules** | 5 (WebXR, WebGPU Compute, MIDI, AI Presets, OffscreenWorker) |
 | **Test Coverage** | 694+ tests passing |
 
 ---
@@ -117,13 +123,17 @@ The SDK provides 4 visualization systems with shared 6D rotation mathematics, un
 |----------|-------|
 | Canvas IDs | `background-canvas`, `shadow-canvas`, `content-canvas`, `highlight-canvas`, `accent-canvas` |
 | Geometries | 24 (8 base × 3 cores) |
-| Audio Reactive | Yes (via global) |
+| Audio Reactive | Yes (bass/mid/high uniforms — wired in v2.0.0) |
+| Color Control | Full HSL (hue + saturation via `hsl2rgb()` — wired in v2.0.0) |
 | Physics | No |
 
 **Core Features:**
 - Single WebGL context on `content-canvas`
 - Geometry functions in fragment shader
 - Core warp applied via `applyCoreWarp()` shader function
+- Full `hsl2rgb()` color pipeline with saturation control (v2.0.0)
+- Audio-reactive density/morph/hue shift (v2.0.0)
+- Click intensity boost (v2.0.0)
 
 ### 3. Holographic System
 **File:** `src/holograms/RealHolographicSystem.js` (652 LOC)
@@ -316,13 +326,13 @@ class ResourceManagerContract {
 
 ```
 /home/user/Vib3-CORE-Documented01-/
-├── src/                          # Core SDK (56,922 LOC)
+├── src/                          # Core SDK (~72,000+ LOC)
 │   ├── core/                     # Engine orchestration
-│   │   ├── VIB3Engine.js         # Main unified engine
+│   │   ├── VIB3Engine.js         # Main unified engine (+ SpatialInput)
 │   │   ├── RendererContracts.js  # Shared interfaces
 │   │   └── renderers/            # System adapters
 │   ├── quantum/                  # Quantum visualization
-│   ├── faceted/                  # Faceted visualization
+│   ├── faceted/                  # Faceted visualization (+ audio/saturation)
 │   ├── holograms/                # Holographic visualization
 │   ├── geometry/                 # 24-geometry system
 │   ├── math/                     # 4D math utilities
@@ -330,7 +340,12 @@ class ResourceManagerContract {
 │   ├── scene/                    # Scene graph
 │   ├── agent/                    # MCP/CLI/Telemetry
 │   ├── export/                   # Export generators
-│   └── wasm/                     # WASM loader
+│   ├── wasm/                     # WASM loader
+│   ├── reactivity/               # Reactivity + SpatialInputSystem (v2.0.0)
+│   ├── creative/                 # Creative tooling (v2.0.0)
+│   ├── integrations/             # Platform integrations (v2.0.0)
+│   └── advanced/                 # Advanced features (v2.0.0)
+├── tools/                        # Tooling (+ shader-sync-verify.js)
 ├── cpp/                          # C++ math core (1,783 LOC)
 ├── js/                           # Client-side integration
 ├── tests/                        # Test suite (60 files)
@@ -379,20 +394,30 @@ Expected: `change_geometry`
 
 ## Current Development Status
 
-### Phase Status (as of Session 014)
+### Phase Status (as of v2.0.0, 2026-01-30)
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1: Foundation | ✅ Complete | Math, geometry, parameters |
 | Phase 2: Rendering | ✅ Mostly Complete | Contracts exist, adapters implemented |
 | Phase 3: Agentic | ✅ Complete | MCP, CLI, Telemetry working |
 | Phase 4: WebGPU | 🔄 In Progress | Scaffold exists, needs shader pipeline |
-| Phase 5: Hardening | 🔄 In Progress | 694 tests passing |
+| Phase 5: Hardening | ✅ Complete | 694 tests passing, XSS prevention, input validation |
+| **Phase A: Parity & Polish** | **✅ Complete** | Quantum color, Faceted saturation/audio, clickIntensity fix, shader sync tool |
+| **Phase B: Creative Tooling** | **✅ Complete** | Color presets, transitions, post-processing, timeline |
+| **Phase C: Platform Integrations** | **✅ Complete** | React, Vue, Svelte, Figma, Three.js, TouchDesigner, OBS |
+| **Phase D: Advanced** | **✅ Complete** | WebXR, WebGPU compute, MIDI, AI presets, OffscreenWorker |
+| **SpatialInputSystem** | **✅ Complete** | 8 source types, 6 profiles, integrated into VIB3Engine |
 
-### Known Gaps
+### v2.0.0 Bugs Fixed
+1. ~~`clickIntensity` uniform mapped to `u_mouseIntensity`~~ → Fixed (QuantumVisualizer.js:792)
+2. ~~Faceted system missing saturation control~~ → Fixed (hsl2rgb + u_saturation uniform)
+3. ~~Faceted system missing audio reactivity~~ → Fixed (bass/mid/high uniforms wired)
+4. ~~Inline shaders can drift from external files~~ → Mitigated (shader-sync-verify.js tooling)
+
+### Remaining Gaps
 1. WebGPU backend needs full shader pipeline
 2. Some systems don't fully implement RendererContract
-3. Documentation could use consolidation
-4. Need agent context absorption verification
+3. New v2.0.0 modules need test coverage
 
 ---
 
@@ -404,22 +429,75 @@ Expected: `change_geometry`
 | WASM | ✅ Working | cpp/ → Emscripten → vib3.wasm |
 | Flutter | 🔄 Scaffold | src/platforms/flutter/ |
 | Node.js CLI | ✅ Working | src/agent/cli/ |
+| React | ✅ Component (v2.0.0) | src/integrations/frameworks/Vib3React.js |
+| Vue 3 | ✅ Component (v2.0.0) | src/integrations/frameworks/Vib3Vue.js |
+| Svelte | ✅ Component (v2.0.0) | src/integrations/frameworks/Vib3Svelte.js |
+| Three.js | ✅ ShaderMaterial (v2.0.0) | src/integrations/ThreeJsPackage.js |
+| Figma | ✅ Plugin (v2.0.0) | src/integrations/FigmaPlugin.js |
+| TouchDesigner | ✅ GLSL Export (v2.0.0) | src/integrations/TouchDesignerExport.js |
+| OBS Studio | ✅ Browser Source (v2.0.0) | src/integrations/OBSMode.js |
+| WebXR (VR/AR) | ✅ Renderer (v2.0.0) | src/advanced/WebXRRenderer.js |
+
+---
+
+## v2.0.0 New Systems
+
+### SpatialInputSystem (`src/reactivity/SpatialInputSystem.js` — 1,783 lines)
+Universal spatial input that decouples "card tilting" from physical device orientation. Any input source maps through a normalized spatial state (pitch/yaw/roll/x/y/z/intensity/velocity) to any visualization parameter.
+
+- **8 input sources**: deviceTilt, mousePosition, gyroscope, gamepad, perspective, programmatic, audio, midi
+- **6 built-in profiles**: cardTilt, wearablePerspective, gameAsset, vjAudioSpatial, uiElement, immersiveXR
+- **Per-axis lerp smoothing**, dramatic mode (8x), sensitivity control
+- **Full serialization** (exportConfig/importConfig)
+- **Integrated into VIB3Engine** with 7 new methods
+
+### Creative Tooling (`src/creative/` — 3,837 lines)
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| ColorPresetsSystem.js | 980 | 22 themed presets (Ocean, Lava, Neon, Monochrome, etc.) |
+| TransitionAnimator.js | 683 | 14 easing functions, smooth state interpolation, sequencing |
+| PostProcessingPipeline.js | 1,113 | 14 composable effects (bloom, chromatic aberration, vignette, etc.), 7 preset chains |
+| ParameterTimeline.js | 1,061 | Keyframe animation with BPM sync for music-driven sequences |
+
+### Platform Integrations (`src/integrations/` — 4,693 lines)
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| frameworks/Vib3React.js | 591 | `<Vib3Canvas>` React component + `useVib3()` hook |
+| frameworks/Vib3Vue.js | 628 | Vue 3 component + composable |
+| frameworks/Vib3Svelte.js | 654 | Svelte component + store |
+| FigmaPlugin.js | 854 | Figma plugin manifest, code generator, and UI |
+| ThreeJsPackage.js | 660 | Three.js ShaderMaterial with 4D rotation uniforms |
+| TouchDesignerExport.js | 552 | GLSL TOP export for TouchDesigner |
+| OBSMode.js | 754 | Transparent background + OBS browser source mode |
+
+### Advanced Features (`src/advanced/` — 4,262 lines)
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| WebXRRenderer.js | 680 | WebXR VR/AR with 6DOF spatial extraction |
+| WebGPUCompute.js | 1,051 | WGSL particle simulation + audio FFT compute shaders |
+| MIDIController.js | 703 | Web MIDI API with learn mode and CC mapping |
+| AIPresetGenerator.js | 777 | Text-to-preset via LLM + mutation/crossbreeding algorithms |
+| OffscreenWorker.js | 1,051 | OffscreenCanvas worker rendering + SharedArrayBuffer |
+
+### Shader Sync Tool (`tools/shader-sync-verify.js` — 937 lines)
+Verifies inline shaders match external shader files. Parses GLSL uniforms and WGSL struct fields, compares across all 3 systems, produces color-coded console reports.
 
 ---
 
 ## Next Steps for Development
 
 ### Immediate Priorities
-1. Verify all 4 systems pass RendererContract compliance
+1. Add test coverage for v2.0.0 modules (creative, integrations, advanced, SpatialInput)
 2. Complete WebGPU shader pipeline
-3. Add agent onboarding quiz to MCP initial response
-4. Consolidate documentation into single source of truth
+3. Production-harden platform integration wrappers
+4. Publish @vib3/sdk v2.0.0 to NPM
 
-### Phase 2 Consolidation Tasks
-- [ ] Audit RendererContract compliance for all 4 systems
-- [ ] Extract remaining shared code to contracts
+### Consolidation Tasks
+- [ ] Audit RendererContract compliance for all 3 active systems
+- [ ] Write integration tests for SpatialInputSystem profiles
+- [ ] Add E2E tests for creative tooling (transitions, post-processing)
+- [ ] Verify framework components (React, Vue, Svelte) with sample apps
 - [ ] Document lifecycle rules in code comments
-- [ ] Add contract compliance tests
 
 ---
 
@@ -427,14 +505,16 @@ Expected: `change_geometry`
 
 | Document | Purpose |
 |----------|---------|
-| `CLAUDE.md` | Development instructions |
+| `CLAUDE.md` | Development instructions (v2.0.0 updated) |
 | `DEV_TRACK.md` | Session-by-session progress |
 | `DOCS/CLI_ONBOARDING.md` | Agent CLI setup |
 | `DOCS/CONTROL_REFERENCE.md` | UI control parameters |
 | `DOCS/RENDERER_LIFECYCLE.md` | Renderer architecture |
 | `DOCS/GPU_DISPOSAL_GUIDE.md` | Memory management |
+| `DOCS/SYSTEM_AUDIT_2026-01-30.md` | Full system audit (v2.0.0 updated) |
 | `24-GEOMETRY-6D-ROTATION-SUMMARY.md` | Geometry encoding |
 
 ---
 
 *This document is the canonical system inventory. Update after significant changes.*
+*Last major update: v2.0.0 — 2026-01-30*
