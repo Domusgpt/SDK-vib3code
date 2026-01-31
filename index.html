@@ -1,29 +1,258 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIB3+ CORE</title>
-    <meta http-equiv="refresh" content="3; url=docs/webgpu-live.html">
+    <title>VIB3+ CORE — 4D Visualization Engine</title>
+    <meta name="description" content="VIB3+ is a 4D visualization SDK with 24 geometry variants, 6D rotation, and three rendering systems. WebGL + WebGPU.">
     <style>
-        body { background: #0a0a12; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; gap: 12px; padding: 20px; }
-        h1 { font-size: 18px; color: #0ff; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 8px; font-weight: 300; }
-        a { display: block; padding: 14px 24px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #0ff; text-decoration: none; font-size: 13px; min-width: 320px; text-align: center; transition: all 0.2s; }
-        a:hover, a:active { background: rgba(0,255,255,0.08); border-color: rgba(0,255,255,0.4); }
-        a.primary { border-color: rgba(0,255,100,0.4); color: #0f6; background: rgba(0,255,100,0.06); font-weight: bold; }
-        a.primary:hover { background: rgba(0,255,100,0.12); }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 9px; letter-spacing: 1px; margin-right: 6px; vertical-align: middle; }
-        .badge.gpu { background: rgba(0,255,100,0.2); color: #0f6; }
-        .badge.gl { background: rgba(255,200,0,0.2); color: #fc0; }
-        .dim { color: #555; font-size: 10px; margin-top: 8px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #07070f;
+            color: #c8c8d4;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            min-height: 100vh;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 24px 48px;
+            text-align: center;
+        }
+        .hero-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border: 1px solid rgba(0, 255, 200, 0.3);
+            border-radius: 100px;
+            font-size: 12px;
+            color: #0fc;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: clamp(32px, 6vw, 56px);
+            font-weight: 700;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #0ff 0%, #0f6 40%, #0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        .subtitle {
+            font-size: clamp(14px, 2.5vw, 18px);
+            color: #888;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 48px;
+        }
+        .cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .cta-primary {
+            background: linear-gradient(135deg, rgba(0,255,200,0.15), rgba(0,200,255,0.15));
+            border: 1px solid rgba(0,255,200,0.4);
+            color: #0fc;
+        }
+        .cta-primary:hover { background: rgba(0,255,200,0.2); border-color: rgba(0,255,200,0.6); }
+        .cta-secondary {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #aaa;
+        }
+        .cta-secondary:hover { background: rgba(255,255,255,0.08); color: #ddd; }
+
+        .code-block {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 24px 28px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            color: #b8b8c8;
+            text-align: left;
+            max-width: 520px;
+            width: 100%;
+            margin-bottom: 64px;
+            line-height: 1.7;
+        }
+        .code-block .kw { color: #c792ea; }
+        .code-block .fn { color: #82aaff; }
+        .code-block .str { color: #c3e88d; }
+        .code-block .cmt { color: #546e7a; }
+        .code-block .num { color: #f78c6c; }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            max-width: 960px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 24px 64px;
+        }
+        .feature {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .feature h3 {
+            font-size: 15px;
+            color: #e0e0e8;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .feature p {
+            font-size: 13px;
+            color: #777;
+            line-height: 1.5;
+        }
+        .feature .tag {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        .tag-core { background: rgba(0,255,255,0.1); color: #0ff; }
+        .tag-new { background: rgba(0,255,100,0.1); color: #0f6; }
+
+        .links {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 0 24px 48px;
+        }
+        .links a {
+            display: block;
+            padding: 14px 24px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            color: #999;
+            text-decoration: none;
+            font-size: 13px;
+            min-width: 340px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .links a:hover { background: rgba(255,255,255,0.04); color: #ccc; border-color: rgba(255,255,255,0.15); }
+        .links .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+            letter-spacing: 1px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .badge-gpu { background: rgba(0,255,100,0.15); color: #0f6; }
+        .badge-gl { background: rgba(255,200,0,0.15); color: #fc0; }
+
+        footer {
+            text-align: center;
+            padding: 32px 24px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 12px;
+            color: #444;
+        }
+        footer a { color: #666; text-decoration: none; }
+        footer a:hover { color: #999; }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0s !important; transition-duration: 0s !important; }
+        }
     </style>
 </head>
 <body>
-    <h1>VIB3+ CORE</h1>
-    <a class="primary" href="docs/webgpu-live.html"><span class="badge gpu">WebGPU</span> Live 4D Visualization Engine</a>
-    <a href="docs/index.html">Gallery &mdash; Algorithmic Avant-Garde</a>
-    <a href="docs/test-hub.html">Test Hub &mdash; GPU Diagnostics + All Visualizations</a>
-    <a href="docs/vib3-exports/index.html">Shader Exports &mdash; Real WebGL Renders</a>
-    <p class="dim">Auto-redirecting to WebGPU live in 3s...</p>
+    <section class="hero">
+        <span class="hero-badge">v2.0.0</span>
+        <h1>VIB3+ CORE</h1>
+        <p class="subtitle">
+            A 4D visualization engine with 24 geometry variants, 6D rotation,
+            three rendering systems, and integrations for React, Vue, Svelte,
+            Three.js, Figma, TouchDesigner, and OBS.
+        </p>
+
+        <div class="cta-row">
+            <a class="cta cta-primary" href="docs/webgpu-live.html">Launch Live Demo</a>
+            <a class="cta cta-secondary" href="https://github.com/Domusgpt/Vib3-CORE-Documented01-">GitHub</a>
+        </div>
+
+        <div class="code-block">
+            <span class="cmt">// npm install @vib3/sdk</span><br>
+            <span class="kw">import</span> { VIB3Engine } <span class="kw">from</span> <span class="str">'@vib3/sdk/core'</span>;<br><br>
+            <span class="kw">const</span> engine = <span class="kw">new</span> <span class="fn">VIB3Engine</span>();<br>
+            <span class="kw">await</span> engine.<span class="fn">initialize</span>();<br>
+            <span class="kw">await</span> engine.<span class="fn">switchSystem</span>(<span class="str">'quantum'</span>);<br>
+            engine.<span class="fn">setParameter</span>(<span class="str">'geometry'</span>, <span class="num">10</span>);<br>
+            engine.<span class="fn">setParameter</span>(<span class="str">'rot4dXW'</span>, <span class="num">1.57</span>);
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="feature">
+            <span class="tag tag-core">CORE</span>
+            <h3>3 Visualization Systems</h3>
+            <p>Quantum lattices, Faceted geometric patterns, and Holographic 5-layer glassmorphic effects. Each with 24 geometry variants.</p>
+        </div>
+        <div class="feature">
+            <span class="tag tag-core">CORE</span>
+            <h3>6D Rotation</h3>
+            <p>Full control over 3 spatial planes (XY/XZ/YZ) and 3 hyperspace planes (XW/YW/ZW) via Clifford algebra rotors.</p>
+        </div>
+        <div class="feature">
+            <span class="tag tag-core">CORE</span>
+            <h3>Dual GPU Backends</h3>
+            <p>WebGL 2.0 primary with automatic WebGPU fallback. C++ WASM math core with JavaScript fallback.</p>
+        </div>
+        <div class="feature">
+            <span class="tag tag-new">v2.0</span>
+            <h3>Universal Spatial Input</h3>
+            <p>8 input sources (tilt, gyroscope, gamepad, mouse, MIDI, audio) mapped through 6 profiles (card tilt, VJ, XR).</p>
+        </div>
+        <div class="feature">
+            <span class="tag tag-new">v2.0</span>
+            <h3>Creative Tooling</h3>
+            <p>22 color presets, 14 easing transitions, 14 post-processing effects, keyframe timeline with BPM sync.</p>
+        </div>
+        <div class="feature">
+            <span class="tag tag-new">v2.0</span>
+            <h3>Platform Integrations</h3>
+            <p>React, Vue, Svelte components. Figma plugin. Three.js ShaderMaterial. TouchDesigner GLSL export. OBS mode.</p>
+        </div>
+    </section>
+
+    <section class="links">
+        <a href="docs/webgpu-live.html"><span class="badge badge-gpu">WebGPU</span> Live 4D Visualization Engine</a>
+        <a href="docs/index.html">Gallery — Algorithmic Avant-Garde</a>
+        <a href="docs/test-hub.html">Test Hub — GPU Diagnostics + All Visualizations</a>
+        <a href="docs/vib3-exports/index.html"><span class="badge badge-gl">WebGL</span> Shader Exports — Real Renders</a>
+    </section>
+
+    <footer>
+        <p>&copy; 2025-2026 <a href="https://parserator.com">Clear Seas Solutions LLC</a> / Paul Phillips &middot; MIT License</p>
+    </footer>
 </body>
 </html>

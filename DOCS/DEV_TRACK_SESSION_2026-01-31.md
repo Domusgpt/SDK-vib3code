@@ -1,110 +1,155 @@
 # Dev Track Session — January 31, 2026
 
 **Branch**: `claude/review-project-status-BwVbr`
-**Phase**: E-1 (Pre-Launch Blockers)
+**Phase**: E-1 through E-6 (Full Master Plan Execution)
 **Ref**: `DOCS/MASTER_PLAN_2026-01-31.md`
 
 ---
 
 ## Session Goals
 
-Execute Phase E-1 from the Master Plan: resolve all pre-launch blockers so the SDK can be published to npm.
+1. Full codebase audit against Phase 5 platform hardening plan
+2. Create Master Plan consolidating all findings
+3. Execute Phase E-1 (Pre-Launch Blockers)
+4. Execute Phases E-2 through E-6 (remaining master plan items)
 
-## Work Completed
+---
 
-### 1. Full Codebase Audit
-- Audited all 570+ files, 95K+ lines against Phase 5 plan from previous session
-- Identified 14 broken package.json exports (quaternion, pose, product/telemetry, sensors, localization modules that don't exist)
-- Found `types/adaptive-sdk.d.ts` referenced but missing
-- Confirmed no LICENSE file, no CHANGELOG, no `npm run dev` alias
-- Documented everything in `DOCS/MASTER_PLAN_2026-01-31.md` (570 lines, 43 action items across 6 phases)
+## Commit 1: Master Plan (`2c88aa7`)
 
-### 2. Master Plan Document Created
-- `DOCS/MASTER_PLAN_2026-01-31.md` — consolidates:
-  - Phase 5 platform hardening plan (screenshots from previous session)
-  - Full audit findings with per-item status (DONE / NOT DONE / PARTIALLY DONE)
-  - 8 additional issues found during audit
-  - 43 total action items in 6 prioritized phases
-  - File reference and new directory plan
+- Created `DOCS/MASTER_PLAN_2026-01-31.md` — 570-line master plan with 43 action items across 6 phases
+- Full codebase audit: 570+ files, 95K+ lines
+- Identified 14 broken exports, missing LICENSE, missing CHANGELOG, missing TypeScript barrel
 
-### 3. LICENSE File Added
-- Created root `LICENSE` (MIT License)
-- Owner: Clear Seas Solutions LLC / Paul Phillips
-- Updated `package.json` license field from attestation reference to `"MIT"`
-- Rationale: MIT unblocks adoption; companies and open-source projects won't touch code without a clear license
+## Commit 2: Phase E-1 Pre-Launch Blockers (`913419f`)
 
-### 4. Broken Package.json Exports Fixed
-- Removed 14 export paths that referenced non-existent files:
-  - `./quaternion` — `src/ui/adaptive/renderers/ShaderQuaternionSynchronizer.js` (missing)
-  - `./sensors` — `src/ui/adaptive/SensoryInputBridge.js` (missing)
-  - `./core/quaternion` — `src/core/quaternion/index.ts` (missing)
-  - `./core/quaternion/poseSchema` — `src/core/quaternion/poseSchema.ts` (missing)
-  - `./core/quaternion/registry` — `src/core/quaternion/registry.ts` (missing)
-  - `./ui/adaptive/renderers/webgpu` — `src/ui/adaptive/renderers/webgpu/index.ts` (missing)
-  - `./ui/adaptive/renderers/pose-registry` — (missing)
-  - `./ui/adaptive/renderers/pose-monitor` — (missing)
-  - `./ui/adaptive/renderers/pose-confidence` — (missing)
-  - `./ui/adaptive/localization` — `src/ui/adaptive/localization/index.ts` (missing)
-  - `./product/telemetry/facade` — `src/product/telemetry/createTelemetryFacade.js` (missing)
-  - `./product/telemetry/reference-providers` — (missing)
-- Updated root `.` export types path from missing `adaptive-sdk.d.ts` to valid `./types/core/VIB3Engine.d.ts`
-- Updated root-level `"types"` field to match
-- All remaining 70+ exports verified to point to real files
+| # | Item | File(s) |
+|---|------|---------|
+| 1 | MIT LICENSE added | `LICENSE` |
+| 2 | 14 broken exports removed | `package.json` — quaternion, pose, sensors, localization, product/telemetry |
+| 3 | TypeScript barrel created | `types/adaptive-sdk.d.ts` |
+| 4 | `npm run dev` alias | `package.json` scripts |
+| 5 | `prepublishOnly` script | `package.json` scripts |
+| 6 | CI publish workflow | `.github/workflows/publish.yml` |
+| 7 | CHANGELOG.md | `CHANGELOG.md` — v1.0.0 + v2.0.0 |
 
-### 5. TypeScript Barrel File Created
-- Created `types/adaptive-sdk.d.ts` as barrel re-export
-- Re-exports from `./core/VIB3Engine`, `./reactivity/index`, `./render/index`
-- These are the 3 type modules that actually exist (11 `.d.ts` files, 2,527 lines)
-- v2.0.0 modules (creative, integrations, advanced, spatial) noted as needing types in future
+## Commit 3: Phases E-2 through E-6 (this commit)
 
-### 6. npm run dev Alias Added
-- Added `"dev": "vite --open"` to package.json scripts
-- Most developers expect `npm run dev` — the `:web` suffix was unnecessary friction
+### E-2: Launch
 
-### 7. prepublishOnly Script Added
-- Added `"prepublishOnly": "npm test && npm run build:web"` to package.json scripts
-- Ensures tests pass and build succeeds before any npm publish
-- Standard npm practice for published packages
+| Item | File(s) | Notes |
+|------|---------|-------|
+| Landing page | `index.html` | Replaced 3-second meta-refresh with proper landing page: hero, code snippet, feature cards, nav links. Includes `prefers-reduced-motion`. |
+| URL state support | `docs/url-state.js` | Reads/writes params to URL query string. Auto-applies on load. Shareable links. |
+| README update | `README.md` | License badge → MIT. Added Quick Start with `npx @vib3/sdk init`. Added `build:lib`, `storybook`, `verify:shaders` to dev commands. Updated license section. |
 
-### 8. CI Publish Workflow Created
-- Created `.github/workflows/publish.yml`
-- Triggers on Git tag push matching `v*` pattern (e.g., `v2.0.0`)
-- Flow: checkout → setup Node 20 → pnpm install → test → build → publish
-- Uses `NPM_TOKEN` secret (must be configured in GitHub repo settings)
-- Publishes with `--access public` for scoped package
-- Creates GitHub Release automatically from the tag
+### E-3: Adoption Friction
 
-### 9. CHANGELOG.md Created
-- Covers v1.0.0 and v2.0.0 releases
-- v2.0.0 section documents all 18 new files, 15,512 lines:
-  - SpatialInputSystem (8 input sources, 6 profiles)
-  - Creative tooling (color presets, transitions, post-processing, timeline)
-  - Platform integrations (React, Vue, Svelte, Figma, Three.js, TouchDesigner, OBS)
-  - Advanced features (WebXR, WebGPU Compute, MIDI, AI Presets, OffscreenWorker)
-  - Shader sync verification tool
-- Documents all bug fixes (Quantum color, Faceted saturation/audio, clickIntensity)
-- v1.0.0 section covers core engine, 3 systems, WASM core, render backends, geometry, export, MCP, telemetry, testing, CI/CD
+| Item | File(s) | Notes |
+|------|---------|-------|
+| CLI `init` command | `src/cli/index.js` | `vib3 init my-app` scaffolds package.json + index.html + main.js with VIB3Engine wired up. |
+| React example | `examples/react/index.jsx` + `README.md` | System switching, geometry, hue controls via hooks. |
+| Vanilla JS example | `examples/vanilla/index.html` | Minimal HTML+JS with controls. |
+| Three.js example | `examples/threejs/index.html` | VIB3+ shader on a rotating Three.js cube, imports Three from CDN. |
+| CDN/UMD build | `vite.config.js` | Added `--mode lib` path: produces `dist/lib/vib3.es.js` + `vib3.umd.js`. Added `build:lib` script. |
+| Storybook config | `.storybook/main.js`, `.storybook/preview.js`, `stories/VIB3Engine.stories.js` | html-vite Storybook with dark background, system/geometry/hue/speed/chaos controls. |
 
-## Files Changed
+### E-4: Quality & Confidence
 
-| File | Action | Description |
-|------|--------|-------------|
-| `DOCS/MASTER_PLAN_2026-01-31.md` | Created | 570-line master plan with full audit |
-| `DOCS/DEV_TRACK_SESSION_2026-01-31.md` | Created | This session log |
-| `LICENSE` | Created | MIT License |
-| `CHANGELOG.md` | Created | v1.0.0 and v2.0.0 release notes |
-| `types/adaptive-sdk.d.ts` | Created | TypeScript barrel re-export |
-| `.github/workflows/publish.yml` | Created | Automated npm publish on tag |
-| `package.json` | Modified | Fixed exports, added scripts, updated license |
+| Item | File(s) | Notes |
+|------|---------|-------|
+| SpatialInputSystem destroy() | — | Already exists (lines 1726-1752). Audit corrected. |
+| Cross-browser Playwright | `playwright.config.js` | Added Firefox and WebKit (Safari) projects alongside Chromium. |
+| Accessibility CSS | `styles/accessibility.css` | `prefers-reduced-motion`, `focus-visible` outlines, `forced-colors` support, skip-to-content link. |
 
-## Phase E-1 Status: COMPLETE
+### E-5: Scale & Distribution
 
-All 7 pre-launch blocker items resolved. Next phase is E-2 (Launch):
-- npm publish `@vib3/sdk` v2.0.0
-- Replace `index.html` with proper landing page
-- Add URL state to demo pages
-- Record demo videos/GIFs
-- Update README with media
+| Item | File(s) | Notes |
+|------|---------|-------|
+| WASM build CI | `.github/workflows/wasm-build.yml` | Triggers on cpp/ changes. Uses Emscripten 3.1.51. Uploads WASM artifacts. |
+| OBS setup guide | `DOCS/OBS_SETUP_GUIDE.md` | 5-step visual guide: start VIB3+, add browser source, enable transparency, position overlay, control parameters. Includes troubleshooting table. |
+
+### E-6: Ecosystem & Community
+
+| Item | File(s) | Notes |
+|------|---------|-------|
+| Bug report template | `.github/ISSUE_TEMPLATE/bug_report.md` | System, browser, OS fields. Repro steps. |
+| Feature request template | `.github/ISSUE_TEMPLATE/feature_request.md` | Area checkboxes for all subsystems. |
+| CONTRIBUTING.md | `CONTRIBUTING.md` | Getting started, dev commands, PR process, code style. |
+| SECURITY.md | `SECURITY.md` | Responsible disclosure to Paul@clearseassolutions.com. Scope covers XSS, GPU exhaustion, WASM safety, MCP validation. |
+| Opt-in error reporter | `src/core/ErrorReporter.js` | `window.onerror` + `unhandledrejection` capture. OFF by default. Rate-limited (50/session). Anonymized. Supports custom callback or HTTP POST. |
+
+---
+
+## Files Changed (All 3 Commits Combined)
+
+### Created (25 files)
+| File | Purpose |
+|------|---------|
+| `DOCS/MASTER_PLAN_2026-01-31.md` | Master plan with 43 items |
+| `DOCS/DEV_TRACK_SESSION_2026-01-31.md` | This session log |
+| `DOCS/OBS_SETUP_GUIDE.md` | OBS integration guide |
+| `LICENSE` | MIT License |
+| `CHANGELOG.md` | v1.0.0 + v2.0.0 release notes |
+| `CONTRIBUTING.md` | Contributor guide |
+| `SECURITY.md` | Security policy |
+| `types/adaptive-sdk.d.ts` | TypeScript barrel re-export |
+| `.github/workflows/publish.yml` | npm publish on Git tag |
+| `.github/workflows/wasm-build.yml` | WASM build CI |
+| `.github/ISSUE_TEMPLATE/bug_report.md` | Bug report template |
+| `.github/ISSUE_TEMPLATE/feature_request.md` | Feature request template |
+| `.storybook/main.js` | Storybook config |
+| `.storybook/preview.js` | Storybook preview |
+| `stories/VIB3Engine.stories.js` | Engine stories |
+| `docs/url-state.js` | URL state manager |
+| `styles/accessibility.css` | Accessibility styles |
+| `src/core/ErrorReporter.js` | Opt-in error telemetry |
+| `examples/react/index.jsx` | React example |
+| `examples/react/README.md` | React example docs |
+| `examples/vanilla/index.html` | Vanilla JS example |
+| `examples/threejs/index.html` | Three.js example |
+
+### Modified (5 files)
+| File | Changes |
+|------|---------|
+| `package.json` | Removed 14 broken exports, license → MIT, added dev/prepublishOnly/build:lib scripts, added LICENSE+CHANGELOG to files |
+| `index.html` | Replaced redirect with landing page |
+| `vite.config.js` | Added library build mode (UMD + ESM) |
+| `playwright.config.js` | Added Firefox + WebKit browser projects |
+| `src/cli/index.js` | Added `init` command for project scaffolding |
+| `README.md` | License badge, Quick Start, dev commands, license section |
+
+---
+
+## Items Requiring Manual / External Action
+
+These items from the master plan cannot be completed in code and need your action:
+
+| Item | Action Required |
+|------|-----------------|
+| npm publish | Configure `NPM_TOKEN` in GitHub repo secrets, push `v2.0.0` tag |
+| Demo videos/GIFs | Screen record 30s of each system, add to `assets/` and README |
+| Figma Community publish | Generate plugin bundle from `FigmaPlugin.js`, publish via Figma Dev Mode |
+| GitHub Discussions | Enable in repo Settings → Features → Discussions |
+| GitHub Projects board | Create in repo → Projects tab |
+| Discord community | Create server externally |
+| Blog posts | Content creation |
+| TypeScript types for v2.0.0 modules | Large effort — 18 `.d.ts` files needed for creative/integrations/advanced |
+| Unit tests for v2.0.0 modules | Large effort — 18 test files needed |
+
+---
+
+## Phase Status
+
+| Phase | Items | Done | Remaining |
+|-------|-------|------|-----------|
+| E-1: Pre-Launch Blockers | 7 | 7 | 0 |
+| E-2: Launch | 5 | 3 | 2 (videos, full demo polish) |
+| E-3: Adoption | 5 | 5 | 0 (Vue/Svelte examples could be added) |
+| E-4: Quality | 9 | 3 | 6 (unit tests, mobile, memory leak, benchmarks) |
+| E-5: Scale | 6 | 2 | 4 (WebGPU primary, canary builds, Figma, Releases) |
+| E-6: Ecosystem | 11 | 4 | 7 (gallery app, tutorial, API docs, community) |
+| **Total** | **43** | **24** | **19** |
 
 ---
 
