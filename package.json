@@ -357,7 +357,7 @@
     "@types/node": "^20.14.9",
     "@vitest/coverage-v8": "^1.6.1",
     "eslint": "^9.6.0",
-    "happy-dom": "^20.3.7",
+    "happy-dom": "^20.4.0",
     "playwright": "^1.58.0",
     "puppeteer-core": "^24.36.0",
     "storybook": "^8.1.6",
