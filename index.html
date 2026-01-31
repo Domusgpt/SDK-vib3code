@@ -24,7 +24,7 @@
 
         /* ─── Scroll Progress Bar ─── */
         .scroll-progress {
-            position: fixed; top: 0; left: 0; height: 2px; z-index: 9999;
+            position: fixed; top: 0; left: 0; width: 100%; height: 2px; z-index: 9999;
             background: linear-gradient(90deg, #0ff, #0f6, #0ff);
             transform-origin: left; transform: scaleX(0);
             will-change: transform;
@@ -525,7 +525,6 @@
          ════════════════════════════════════════════════════════ -->
     <script type="module">
         // ── Import VIB3 Systems Directly (bypass CanvasManager for multi-instance) ──
-        import { FacetedSystem } from './src/faceted/FacetedSystem.js';
 
         gsap.registerPlugin(ScrollTrigger);
 
