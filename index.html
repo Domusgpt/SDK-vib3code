@@ -683,6 +683,7 @@
 
         /* ═══════════════════════════════════════════
            ADAPTER: Quantum (1 GPU context)
+           FIX: setActive(true) + direct mouse/touch wiring
            ═══════════════════════════════════════════ */
         class Vib3Quantum {
             constructor(canvasId, opts = {}) {
@@ -698,11 +699,32 @@
                 };
                 try {
                     this.engine = new QuantumEngine({ canvas, autoStart: true });
+                    // CRITICAL: Engine defaults isActive=false, render loop checks it
+                    this.engine.setActive(true);
                     this.engine.updateParameters(this.params);
                 } catch (e) {
                     console.warn('Quantum init failed', e);
                     this.active = false; return;
                 }
+                // Wire mouse/touch interaction directly (engine skips in canvasOverride mode)
+                this._onMouse = (e) => {
+                    const r = canvas.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width;
+                    const y = (e.clientY - r.top) / r.height;
+                    this.engine.updateInteraction(x, y, 0.8);
+                };
+                this._onTouch = (e) => {
+                    if (!e.touches.length) return;
+                    const t = e.touches[0];
+                    const r = canvas.getBoundingClientRect();
+                    const x = (t.clientX - r.left) / r.width;
+                    const y = (t.clientY - r.top) / r.height;
+                    this.engine.updateInteraction(x, y, 0.9);
+                };
+                this._onLeave = () => { this.engine.updateInteraction(0.5, 0.5, 0); };
+                canvas.addEventListener('mousemove', this._onMouse);
+                canvas.addEventListener('touchmove', this._onTouch, { passive: true });
+                canvas.addEventListener('mouseleave', this._onLeave);
                 this._resizeObs = new ResizeObserver(() => {
                     const p = canvas.parentElement;
                     if (!p) return;
@@ -716,6 +738,9 @@
             render() { if (this.active) this.engine?.updateParameters(this.params); }
             dispose() {
                 this.active = false;
+                this.canvas?.removeEventListener('mousemove', this._onMouse);
+                this.canvas?.removeEventListener('touchmove', this._onTouch);
+                this.canvas?.removeEventListener('mouseleave', this._onLeave);
                 this._resizeObs?.disconnect();
                 try { this.engine?.dispose(); } catch (e) {}
             }
@@ -723,6 +748,7 @@
 
         /* ═══════════════════════════════════════════
            ADAPTER: Holographic (1 GPU context in single-canvas mode)
+           FIX: setActive(true) + direct mouse/touch wiring
            ═══════════════════════════════════════════ */
         class Vib3Holographic {
             constructor(canvasId, opts = {}) {
@@ -738,6 +764,8 @@
                 };
                 try {
                     this.system = new RealHolographicSystem({ canvas });
+                    // CRITICAL: System defaults isActive=false, render loop checks it
+                    this.system.setActive(true);
                     for (const [k, v] of Object.entries(this.params)) {
                         this.system.updateParameter(k, v);
                     }
@@ -745,6 +773,33 @@
                     console.warn('Holographic init failed', e);
                     this.active = false; return;
                 }
+                // Wire mouse/touch for holographic moiré interaction
+                this._onMouse = (e) => {
+                    const r = canvas.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width;
+                    const y = (e.clientY - r.top) / r.height;
+                    if (this.system.visualizers) {
+                        this.system.visualizers.forEach(v => v.updateInteraction?.(x, y, 0.7));
+                    }
+                };
+                this._onTouch = (e) => {
+                    if (!e.touches.length) return;
+                    const t = e.touches[0];
+                    const r = canvas.getBoundingClientRect();
+                    const x = (t.clientX - r.left) / r.width;
+                    const y = (t.clientY - r.top) / r.height;
+                    if (this.system.visualizers) {
+                        this.system.visualizers.forEach(v => v.updateInteraction?.(x, y, 0.85));
+                    }
+                };
+                this._onLeave = () => {
+                    if (this.system.visualizers) {
+                        this.system.visualizers.forEach(v => v.updateInteraction?.(0.5, 0.5, 0));
+                    }
+                };
+                canvas.addEventListener('mousemove', this._onMouse);
+                canvas.addEventListener('touchmove', this._onTouch, { passive: true });
+                canvas.addEventListener('mouseleave', this._onLeave);
                 this._resizeObs = new ResizeObserver(() => {
                     const p = canvas.parentElement;
                     if (!p) return;
@@ -764,6 +819,9 @@
             }
             dispose() {
                 this.active = false;
+                this.canvas?.removeEventListener('mousemove', this._onMouse);
+                this.canvas?.removeEventListener('touchmove', this._onTouch);
+                this.canvas?.removeEventListener('mouseleave', this._onLeave);
                 this._resizeObs?.disconnect();
                 try { this.system?.dispose(); } catch (e) {}
             }
@@ -771,6 +829,7 @@
 
         /* ═══════════════════════════════════════════
            ADAPTER: Faceted (1 GPU context)
+           FacetedSystem.start() already sets isActive=true
            ═══════════════════════════════════════════ */
         class Vib3Faceted {
             constructor(canvasId, opts = {}) {
@@ -789,7 +848,7 @@
                     const ok = this.faceted.initialize(canvas);
                     if (!ok) { this.active = false; return; }
                     this.faceted.updateParameters(this.params);
-                    this.faceted.start();
+                    this.faceted.start(); // start() sets isActive=true internally
                 } catch (e) {
                     console.warn('Faceted init failed', e);
                     this.active = false; return;
@@ -894,20 +953,23 @@
         const pool = new ContextPool(2);
         const c2d = new Map();
 
-        // Configuration
+        // Configuration — each system opens with its signature aesthetic
         const heroOpts = {
-            geometry: 3, hue: 220, gridDensity: 32, speed: 0.5,
-            intensity: 0.6, chaos: 0.1, morphFactor: 0.9,
-            rot4dXW: 0.2, dimension: 3.8, saturation: 0.85
+            geometry: 3, hue: 210, gridDensity: 28, speed: 0.4,
+            intensity: 0.75, chaos: 0.05, morphFactor: 0.6,
+            rot4dXW: 0.15, rot4dYW: 0.08, dimension: 3.6, saturation: 0.9
         };
         const trinityOpts = [
-            { geometry: 2, hue: 200, gridDensity: 28, speed: 0.7, intensity: 0.75, chaos: 0.15, morphFactor: 0.7, dimension: 3.5 },
-            { geometry: 4, hue: 320, gridDensity: 20, speed: 0.6, intensity: 0.8, chaos: 0.2, morphFactor: 0.6, dimension: 3.6 },
-            { geometry: 1, hue: 60, gridDensity: 24, speed: 0.8, intensity: 0.7, chaos: 0.1, morphFactor: 1.0, dimension: 3.4 },
+            // Quantum: cool lattice, torus geometry, medium density
+            { geometry: 3, hue: 195, gridDensity: 24, speed: 0.5, intensity: 0.8, chaos: 0.08, morphFactor: 0.5, dimension: 3.5, saturation: 0.85 },
+            // Holographic: warm spectral, Klein bottle, lower density for moiré
+            { geometry: 4, hue: 310, gridDensity: 18, speed: 0.4, intensity: 0.85, chaos: 0.12, morphFactor: 0.4, dimension: 3.7, saturation: 0.9 },
+            // Faceted: golden precise, hypercube, high density for lattice clarity
+            { geometry: 1, hue: 45, gridDensity: 32, speed: 0.6, intensity: 0.75, chaos: 0.03, morphFactor: 0.8, dimension: 3.4, saturation: 0.8 },
         ];
         const energyCardOpts = {
-            geometry: 7, hue: 180, gridDensity: 30, speed: 0.8,
-            intensity: 0.6, chaos: 0.1, morphFactor: 0.8, dimension: 3.5
+            geometry: 7, hue: 180, gridDensity: 26, speed: 0.6,
+            intensity: 0.65, chaos: 0.08, morphFactor: 0.7, dimension: 3.5, saturation: 0.85
         };
 
         const triFactories = [Vib3Quantum, Vib3Holographic, Vib3Faceted];
@@ -1042,7 +1104,8 @@
             tl.to('#heroScroll', { opacity: 1, duration: 0.6 }, '-=0.2');
         }
 
-        // Hero scroll — dramatic parameter sweep
+        // Hero scroll — "Emergence": a point unfolds into the fourth dimension
+        // Story: stillness → first rotation → dimensional awakening → full hyperspace
         ScrollTrigger.create({
             trigger: '.hero',
             start: 'top top', end: 'bottom top',
@@ -1051,16 +1114,35 @@
                 const p = self.progress;
                 const hero = pool.get('hero');
                 if (!hero) return;
+
+                // Ease: slow start, accelerating revelation
+                const ease = p * p * (3 - 2 * p); // smoothstep
+                const late = Math.max(0, (p - 0.4) / 0.6); // delayed ramp
+
                 hero.setParams({
-                    rot4dXW: p * Math.PI * 1.5,
-                    rot4dYW: p * Math.PI * 0.8,
-                    rot4dZW: p * 0.5,
-                    gridDensity: 32 + p * 30,
-                    hue: 220 + p * 100,
-                    chaos: 0.1 + p * 0.5,
-                    intensity: 0.6 + p * 0.3,
-                    morphFactor: 0.9 + p * 0.8,
-                    geometry: Math.floor(p * 6),
+                    // Act 1 (0-30%): First 3D rotation awakens — gentle XY spin
+                    rot4dXY: ease * 0.4,
+                    rot4dXZ: ease * 0.25,
+                    // Act 2 (30-60%): Fourth dimension opens — XW plane rotation
+                    rot4dXW: late * Math.PI * 1.2,
+                    rot4dYW: late * Math.PI * 0.6,
+                    // Act 3 (60-100%): Full hyperspace — all planes active
+                    rot4dZW: Math.max(0, (p - 0.6) / 0.4) * Math.PI * 0.8,
+                    // Geometry evolves: torus → sphere → Klein bottle
+                    geometry: p < 0.3 ? 3 : p < 0.65 ? 2 : 4,
+                    // Density grows as structure complexifies
+                    gridDensity: 28 + ease * 32,
+                    // Color shifts from deep ocean to electric cyan
+                    hue: 210 + ease * 60 + Math.sin(p * Math.PI * 3) * 15,
+                    // Chaos: calm → turbulent at the boundary
+                    chaos: 0.05 + late * 0.35,
+                    // Intensity builds toward climax
+                    intensity: 0.75 + ease * 0.2,
+                    // Morph: rigid lattice → fluid waveform
+                    morphFactor: 0.6 + ease * 1.0,
+                    // Dimension: perspective narrows as we approach 4D
+                    dimension: 3.6 - ease * 0.4,
+                    saturation: 0.9 + late * 0.1,
                 });
             }
         });
@@ -1117,47 +1199,73 @@
                     swapTriSystem(newIdx);
                 }
 
-                // Drive shader parameters on active system
+                // Drive shader parameters — each system tells a unique mathematical story
                 const adapter = pool.get('trinity');
                 if (!adapter) return;
 
                 const localP = newIdx === 0 ? p / 0.33
                              : newIdx === 1 ? (p - 0.33) / 0.33
                              : (p - 0.66) / 0.34;
+                const smooth = localP * localP * (3 - 2 * localP); // smoothstep
+                const pulse = Math.sin(localP * Math.PI); // bell curve 0→1→0
 
                 if (triCurrent === 0) {
-                    // Quantum: geometry evolves, rotation sweeps, density rises
+                    // ── QUANTUM: "Lattice Resonance" ──
+                    // A torus unfolds into complex interference patterns.
+                    // Slow rotation builds, density rises like crystallization,
+                    // color shifts from deep ocean to phosphorescent cyan.
+                    const breathe = Math.sin(localP * Math.PI * 4) * 0.15;
                     adapter.setParams({
-                        geometry: Math.floor(localP * 7),
-                        rot4dXW: localP * Math.PI * 2,
-                        rot4dYW: localP * Math.PI,
-                        gridDensity: 20 + localP * 40,
-                        hue: 200 + localP * 80,
-                        chaos: 0.1 + localP * 0.3,
-                        morphFactor: 0.5 + localP * 1.0,
+                        geometry: localP < 0.5 ? 3 : localP < 0.8 ? 2 : 6, // torus → sphere → wave
+                        rot4dXW: smooth * Math.PI * 1.5,
+                        rot4dYW: smooth * Math.PI * 0.7,
+                        rot4dXY: Math.sin(localP * Math.PI * 2) * 0.3,
+                        gridDensity: 24 + smooth * 36 + breathe * 10,
+                        hue: 195 + smooth * 45 + Math.sin(localP * Math.PI * 6) * 20,
+                        chaos: 0.08 + pulse * 0.25,
+                        morphFactor: 0.5 + smooth * 0.9,
+                        intensity: 0.8 + pulse * 0.15,
+                        dimension: 3.5 - smooth * 0.3,
+                        saturation: 0.85 + pulse * 0.12,
                     });
                 } else if (triCurrent === 1) {
-                    // Holographic: warm colors, dramatic 4D spins
+                    // ── HOLOGRAPHIC: "Spectral Folding" ──
+                    // Klein bottle geometry warps through Hypersphere core.
+                    // Color sweeps warm → cool → ultraviolet. Moiré interference
+                    // intensifies as the projection distance contracts.
+                    const warp = Math.sin(localP * Math.PI * 3) * 0.2;
                     adapter.setParams({
-                        geometry: 8 + Math.floor(localP * 7),
-                        rot4dXW: localP * Math.PI * 3,
-                        rot4dZW: localP * Math.PI * 1.5,
-                        gridDensity: 16 + localP * 30,
-                        hue: 300 + localP * 60,
-                        chaos: 0.15 + localP * 0.35,
-                        morphFactor: 0.6 + localP * 0.8,
-                        intensity: 0.7 + localP * 0.25,
+                        geometry: 8 + (localP < 0.4 ? 4 : localP < 0.7 ? 3 : 5), // HS-Klein → HS-Torus → HS-Fractal
+                        rot4dXW: smooth * Math.PI * 2.5,
+                        rot4dZW: smooth * Math.PI * 1.2,
+                        rot4dYZ: Math.sin(localP * Math.PI * 2) * 0.5,
+                        gridDensity: 18 + pulse * 22,
+                        hue: 310 - smooth * 80 + Math.sin(localP * Math.PI * 5) * 30, // magenta → cyan → violet
+                        chaos: 0.12 + smooth * 0.3 + warp,
+                        morphFactor: 0.4 + pulse * 0.8,
+                        intensity: 0.85 + pulse * 0.12,
+                        dimension: 3.7 - smooth * 0.5, // dramatic perspective squeeze
+                        saturation: 0.9 + pulse * 0.1,
                     });
                 } else {
-                    // Faceted: clean precision, geometry converges
+                    // ── FACETED: "Crystalline Convergence" ──
+                    // Hypertetrahedron core — the pentatope.
+                    // Starts as clean hypercube lattice, evolves through crystal
+                    // geometries with golden precision. Minimal chaos, maximum structure.
+                    const facet = Math.sin(localP * Math.PI * 2) * 0.1;
                     adapter.setParams({
-                        geometry: 16 + Math.floor(localP * 7),
-                        rot4dXW: localP * Math.PI * 2.5,
-                        rot4dYW: localP * Math.PI * 0.5,
-                        gridDensity: 18 + localP * 35,
-                        hue: 40 + localP * 120,
-                        chaos: 0.05 + localP * 0.2,
-                        morphFactor: 0.8 + localP * 0.7,
+                        geometry: 16 + (localP < 0.3 ? 1 : localP < 0.6 ? 7 : localP < 0.85 ? 0 : 5),
+                        // HT-Cube → HT-Crystal → HT-Tetra → HT-Fractal
+                        rot4dXW: smooth * Math.PI * 2.0,
+                        rot4dYW: smooth * Math.PI * 0.4,
+                        rot4dXZ: Math.sin(localP * Math.PI * 1.5) * 0.4,
+                        gridDensity: 32 + smooth * 28 + facet * 8,
+                        hue: 45 + smooth * 75 + Math.sin(localP * Math.PI * 4) * 15, // gold → amber → copper
+                        chaos: 0.03 + pulse * 0.12, // stays clean
+                        morphFactor: 0.8 + smooth * 0.7,
+                        intensity: 0.75 + pulse * 0.2,
+                        dimension: 3.4 - smooth * 0.2,
+                        saturation: 0.8 + smooth * 0.15,
                     });
                 }
             }
