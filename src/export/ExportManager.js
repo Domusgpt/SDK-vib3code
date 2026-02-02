@@ -3,6 +3,8 @@
  * Handles all export and import functionality for configurations and media
  */
 import { PhillipsRenderer } from '../systems/PhillipsRenderer.js';
+import { JSOH } from './JSOH.js';
+import { PLASTIC_CONSTANT, getPlasticSamplingPoint } from '../math/Plastic.js';
 
 export class ExportManager {
     constructor(engine) {
@@ -55,6 +57,94 @@ export class ExportManager {
         const json = JSON.stringify(config, null, 2);
         this.downloadFile(json, 'vib34d-config.json', 'application/json');
         this.engine.statusManager.success('Configuration exported as JSON');
+    }
+
+    /**
+     * Export to Parserator (AI Agent Ready Format)
+     * Generates a "Canonical View" and JSOH metadata.
+     */
+    async exportToParserator() {
+        if (this.engine.statusManager) this.engine.statusManager.info('Generating Parserator Package...');
+
+        // 1. Generate Synthetic Plastic Cloud (Since we don't have a real point cloud source yet)
+        const pointCount = 5000;
+        const positions = new Float32Array(pointCount * 3);
+        const scales = new Float32Array(pointCount);
+        const colors = new Float32Array(pointCount * 3);
+
+        for (let i = 0; i < pointCount; i++) {
+            // Use Plastic Sampling for low-discrepancy distribution
+            const sample = getPlasticSamplingPoint(i);
+
+            // Map 0..1 to -1..1 spherical distribution approx
+            const theta = sample.x * Math.PI * 2;
+            const phi = Math.acos(2 * sample.y - 1);
+
+            const r = 1.0; // Unit sphere
+            positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            positions[i*3+2] = r * Math.cos(phi);
+
+            // Scale modulated by Plastic powers
+            // Power law distribution: 1/rho^k
+            scales[i] = 1.0 / Math.pow(PLASTIC_CONSTANT, (i % 5));
+
+            // Procedural Color
+            colors[i*3] = (Math.sin(theta) + 1) * 0.5;
+            colors[i*3+1] = (Math.cos(phi) + 1) * 0.5;
+            colors[i*3+2] = 0.8;
+        }
+
+        const splatData = { positions, scales, colors };
+
+        // 2. Render Canonical View
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const renderer = this.createPhillipsRenderer(canvas, { backgroundColor: [0,0,0,1] });
+
+        renderer.setData(splatData);
+
+        // Canonical Camera: Orthographic or Fixed Perspective looking at center
+        // Simple scale matrix to fit unit sphere in view
+        const viewProjection = new Float32Array([
+            0.8, 0, 0, 0,
+            0, 0.8, 0, 0,
+            0, 0, 0.5, 0,
+            0, 0, 0, 1
+        ]);
+
+        renderer.render(viewProjection);
+
+        // 3. Capture Image
+        const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        // Convert to Base64 for single-file JSON
+        const reader = new FileReader();
+        reader.readAsDataURL(imageBlob);
+
+        reader.onloadend = () => {
+            const base64Image = reader.result;
+
+            // 4. Generate JSOH
+            const jsoh = JSOH.generate(splatData, {
+                generatedBy: "PhillipsRenderer",
+                viewType: "Canonical"
+            });
+
+            // 5. Package
+            const pkg = {
+                parseratorVersion: "1.0",
+                image: base64Image,
+                structure: jsoh
+            };
+
+            const json = JSON.stringify(pkg, null, 2);
+            this.downloadFile(json, 'parserator-package.json', 'application/json');
+            if (this.engine.statusManager) this.engine.statusManager.success('Parserator Package Exported');
+
+            // Cleanup
+            renderer.destroy();
+        };
     }
     
     /**
