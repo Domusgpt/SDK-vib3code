@@ -2,6 +2,7 @@
  * VIB34D Export/Import Management System
  * Handles all export and import functionality for configurations and media
  */
+import { PhillipsRenderer } from '../systems/PhillipsRenderer.js';
 
 export class ExportManager {
     constructor(engine) {
@@ -576,5 +577,15 @@ window.addEventListener('load', () => {
     getGeometryName(index) {
         const names = ['Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal'];
         return names[index] || 'Unknown';
+    }
+
+    /**
+     * Create a Phillips Renderer instance for Canonical Views.
+     * @param {HTMLCanvasElement} canvas
+     * @param {Object} options
+     * @returns {PhillipsRenderer}
+     */
+    createPhillipsRenderer(canvas, options) {
+        return new PhillipsRenderer(canvas, options);
     }
 }
