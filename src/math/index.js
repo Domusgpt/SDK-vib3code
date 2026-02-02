@@ -10,7 +10,7 @@
  * - Projection: 4D to 3D projection functions
  *
  * @example
- * import { Vec4, Rotor4D, Mat4x4, Projection } from '@vib3/sdk/math';
+ * import { Vec4, Rotor4D, Mat4x4, Projection } from '@vib3code/sdk/math';
  *
  * // Create a tesseract vertex
  * const vertex = new Vec4(1, 1, 1, 1);

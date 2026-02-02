@@ -88,7 +88,7 @@ Exports animated visualization as Lottie-compatible JSON.
     }
   ],
   "meta": {
-    "generator": "@vib3/sdk",
+    "generator": "@vib3code/sdk",
     "version": "1.9.0",
     "system": "quantum",
     "geometry": 12
@@ -173,7 +173,7 @@ Full scene serialization for sharing and restoring states.
     "name": "My Scene",
     "author": "user@example.com",
     "created": "2026-01-23T22:00:00Z",
-    "generator": "@vib3/sdk@1.9.0"
+    "generator": "@vib3code/sdk@1.9.0"
   },
   "parameters": {
     "system": "quantum",

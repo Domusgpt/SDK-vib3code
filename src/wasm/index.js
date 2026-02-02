@@ -4,7 +4,7 @@
  * WebAssembly integration with automatic JavaScript fallback.
  *
  * Usage:
- *   import { init, getModule } from '@vib3/sdk/wasm';
+ *   import { init, getModule } from '@vib3code/sdk/wasm';
  *
  *   // Initialize (loads WASM if available)
  *   await init();

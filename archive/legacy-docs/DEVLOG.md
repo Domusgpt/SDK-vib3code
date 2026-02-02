@@ -271,7 +271,7 @@ Created complete 4D mathematics library in `src/math/`:
 
 ### Package.json Updates
 
-- Renamed to `@vib3/sdk`
+- Renamed to `@vib3code/sdk`
 - Version bumped to `1.1.0`
 - Added `bin.vib3` for CLI
 - Added `sideEffects: false` for tree-shaking
@@ -768,7 +768,7 @@ Rotor4D Rotor4D::operator*(const Rotor4D& b) const noexcept {
 
 **WASM Loader Usage:**
 ```javascript
-import { init, getModule } from '@vib3/sdk/wasm';
+import { init, getModule } from '@vib3code/sdk/wasm';
 
 await init();
 const vib3 = getModule();

@@ -1,7 +1,7 @@
 # VIB3+ CORE System Audit
 
 **Date**: January 30, 2026
-**Version**: 2.0.0 (`@vib3/sdk`)
+**Version**: 2.0.0 (`@vib3code/sdk`)
 **Branch**: `claude/phase-5-hardening-a4Wzn`
 **Auditor**: Automated codebase review
 **Owner**: Clear Seas Solutions LLC
@@ -239,7 +239,7 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 | **Flutter plugin** | `flutter/` | Present. iOS + Android + Web |
 | **Flutter demo** | `examples/flutter_demo/` | Present |
 | **GitHub Pages** | `docs/` | Deployed. 26 HTML pages |
-| **NPM SDK** | `@vib3/sdk` package.json | Defined |
+| **NPM SDK** | `@vib3code/sdk` package.json | Defined |
 
 ---
 
@@ -273,7 +273,7 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 
 | File | Purpose |
 |------|---------|
-| `package.json` | NPM config, v2.0.0, @vib3/sdk |
+| `package.json` | NPM config, v2.0.0, @vib3code/sdk |
 | `vite.config.js` | Dev server + build |
 | `vitest.config.js` | Unit test config |
 | `playwright.config.js` | E2E test config |
@@ -425,7 +425,7 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 
 | Channel | Format | Approach |
 |---------|--------|----------|
-| **NPM** | SDK package | Already defined as `@vib3/sdk`. Publish to NPM registry |
+| **NPM** | SDK package | Already defined as `@vib3code/sdk`. Publish to NPM registry |
 | **GitHub Marketplace** | Action / App | GitHub Action for automated VIB3+ asset generation in CI |
 | **Chrome Web Store** | Extension | New tab page or visualizer extension |
 | **App stores (iOS/Android)** | Flutter app | Flutter plugin → standalone app distribution |
@@ -475,7 +475,7 @@ VIB3+ is a 4D visualization SDK with three active rendering systems (Quantum, Fa
 ### Phase E — Next (Planned)
 - [ ] Add test coverage for all v2.0.0 modules
 - [ ] Validate platform integrations with real framework apps
-- [ ] Publish @vib3/sdk v2.0.0 to NPM registry
+- [ ] Publish @vib3code/sdk v2.0.0 to NPM registry
 - [ ] Production-harden WebGPU shader pipeline
 - [ ] Create example apps for each framework integration
 

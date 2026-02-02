@@ -84,7 +84,7 @@ vib3 license refresh
 
 ### 4. Programmatic activation
 ```javascript
-import { LicenseManager } from '@vib3/sdk/license';
+import { LicenseManager } from '@vib3code/sdk/license';
 
 const license = new LicenseManager();
 

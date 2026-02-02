@@ -77,19 +77,19 @@ Complete scene management infrastructure:
 
 ```javascript
 // Math
-import { Vec4, Rotor4D, Mat4x4 } from '@vib3/sdk/math';
+import { Vec4, Rotor4D, Mat4x4 } from '@vib3code/sdk/math';
 
 // Geometry
-import { GeometryFactory, generateGeometry } from '@vib3/sdk/geometry';
-import { warpHypersphereCore } from '@vib3/sdk/geometry/warp';
+import { GeometryFactory, generateGeometry } from '@vib3code/sdk/geometry';
+import { warpHypersphereCore } from '@vib3code/sdk/geometry/warp';
 
 // Scene
-import { Node4D, Scene4D } from '@vib3/sdk/scene';
-import { ResourceManager } from '@vib3/sdk/scene/resources';
+import { Node4D, Scene4D } from '@vib3code/sdk/scene';
+import { ResourceManager } from '@vib3code/sdk/scene/resources';
 
 // Agent
-import { MCPServer } from '@vib3/sdk/agent/mcp';
-import { TelemetryService } from '@vib3/sdk/agent/telemetry';
+import { MCPServer } from '@vib3code/sdk/agent/mcp';
+import { TelemetryService } from '@vib3code/sdk/agent/telemetry';
 ```
 
 ---

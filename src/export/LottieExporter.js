@@ -142,7 +142,7 @@ export function exportLottie(params, options = {}) {
     // Add metadata
     if (includeMetadata) {
         lottie.meta = {
-            generator: '@vib3/sdk',
+            generator: '@vib3code/sdk',
             version: '1.9.0',
             system: system,
             geometry: geometry,

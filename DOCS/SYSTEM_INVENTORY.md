@@ -490,7 +490,7 @@ Verifies inline shaders match external shader files. Parses GLSL uniforms and WG
 1. Add test coverage for v2.0.0 modules (creative, integrations, advanced, SpatialInput)
 2. Complete WebGPU shader pipeline
 3. Production-harden platform integration wrappers
-4. Publish @vib3/sdk v2.0.0 to NPM
+4. Publish @vib3code/sdk v2.0.0 to NPM
 
 ### Consolidation Tasks
 - [ ] Audit RendererContract compliance for all 3 active systems
