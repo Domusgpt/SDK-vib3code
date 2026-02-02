@@ -16,31 +16,31 @@ The **Phillips Rendering System** is a divergence from standard 3D Gaussian Spla
 
 ## 2. Implementation Phases
 
-### Phase 1: Mathematical Foundation
+### Phase 1: Mathematical Foundation (Done)
 **Goal:** Establish the core constants and sampling logic.
-*   [ ] Create `src/math/Plastic.js`:
+*   [x] Create `src/math/Plastic.js`:
     *   Define `PLASTIC_CONSTANT` ($\rho$).
     *   Implement `getPadovanSequence(n)`.
     *   Implement `getPlasticSamplingPoint(index)` (Low-discrepancy generator).
-*   [ ] Create `src/math/SplatMath.js`:
-    *   Logic to strip Spherical Harmonics (SH) from standard Gaussian data.
-    *   Quantization logic (Float32 -> RGB565).
 
-### Phase 2: The Phillips Renderer
+### Phase 2: The Phillips Renderer (Done)
 **Goal:** A standalone WebGL renderer for "Gaussian Flats".
-*   [ ] Create `src/systems/PhillipsRenderer.js`:
+*   [x] Create `src/systems/PhillipsRenderer.js`:
     *   **Vertex Shader:** Project 3D gaussians to 2D screen space (Billboard/Quad).
     *   **Fragment Shader:** "Flat" mode. Output pure Albedo. Ignore lighting/specular.
     *   **Uniforms:** `u_plasticScale` (controlled by $\rho$).
-*   [ ] **Optimization:** Implement Instanced Rendering using the reduced byte structure (17 bytes/instance).
 
-### Phase 3: Parserator Integration
+### Phase 3: Parserator Integration (Done)
 **Goal:** Export data in a format consumable by `Parserator.com`.
-*   [ ] Define "JSOH" (JSON Structured Object Hierarchy) schema for 3D scenes.
-    *   Likely a JSON structure defining the "Semantic Massing" of the scene.
-*   [ ] Update `ExportManager.js`:
+*   [x] Define "JSOH" (JSON Structured Object Hierarchy) schema for 3D scenes (`src/export/JSOH.js`).
+*   [x] Update `ExportManager.js`:
     *   Add `exportToParserator()` method.
     *   Generate the "Canonical View" screenshot (PNG) + JSOH metadata.
+
+### Phase 5: Interactive Visualization (In Progress)
+**Goal:** Create a live browser demo to verify the system visually.
+*   [ ] Create `docs/phillips-demo.html`.
+*   [ ] Implement interactive controls for Plastic Scale and Cloud Density.
 
 ### Phase 4: Verification
 *   [ ] **Unit Tests:** Verify Padovan sequence and Plastic Ratio precision.

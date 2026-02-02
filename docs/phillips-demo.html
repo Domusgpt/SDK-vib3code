@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phillips Rendering System Demo</title>
+    <style>
+        body { margin: 0; background: #111; color: #fff; font-family: monospace; overflow: hidden; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; }
+        input[type="range"] { width: 100%; }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover { background: #3a8eef; }
+        .value { float: right; color: #4a9eff; }
+        h1 { margin: 0 0 20px 0; font-size: 1.2em; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h1>Phillips Rendering System</h1>
+
+        <div class="control-group">
+            <label>Plastic Scale (ρ) <span id="scaleVal" class="value">1.32</span></label>
+            <input type="range" id="scale" min="0.5" max="3.0" step="0.01" value="1.3247">
+        </div>
+
+        <div class="control-group">
+            <label>Point Count <span id="countVal" class="value">5000</span></label>
+            <input type="range" id="count" min="1000" max="50000" step="1000" value="5000">
+        </div>
+
+        <div class="control-group">
+            <label>Rotation Speed <span id="speedVal" class="value">1.0</span></label>
+            <input type="range" id="speed" min="0" max="5.0" step="0.1" value="1.0">
+        </div>
+
+        <button id="exportBtn">Export to Parserator</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { PhillipsRenderer } from '../src/systems/PhillipsRenderer.js';
+        import { PLASTIC_CONSTANT, getPlasticSamplingPoint } from '../src/math/Plastic.js';
+        import { ExportManager } from '../src/export/ExportManager.js';
+
+        // Mock Engine for ExportManager
+        const mockEngine = {
+            statusManager: {
+                info: (msg) => console.log('INFO:', msg),
+                success: (msg) => console.log('SUCCESS:', msg),
+                error: (msg) => console.error('ERROR:', msg)
+            }
+        };
+
+        const canvas = document.getElementById('canvas');
+        const renderer = new PhillipsRenderer(canvas, { backgroundColor: [0.1, 0.1, 0.1, 1] });
+        const exportManager = new ExportManager(mockEngine);
+
+        // State
+        const state = {
+            count: 5000,
+            scale: PLASTIC_CONSTANT,
+            speed: 1.0,
+            time: 0
+        };
+
+        // Data Generation
+        function generateData() {
+            const positions = new Float32Array(state.count * 3);
+            const scales = new Float32Array(state.count);
+            const colors = new Float32Array(state.count * 3);
+
+            for (let i = 0; i < state.count; i++) {
+                const sample = getPlasticSamplingPoint(i);
+                const theta = sample.x * Math.PI * 2;
+                const phi = Math.acos(2 * sample.y - 1);
+
+                const r = 1.0 + Math.sin(theta * 3 + phi * 5) * 0.1; // Slight deformation
+
+                positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i*3+2] = r * Math.cos(phi);
+
+                // Plastic power scaling
+                scales[i] = 1.0 / Math.pow(state.scale, (i % 5));
+
+                // Procedural Color based on position
+                colors[i*3] = (positions[i*3] + 1) * 0.5;
+                colors[i*3+1] = (positions[i*3+1] + 1) * 0.5;
+                colors[i*3+2] = (positions[i*3+2] + 1) * 0.5;
+            }
+
+            renderer.setData({ positions, scales, colors });
+        }
+
+        // UI Listeners
+        document.getElementById('scale').addEventListener('input', (e) => {
+            state.scale = parseFloat(e.target.value);
+            document.getElementById('scaleVal').textContent = state.scale.toFixed(2);
+            // Re-upload scale data (simplified: regen all)
+            renderer.options.plasticScale = state.scale;
+            generateData();
+        });
+
+        document.getElementById('count').addEventListener('input', (e) => {
+            state.count = parseInt(e.target.value);
+            document.getElementById('countVal').textContent = state.count;
+            generateData();
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            state.speed = parseFloat(e.target.value);
+            document.getElementById('speedVal').textContent = state.speed.toFixed(1);
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            exportManager.exportToParserator();
+        });
+
+        // Loop
+        function loop() {
+            state.time += 0.01 * state.speed;
+
+            const c = Math.cos(state.time);
+            const s = Math.sin(state.time);
+
+            // Simple Orbit Camera View Matrix
+            // Camera at z=2.5, looking at 0,0,0
+            // Rotating around Y axis
+
+            const viewProjection = new Float32Array([
+                c, 0, -s, 0,
+                0, 1, 0, 0,
+                s, 0, c, 0,
+                0, 0, -2.5, 1
+            ]);
+
+            // Perspective Projection (simple aspect correction)
+            const aspect = canvas.width / canvas.height;
+            viewProjection[0] /= aspect;
+
+            renderer.render(viewProjection);
+            requestAnimationFrame(loop);
+        }
+
+        // Init
+        generateData();
+        loop();
+
+        // Handle Resize
+        window.addEventListener('resize', () => renderer.resize());
+    </script>
+</body>
+</html>
