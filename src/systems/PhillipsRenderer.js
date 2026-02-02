@@ -30,6 +30,8 @@ export class PhillipsRenderer {
         this.options = {
             plasticScale: PLASTIC_CONSTANT,
             backgroundColor: [0, 0, 0, 0], // Transparent by default
+            kirigamiShift: [0, 0], // Moiré shift vector
+            moireFreq: 20.0, // Frequency of the interference pattern
             ...options
         };
 
@@ -62,6 +64,7 @@ export class PhillipsRenderer {
             uniform vec2 u_resolution;
 
             varying vec3 v_color;
+            varying vec2 v_screenPos;
 
             void main() {
                 // Project position
@@ -76,15 +79,22 @@ export class PhillipsRenderer {
                 gl_PointSize = max(2.0, size); // Ensure minimum visibility
 
                 v_color = a_color;
+
+                // Pass normalized screen position for Moiré calculation
+                v_screenPos = pos.xy / pos.w;
             }
         `;
 
-        // Fragment Shader: The "Flat Shader"
-        // Pure Albedo, no lighting, soft circular edges via alpha blending.
+        // Fragment Shader: The "Quatossian Flat Shader"
+        // Now includes Kirigami Moiré Modulation for interference effects.
         const fragmentSource = `
             precision mediump float;
 
+            uniform vec2 u_kirigamiShift;
+            uniform float u_moireFreq;
+
             varying vec3 v_color;
+            varying vec2 v_screenPos;
 
             void main() {
                 // Circular point shape
@@ -95,15 +105,26 @@ export class PhillipsRenderer {
                     discard;
                 }
 
-                // Hard flat edge (Canonical style) or soft edge?
-                // Prompt says: "Start with standard alpha blending (for soft edges)"
-                // But also "Canonical Views... deterministic".
-                // Let's do a slight anti-aliased edge for the circle to avoid harsh jaggies,
-                // but keep the inner color flat.
+                // Kirigami-based Moiré Modulation
+                // Simulating two overlapping grids (G1 and G2)
+                // T(x) = Sum(G1(x) * G2(x + s))
 
+                // Grid 1 (Base Mask)
+                float g1 = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq);
+
+                // Grid 2 (Shifted Completer Mask)
+                float g2 = sin((v_screenPos.x + v_screenPos.y + u_kirigamiShift.x) * (u_moireFreq * 1.05)); // Slight freq diff for beats
+
+                // Interference Pattern (0.0 to 1.0)
+                float interference = 0.5 + 0.5 * (g1 * g2);
+
+                // Modulate opacity/intensity
                 float alpha = 1.0 - smoothstep(0.24, 0.25, distSq);
 
-                gl_FragColor = vec4(v_color, alpha);
+                // "Shimmer" effect: Modulate color intensity by interference
+                vec3 finalColor = v_color * (0.8 + 0.4 * interference);
+
+                gl_FragColor = vec4(finalColor, alpha);
             }
         `;
 
@@ -113,7 +134,9 @@ export class PhillipsRenderer {
             this.uniforms = {
                 viewProjection: this.gl.getUniformLocation(this.program, 'u_viewProjection'),
                 plasticScale: this.gl.getUniformLocation(this.program, 'u_plasticScale'),
-                resolution: this.gl.getUniformLocation(this.program, 'u_resolution')
+                resolution: this.gl.getUniformLocation(this.program, 'u_resolution'),
+                kirigamiShift: this.gl.getUniformLocation(this.program, 'u_kirigamiShift'),
+                moireFreq: this.gl.getUniformLocation(this.program, 'u_moireFreq')
             };
         }
     }
@@ -250,6 +273,13 @@ export class PhillipsRenderer {
         gl.uniformMatrix4fv(this.uniforms.viewProjection, false, viewProjectionMatrix);
         gl.uniform1f(this.uniforms.plasticScale, this.options.plasticScale);
         gl.uniform2f(this.uniforms.resolution, this.canvas.width, this.canvas.height);
+
+        // Dynamic Kirigami Uniforms (using Date.now for "shimmer" if not provided)
+        const time = Date.now() * 0.001;
+        const shiftX = this.options.kirigamiShift[0] || Math.sin(time);
+        const shiftY = this.options.kirigamiShift[1] || Math.cos(time);
+        gl.uniform2f(this.uniforms.kirigamiShift, shiftX, shiftY);
+        gl.uniform1f(this.uniforms.moireFreq, this.options.moireFreq);
 
         // Draw
         gl.drawArrays(gl.POINTS, 0, this.count);
