@@ -98,14 +98,16 @@
                 log("Starting dynamic imports...", 'info');
 
                 // Import Modules Dynamically with Error Trapping
+                // We use root-relative paths (/src/...) to ensure they work regardless of where this file is served
+                // assuming the site root contains the 'src' folder (which pages.yml ensures).
                 const [
                     { PhillipsRenderer },
                     { PLASTIC_CONSTANT, getPlasticSamplingPoint },
                     { ExportManager }
                 ] = await Promise.all([
-                    import('./src/systems/PhillipsRenderer.js').catch(e => { throw new Error(`Failed to load PhillipsRenderer: ${e.message}`) }),
-                    import('./src/math/Plastic.js').catch(e => { throw new Error(`Failed to load Plastic.js: ${e.message}`) }),
-                    import('./src/export/ExportManager.js').catch(e => { throw new Error(`Failed to load ExportManager: ${e.message}`) })
+                    import('/src/systems/PhillipsRenderer.js').catch(e => { throw new Error(`Failed to load PhillipsRenderer: ${e.message}`) }),
+                    import('/src/math/Plastic.js').catch(e => { throw new Error(`Failed to load Plastic.js: ${e.message}`) }),
+                    import('/src/export/ExportManager.js').catch(e => { throw new Error(`Failed to load ExportManager: ${e.message}`) })
                 ]);
 
                 log("Modules loaded successfully.", 'success');
