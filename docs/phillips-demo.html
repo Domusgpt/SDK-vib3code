@@ -367,18 +367,72 @@
                 function loop() {
                     state.time += 0.01 * state.speed;
 
+                    const aspect = canvas.width / canvas.height;
+                    const fov = 60 * Math.PI / 180;
+                    const f = 1.0 / Math.tan(fov / 2);
+                    const near = 0.1;
+                    const far = 100.0;
+
+                    // Perspective Matrix (Column-Major)
+                    // f/aspect, 0, 0, 0
+                    // 0, f, 0, 0
+                    // 0, 0, (n+f)/(n-f), -1
+                    // 0, 0, 2nf/(n-f), 0
+                    // Note: WebGL standard clip space.
+
+                    const proj = new Float32Array([
+                        f / aspect, 0, 0, 0,
+                        0, f, 0, 0,
+                        0, 0, (near + far) / (near - far), -1,
+                        0, 0, (2 * near * far) / (near - far), 0
+                    ]);
+
+                    // ModelView: Rotate Y then Translate Z -2.5
                     const c = Math.cos(state.time);
                     const s = Math.sin(state.time);
 
-                    const viewProjection = new Float32Array([
-                        c, 0, -s, 0,
-                        0, 1, 0, 0,
-                        s, 0, c, 0,
-                        0, 0, -2.5, 1
-                    ]);
+                    // Rotation (Y)
+                    // c, 0, -s, 0
+                    // 0, 1, 0, 0
+                    // s, 0, c, 0
+                    // 0, 0, 0, 1
+                    // But in Column Major:
+                    // Col 0: c, 0, s, 0 (Wait, Row0=c, Row2=s in col0?)
+                    // Let's do Row-Major then transpose, or just be careful.
+                    // Standard RotY:
+                    // [ c  0  s  0]
+                    // [ 0  1  0  0]
+                    // [-s  0  c  0]
+                    // [ 0  0  0  1]
+                    // Column Major Array:
+                    const model = [
+                        c, 0, -s, 0,  // Col 0
+                        0, 1, 0, 0,   // Col 1
+                        s, 0, c, 0,   // Col 2
+                        0, 0, -2.5, 1 // Col 3 (Translation included here for simplicity)
+                    ];
 
-                    const aspect = canvas.width / canvas.height;
-                    viewProjection[0] /= aspect;
+                    // Multiply Proj * Model
+                    const viewProjection = new Float32Array(16);
+
+                    // Simple 4x4 Multiply (P * M)
+                    // P is ViewProjection, M is ModelView
+                    // We need P * M.
+
+                    const a = proj;
+                    const b = model;
+
+                    for (let col = 0; col < 4; col++) {
+                        for (let row = 0; row < 4; row++) {
+                            let sum = 0;
+                            for (let k = 0; k < 4; k++) {
+                                // a is column major, so a[row, k] is a[k*4 + row]
+                                // b is column major, so b[k, col] is b[col*4 + k]
+                                sum += a[k*4 + row] * b[col*4 + k];
+                            }
+                            viewProjection[col*4 + row] = sum;
+                        }
+                    }
 
                     if (renderer) renderer.render(viewProjection);
                     requestAnimationFrame(loop);
