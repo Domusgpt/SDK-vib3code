@@ -92,127 +92,141 @@
         log("Initializing Phillips Demo...", 'info');
     </script>
 
-    <script type="module">
-        import { PhillipsRenderer } from '../src/systems/PhillipsRenderer.js';
-        import { PLASTIC_CONSTANT, getPlasticSamplingPoint } from '../src/math/Plastic.js';
-        import { ExportManager } from '../src/export/ExportManager.js';
+    <script>
+        (async function init() {
+            try {
+                log("Starting dynamic imports...", 'info');
 
-        log("Modules imported successfully.", 'success');
+                // Import Modules Dynamically with Error Trapping
+                const [
+                    { PhillipsRenderer },
+                    { PLASTIC_CONSTANT, getPlasticSamplingPoint },
+                    { ExportManager }
+                ] = await Promise.all([
+                    import('../src/systems/PhillipsRenderer.js').catch(e => { throw new Error(`Failed to load PhillipsRenderer: ${e.message}`) }),
+                    import('../src/math/Plastic.js').catch(e => { throw new Error(`Failed to load Plastic.js: ${e.message}`) }),
+                    import('../src/export/ExportManager.js').catch(e => { throw new Error(`Failed to load ExportManager: ${e.message}`) })
+                ]);
 
-        // Mock Engine for ExportManager
-        const mockEngine = {
-            statusManager: {
-                info: (msg) => console.log('INFO:', msg),
-                success: (msg) => console.log('SUCCESS:', msg),
-                error: (msg) => console.error('ERROR:', msg)
+                log("Modules loaded successfully.", 'success');
+
+                // Mock Engine for ExportManager
+                const mockEngine = {
+                    statusManager: {
+                        info: (msg) => log('INFO: ' + msg),
+                        success: (msg) => log('SUCCESS: ' + msg, 'success'),
+                        error: (msg) => log('ERROR: ' + msg, 'error')
+                    }
+                };
+
+                const canvas = document.getElementById('canvas');
+                let renderer;
+                try {
+                    renderer = new PhillipsRenderer(canvas, { backgroundColor: [0.1, 0.1, 0.1, 1] });
+                    log("Renderer initialized.", 'success');
+                } catch (e) {
+                    throw new Error(`Renderer Init Failed: ${e.message}`);
+                }
+
+                const exportManager = new ExportManager(mockEngine);
+
+                // State
+                const state = {
+                    count: 5000,
+                    scale: PLASTIC_CONSTANT,
+                    speed: 1.0,
+                    time: 0
+                };
+
+                // Data Generation
+                function generateData() {
+                    const positions = new Float32Array(state.count * 3);
+                    const scales = new Float32Array(state.count);
+                    const colors = new Float32Array(state.count * 3);
+
+                    for (let i = 0; i < state.count; i++) {
+                        const sample = getPlasticSamplingPoint(i);
+                        const theta = sample.x * Math.PI * 2;
+                        const phi = Math.acos(2 * sample.y - 1);
+
+                        const r = 1.0 + Math.sin(theta * 3 + phi * 5) * 0.1; // Slight deformation
+
+                        positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                        positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                        positions[i*3+2] = r * Math.cos(phi);
+
+                        // Plastic power scaling
+                        scales[i] = 1.0 / Math.pow(state.scale, (i % 5));
+
+                        // Procedural Color based on position
+                        colors[i*3] = (positions[i*3] + 1) * 0.5;
+                        colors[i*3+1] = (positions[i*3+1] + 1) * 0.5;
+                        colors[i*3+2] = (positions[i*3+2] + 1) * 0.5;
+                    }
+
+                    renderer.setData({ positions, scales, colors });
+                }
+
+                // UI Listeners
+                document.getElementById('scale').addEventListener('input', (e) => {
+                    state.scale = parseFloat(e.target.value);
+                    document.getElementById('scaleVal').textContent = state.scale.toFixed(2);
+                    if (renderer) {
+                        renderer.options.plasticScale = state.scale;
+                        generateData();
+                    }
+                });
+
+                document.getElementById('count').addEventListener('input', (e) => {
+                    state.count = parseInt(e.target.value);
+                    document.getElementById('countVal').textContent = state.count;
+                    if (renderer) generateData();
+                });
+
+                document.getElementById('speed').addEventListener('input', (e) => {
+                    state.speed = parseFloat(e.target.value);
+                    document.getElementById('speedVal').textContent = state.speed.toFixed(1);
+                });
+
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    if (exportManager) exportManager.exportToParserator();
+                });
+
+                // Loop
+                function loop() {
+                    state.time += 0.01 * state.speed;
+
+                    const c = Math.cos(state.time);
+                    const s = Math.sin(state.time);
+
+                    const viewProjection = new Float32Array([
+                        c, 0, -s, 0,
+                        0, 1, 0, 0,
+                        s, 0, c, 0,
+                        0, 0, -2.5, 1
+                    ]);
+
+                    const aspect = canvas.width / canvas.height;
+                    viewProjection[0] /= aspect;
+
+                    if (renderer) renderer.render(viewProjection);
+                    requestAnimationFrame(loop);
+                }
+
+                // Init
+                generateData();
+                loop();
+
+                // Handle Resize
+                window.addEventListener('resize', () => {
+                    if(renderer) renderer.resize();
+                });
+
+            } catch (err) {
+                log(`FATAL: ${err.message}`, 'error');
+                console.error(err);
             }
-        };
-
-        const canvas = document.getElementById('canvas');
-        let renderer;
-        try {
-            renderer = new PhillipsRenderer(canvas, { backgroundColor: [0.1, 0.1, 0.1, 1] });
-            log("Renderer initialized.", 'success');
-        } catch (e) {
-            log(`Renderer Init Failed: ${e.message}`, 'error');
-            throw e;
-        }
-
-        const exportManager = new ExportManager(mockEngine);
-
-        // State
-        const state = {
-            count: 5000,
-            scale: PLASTIC_CONSTANT,
-            speed: 1.0,
-            time: 0
-        };
-
-        // Data Generation
-        function generateData() {
-            const positions = new Float32Array(state.count * 3);
-            const scales = new Float32Array(state.count);
-            const colors = new Float32Array(state.count * 3);
-
-            for (let i = 0; i < state.count; i++) {
-                const sample = getPlasticSamplingPoint(i);
-                const theta = sample.x * Math.PI * 2;
-                const phi = Math.acos(2 * sample.y - 1);
-
-                const r = 1.0 + Math.sin(theta * 3 + phi * 5) * 0.1; // Slight deformation
-
-                positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
-                positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-                positions[i*3+2] = r * Math.cos(phi);
-
-                // Plastic power scaling
-                scales[i] = 1.0 / Math.pow(state.scale, (i % 5));
-
-                // Procedural Color based on position
-                colors[i*3] = (positions[i*3] + 1) * 0.5;
-                colors[i*3+1] = (positions[i*3+1] + 1) * 0.5;
-                colors[i*3+2] = (positions[i*3+2] + 1) * 0.5;
-            }
-
-            renderer.setData({ positions, scales, colors });
-        }
-
-        // UI Listeners
-        document.getElementById('scale').addEventListener('input', (e) => {
-            state.scale = parseFloat(e.target.value);
-            document.getElementById('scaleVal').textContent = state.scale.toFixed(2);
-            // Re-upload scale data (simplified: regen all)
-            renderer.options.plasticScale = state.scale;
-            generateData();
-        });
-
-        document.getElementById('count').addEventListener('input', (e) => {
-            state.count = parseInt(e.target.value);
-            document.getElementById('countVal').textContent = state.count;
-            generateData();
-        });
-
-        document.getElementById('speed').addEventListener('input', (e) => {
-            state.speed = parseFloat(e.target.value);
-            document.getElementById('speedVal').textContent = state.speed.toFixed(1);
-        });
-
-        document.getElementById('exportBtn').addEventListener('click', () => {
-            exportManager.exportToParserator();
-        });
-
-        // Loop
-        function loop() {
-            state.time += 0.01 * state.speed;
-
-            const c = Math.cos(state.time);
-            const s = Math.sin(state.time);
-
-            // Simple Orbit Camera View Matrix
-            // Camera at z=2.5, looking at 0,0,0
-            // Rotating around Y axis
-
-            const viewProjection = new Float32Array([
-                c, 0, -s, 0,
-                0, 1, 0, 0,
-                s, 0, c, 0,
-                0, 0, -2.5, 1
-            ]);
-
-            // Perspective Projection (simple aspect correction)
-            const aspect = canvas.width / canvas.height;
-            viewProjection[0] /= aspect;
-
-            renderer.render(viewProjection);
-            requestAnimationFrame(loop);
-        }
-
-        // Init
-        generateData();
-        loop();
-
-        // Handle Resize
-        window.addEventListener('resize', () => renderer.resize());
+        })();
     </script>
 </body>
 </html>
