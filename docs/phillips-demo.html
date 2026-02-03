@@ -93,24 +93,193 @@
     </script>
 
     <script>
+        // --- INLINED DEPENDENCIES FOR ROBUSTNESS ---
+        // To avoid "Failed to fetch module" errors on GitHub Pages due to pathing/CORS quirks,
+        // we define the core logic directly here.
+
+        // 1. Math: Plastic.js
+        const PLASTIC_CONSTANT = 1.324717957244746;
+        function getPlasticSamplingPoint(index) {
+            const rho = PLASTIC_CONSTANT;
+            const a1 = 1.0 / rho;
+            const a2 = 1.0 / (rho * rho);
+            return {
+                x: (0.5 + a1 * index) % 1.0,
+                y: (0.5 + a2 * index) % 1.0
+            };
+        }
+
+        // 2. Renderer: PhillipsRenderer.js
+        class PhillipsRenderer {
+            constructor(canvas, options = {}) {
+                this.canvas = canvas;
+                this.gl = canvas.getContext('webgl', { alpha: true, antialias: false });
+                if (!this.gl) throw new Error('PhillipsRenderer: WebGL not supported');
+
+                this.options = {
+                    plasticScale: PLASTIC_CONSTANT,
+                    backgroundColor: [0, 0, 0, 0],
+                    kirigamiShift: [0, 0],
+                    moireFreq: 20.0,
+                    ...options
+                };
+                this.init();
+            }
+
+            init() {
+                const gl = this.gl;
+                const vs = `
+                    attribute vec3 a_position;
+                    attribute float a_scale;
+                    attribute vec3 a_color;
+                    uniform mat4 u_viewProjection;
+                    uniform float u_plasticScale;
+                    uniform vec2 u_resolution;
+                    varying vec3 v_color;
+                    varying vec2 v_screenPos;
+                    void main() {
+                        vec4 pos = u_viewProjection * vec4(a_position, 1.0);
+                        gl_Position = pos;
+                        float dist = pos.w;
+                        float size = (300.0 * a_scale * u_plasticScale) / dist;
+                        gl_PointSize = max(2.0, size);
+                        v_color = a_color;
+                        v_screenPos = pos.xy / pos.w;
+                    }
+                `;
+                const fs = `
+                    precision mediump float;
+                    uniform vec2 u_kirigamiShift;
+                    uniform float u_moireFreq;
+                    varying vec3 v_color;
+                    varying vec2 v_screenPos;
+                    void main() {
+                        vec2 coord = gl_PointCoord - vec2(0.5);
+                        if (dot(coord, coord) > 0.25) discard;
+
+                        float g1 = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq);
+                        float g2 = sin((v_screenPos.x + v_screenPos.y + u_kirigamiShift.x) * (u_moireFreq * 1.05));
+                        float interference = 0.5 + 0.5 * (g1 * g2);
+                        float alpha = 1.0 - smoothstep(0.24, 0.25, dot(coord, coord));
+                        gl_FragColor = vec4(v_color * (0.8 + 0.4 * interference), alpha);
+                    }
+                `;
+
+                const compile = (type, src) => {
+                    const s = gl.createShader(type);
+                    gl.shaderSource(s, src);
+                    gl.compileShader(s);
+                    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+                        console.error(gl.getShaderInfoLog(s));
+                        return null;
+                    }
+                    return s;
+                };
+
+                const p = gl.createProgram();
+                gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+                gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+                gl.linkProgram(p);
+                if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p));
+
+                this.program = p;
+                this.buffers = {
+                    pos: gl.createBuffer(),
+                    scale: gl.createBuffer(),
+                    col: gl.createBuffer()
+                };
+                this.uniforms = {
+                    vp: gl.getUniformLocation(p, 'u_viewProjection'),
+                    ps: gl.getUniformLocation(p, 'u_plasticScale'),
+                    res: gl.getUniformLocation(p, 'u_resolution'),
+                    ks: gl.getUniformLocation(p, 'u_kirigamiShift'),
+                    mf: gl.getUniformLocation(p, 'u_moireFreq')
+                };
+                this.resize();
+            }
+
+            setData(data) {
+                const gl = this.gl;
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.pos);
+                gl.bufferData(gl.ARRAY_BUFFER, data.positions, gl.STATIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.scale);
+                gl.bufferData(gl.ARRAY_BUFFER, data.scales, gl.STATIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.col);
+                gl.bufferData(gl.ARRAY_BUFFER, data.colors, gl.STATIC_DRAW);
+                this.count = data.positions.length / 3;
+            }
+
+            resize() {
+                this.canvas.width = this.canvas.clientWidth;
+                this.canvas.height = this.canvas.clientHeight;
+                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            render(vpMatrix) {
+                if (!this.program) return;
+                const gl = this.gl;
+                this.resize();
+
+                const bg = this.options.backgroundColor;
+                gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                gl.useProgram(this.program);
+
+                const enableAttrib = (name, buf, size) => {
+                    const loc = gl.getAttribLocation(this.program, name);
+                    if (loc !== -1) {
+                        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+                        gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+                        gl.enableVertexAttribArray(loc);
+                    }
+                };
+
+                enableAttrib('a_position', this.buffers.pos, 3);
+                enableAttrib('a_scale', this.buffers.scale, 1);
+                enableAttrib('a_color', this.buffers.col, 3);
+
+                gl.uniformMatrix4fv(this.uniforms.vp, false, vpMatrix);
+                gl.uniform1f(this.uniforms.ps, this.options.plasticScale);
+                gl.uniform2f(this.uniforms.res, this.canvas.width, this.canvas.height);
+
+                const time = Date.now() * 0.001;
+                gl.uniform2f(this.uniforms.ks,
+                    this.options.kirigamiShift[0] || Math.sin(time),
+                    this.options.kirigamiShift[1] || Math.cos(time)
+                );
+                gl.uniform1f(this.uniforms.mf, this.options.moireFreq);
+
+                gl.drawArrays(gl.POINTS, 0, this.count);
+            }
+        }
+
+        // 3. ExportManager (Simplified Stub for Demo)
+        class ExportManager {
+            constructor(engine) { this.engine = engine; }
+            exportToParserator() {
+                log("Export functionality requires full build. This is the inline demo.", "info");
+                alert("For full export functionality, please run the build locally. This demo is optimized for mobile viewing.");
+            }
+        }
+
+        // --- END INLINED DEPENDENCIES ---
+
         (async function init() {
             try {
-                log("Starting dynamic imports...", 'info');
+                log("Starting inline demo...", 'info');
 
                 // Import Modules Dynamically with Error Trapping
                 // We use root-relative paths (/src/...) to ensure they work regardless of where this file is served
                 // assuming the site root contains the 'src' folder (which pages.yml ensures).
-                const [
-                    { PhillipsRenderer },
-                    { PLASTIC_CONSTANT, getPlasticSamplingPoint },
-                    { ExportManager }
-                ] = await Promise.all([
-                    import('/src/systems/PhillipsRenderer.js').catch(e => { throw new Error(`Failed to load PhillipsRenderer: ${e.message}`) }),
-                    import('/src/math/Plastic.js').catch(e => { throw new Error(`Failed to load Plastic.js: ${e.message}`) }),
-                    import('/src/export/ExportManager.js').catch(e => { throw new Error(`Failed to load ExportManager: ${e.message}`) })
-                ]);
 
-                log("Modules loaded successfully.", 'success');
+                /*
+                   NOTE: Dynamic imports removed for stability.
+                   Using inlined classes defined above.
+                */
+
+                log("Modules loaded successfully (Inlined).", 'success');
 
                 // Mock Engine for ExportManager
                 const mockEngine = {
