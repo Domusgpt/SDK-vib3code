@@ -35,6 +35,9 @@ jobs:
           # Root index (redirects to WebGPU live page)
           cp index.html _site/
 
+          # Phillips Demo (moved to root for simpler pathing)
+          cp phillips-demo.html _site/
+
           # Gallery, WebGPU live page, test hub, and all standalone visualizations
           cp docs/.nojekyll _site/docs/ 2>/dev/null || true
           cp docs/index.html _site/docs/
