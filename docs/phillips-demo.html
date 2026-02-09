@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phillips Rendering System Demo</title>
+    <title>Phillips Rendering System Demo (E8 Enabled)</title>
     <style>
-        body { margin: 0; background: #111; color: #fff; font-family: monospace; overflow: hidden; }
+        body { margin: 0; background: #050505; color: #fff; font-family: monospace; overflow: hidden; }
         canvas { display: block; width: 100vw; height: 100vh; }
         #controls {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             padding: 20px;
             border-radius: 8px;
             width: 300px;
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .control-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #aaa; }
-        input[type="range"] { width: 100%; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 12px; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        select { width: 100%; padding: 5px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; }
         button {
             background: #4a9eff;
             color: white;
@@ -28,10 +31,15 @@
             border-radius: 4px;
             width: 100%;
             margin-top: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
         }
-        button:hover { background: #3a8eef; }
+        button:hover { background: #3a8eef; box-shadow: 0 0 10px rgba(74, 158, 255, 0.4); }
         .value { float: right; color: #4a9eff; }
-        h1 { margin: 0 0 20px 0; font-size: 1.2em; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        h1 { margin: 0 0 20px 0; font-size: 1.2em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee; }
+        .mode-label { color: #88ff88; font-weight: bold; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -41,24 +49,37 @@
     </div>
 
     <div id="controls">
-        <h1>Phillips Rendering System</h1>
+        <h1>Phillips System v2</h1>
 
         <div class="control-group">
-            <label>Plastic Scale (ρ) <span id="scaleVal" class="value">1.32</span></label>
-            <input type="range" id="scale" min="0.5" max="3.0" step="0.01" value="1.3247">
+            <label class="mode-label">RENDER MODE</label>
+            <select id="renderMode">
+                <option value="e8">Quatossian (E8 Lattice)</option>
+                <option value="plastic">Classic (Plastic Ratio)</option>
+            </select>
         </div>
 
         <div class="control-group">
-            <label>Point Count <span id="countVal" class="value">5000</span></label>
-            <input type="range" id="count" min="1000" max="50000" step="1000" value="5000">
+            <label>Scale / Dispersion <span id="scaleVal" class="value">1.32</span></label>
+            <input type="range" id="scale" min="0.5" max="5.0" step="0.01" value="1.3247">
         </div>
 
         <div class="control-group">
-            <label>Rotation Speed <span id="speedVal" class="value">1.0</span></label>
-            <input type="range" id="speed" min="0" max="5.0" step="0.1" value="1.0">
+            <label>Lattice Density (Points) <span id="countVal" class="value">240</span></label>
+            <input type="range" id="count" min="240" max="10000" step="100" value="2400">
         </div>
 
-        <button id="exportBtn">Export to Parserator</button>
+        <div class="control-group">
+            <label>Holographic Edge <span id="edgeVal" class="value">0.5</span></label>
+            <input type="range" id="edge" min="0.0" max="1.0" step="0.01" value="0.5">
+        </div>
+
+        <div class="control-group">
+            <label>Spin Speed <span id="speedVal" class="value">0.5</span></label>
+            <input type="range" id="speed" min="0" max="5.0" step="0.1" value="0.5">
+        </div>
+
+        <button id="exportBtn">Export JSOH Payload</button>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -85,17 +106,11 @@
             return false;
         };
 
-        window.onunhandledrejection = function(event) {
-            log(`UNHANDLED PROMISE: ${event.reason}`, 'error');
-        };
-
-        log("Initializing Phillips Demo...", 'info');
+        log("Initializing Quatossian Framework...", 'info');
     </script>
 
     <script>
-        // --- INLINED DEPENDENCIES FOR ROBUSTNESS ---
-        // To avoid "Failed to fetch module" errors on GitHub Pages due to pathing/CORS quirks,
-        // we define the core logic directly here.
+        // --- INLINED DEPENDENCIES ---
 
         // 1. Math: Plastic.js
         const PLASTIC_CONSTANT = 1.324717957244746;
@@ -109,7 +124,56 @@
             };
         }
 
-        // 2. Renderer: PhillipsRenderer.js
+        // 2. Math: E8.js (Inlined Logic)
+        class E8Lattice {
+            static project3Dto8D(x, y, z) {
+                // Simplified stub for completeness, not used directly in generation loop for speed
+                return new Float32Array([x, y, z, 0, 0, 0, 0, 0]);
+            }
+
+            // Generate a point in D8 lattice (subset of E8) from a seed index
+            // Uses Plastic sequence to pick integer coordinates, enforces even sum
+            static generateLatticePoint(index, spread=4) {
+                const v = new Int8Array(8);
+                let sum = 0;
+
+                // Deterministic Pseudo-Random based on Plastic Ratio
+                // avoiding Math.random for stability
+                const rho = 1.324717957244746;
+
+                for(let i=0; i<8; i++) {
+                    // Unique offset for each dimension based on index
+                    const val = (index * Math.pow(rho, i+1)) % 1.0;
+                    // Map 0..1 to -spread..spread
+                    v[i] = Math.floor(val * (spread * 2 + 1)) - spread;
+                    sum += v[i];
+                }
+
+                // Enforce D8 condition: sum of coordinates must be even
+                if (Math.abs(sum) % 2 === 1) {
+                    v[0] += 1; // Adjust first coordinate to fix parity
+                }
+                return v;
+            }
+
+            // Project 8D to 3D (Golden Projection)
+            static project8Dto3D(v8) {
+                const phi = 1.618034;
+                let x = 0, y = 0, z = 0;
+                for (let k = 0; k < 8; k++) {
+                    const theta = (Math.PI * 2 * k) / 8;
+                    const bX = Math.cos(theta);
+                    const bY = Math.sin(theta);
+                    const bZ = Math.cos(theta * phi);
+                    x += v8[k] * bX;
+                    y += v8[k] * bY;
+                    z += v8[k] * bZ;
+                }
+                return {x, y, z};
+            }
+        }
+
+        // 3. Renderer: PhillipsRenderer.js (With Kirigami Shader Upgrade)
         class PhillipsRenderer {
             constructor(canvas, options = {}) {
                 this.canvas = canvas;
@@ -121,6 +185,7 @@
                     backgroundColor: [0, 0, 0, 0],
                     kirigamiShift: [0, 0],
                     moireFreq: 20.0,
+                    holoEdge: 0.5,
                     ...options
                 };
                 this.init();
@@ -134,34 +199,67 @@
                     attribute vec3 a_color;
                     uniform mat4 u_viewProjection;
                     uniform float u_plasticScale;
-                    uniform vec2 u_resolution;
                     varying vec3 v_color;
                     varying vec2 v_screenPos;
+                    varying float v_depth;
                     void main() {
                         vec4 pos = u_viewProjection * vec4(a_position, 1.0);
                         gl_Position = pos;
                         float dist = pos.w;
-                        float size = (300.0 * a_scale * u_plasticScale) / dist;
+                        // Distance attenuation + user scale
+                        float size = (400.0 * a_scale * u_plasticScale) / dist;
                         gl_PointSize = max(2.0, size);
                         v_color = a_color;
                         v_screenPos = pos.xy / pos.w;
+                        v_depth = dist;
                     }
                 `;
+
+                // UPGRADED FRAGMENT SHADER (Kirigami Interference)
                 const fs = `
                     precision mediump float;
                     uniform vec2 u_kirigamiShift;
                     uniform float u_moireFreq;
+                    uniform float u_time;
+                    uniform float u_holoEdge;
                     varying vec3 v_color;
                     varying vec2 v_screenPos;
-                    void main() {
-                        vec2 coord = gl_PointCoord - vec2(0.5);
-                        if (dot(coord, coord) > 0.25) discard;
+                    varying float v_depth;
 
-                        float g1 = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq);
-                        float g2 = sin((v_screenPos.x + v_screenPos.y + u_kirigamiShift.x) * (u_moireFreq * 1.05));
-                        float interference = 0.5 + 0.5 * (g1 * g2);
-                        float alpha = 1.0 - smoothstep(0.24, 0.25, dot(coord, coord));
-                        gl_FragColor = vec4(v_color * (0.8 + 0.4 * interference), alpha);
+                    void main() {
+                        // 1. Circular Splat Geometry
+                        vec2 coord = gl_PointCoord - vec2(0.5);
+                        float r2 = dot(coord, coord);
+                        if (r2 > 0.25) discard;
+
+                        // 2. Kirigami Interference Pattern
+                        // Simulates wave interference through a mask
+                        float sx = sin(v_screenPos.x * 20.0 + u_time * 2.0);
+                        float sy = cos(v_screenPos.y * 20.0 - u_time * 1.5);
+
+                        // Complex Moiré
+                        float wave = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq + u_kirigamiShift.x);
+                        float wave2 = cos((v_screenPos.x - v_screenPos.y) * u_moireFreq * 0.9 + u_kirigamiShift.y);
+
+                        float interference = 0.5 + 0.5 * (wave * wave2);
+
+                        // 3. Holographic Edge Detection (Fresnel-like)
+                        // Uses radial distance from center of splat to simulate curvature
+                        float edge = smoothstep(0.1, 0.25, r2);
+                        float center = 1.0 - edge;
+
+                        // Mix colors
+                        vec3 baseColor = v_color;
+                        vec3 holoColor = vec3(0.5, 0.8, 1.0) * interference * 2.0; // Cyan tint
+
+                        // Final composite
+                        // "Holographic Edge" blends between flat color and interference pattern
+                        vec3 finalColor = mix(baseColor, holoColor, u_holoEdge * edge + interference * 0.2);
+
+                        // Alpha falloff
+                        float alpha = 1.0 - smoothstep(0.23, 0.25, r2);
+
+                        gl_FragColor = vec4(finalColor, alpha);
                     }
                 `;
 
@@ -191,9 +289,10 @@
                 this.uniforms = {
                     vp: gl.getUniformLocation(p, 'u_viewProjection'),
                     ps: gl.getUniformLocation(p, 'u_plasticScale'),
-                    res: gl.getUniformLocation(p, 'u_resolution'),
                     ks: gl.getUniformLocation(p, 'u_kirigamiShift'),
-                    mf: gl.getUniformLocation(p, 'u_moireFreq')
+                    mf: gl.getUniformLocation(p, 'u_moireFreq'),
+                    time: gl.getUniformLocation(p, 'u_time'),
+                    he: gl.getUniformLocation(p, 'u_holoEdge')
                 };
                 this.resize();
             }
@@ -242,25 +341,41 @@
 
                 gl.uniformMatrix4fv(this.uniforms.vp, false, vpMatrix);
                 gl.uniform1f(this.uniforms.ps, this.options.plasticScale);
-                gl.uniform2f(this.uniforms.res, this.canvas.width, this.canvas.height);
 
                 const time = Date.now() * 0.001;
+                gl.uniform1f(this.uniforms.time, time);
+
                 gl.uniform2f(this.uniforms.ks,
                     this.options.kirigamiShift[0] || Math.sin(time),
                     this.options.kirigamiShift[1] || Math.cos(time)
                 );
                 gl.uniform1f(this.uniforms.mf, this.options.moireFreq);
+                gl.uniform1f(this.uniforms.he, this.options.holoEdge);
 
                 gl.drawArrays(gl.POINTS, 0, this.count);
             }
         }
 
-        // 3. ExportManager (Simplified Stub for Demo)
         class ExportManager {
-            constructor(engine) { this.engine = engine; }
+            constructor() {}
             exportToParserator() {
-                log("Export functionality requires full build. This is the inline demo.", "info");
-                alert("For full export functionality, please run the build locally. This demo is optimized for mobile viewing.");
+                const payload = {
+                    version: "2.0.0",
+                    system: "Quatossian",
+                    timestamp: new Date().toISOString(),
+                    manifest: {
+                        lattice: "E8",
+                        projection: "Golden-Coxeter",
+                        nodes: 2400
+                    }
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'quatossian_manifest.jsoh';
+                a.click();
+                log("Exported JSOH Manifest.", 'success');
             }
         }
 
@@ -268,46 +383,34 @@
 
         (async function init() {
             try {
-                log("Starting inline demo...", 'info');
-
-                // Import Modules Dynamically with Error Trapping
-                // We use root-relative paths (/src/...) to ensure they work regardless of where this file is served
-                // assuming the site root contains the 'src' folder (which pages.yml ensures).
-
-                /*
-                   NOTE: Dynamic imports removed for stability.
-                   Using inlined classes defined above.
-                */
-
-                log("Modules loaded successfully (Inlined).", 'success');
-
-                // Mock Engine for ExportManager
-                const mockEngine = {
-                    statusManager: {
-                        info: (msg) => log('INFO: ' + msg),
-                        success: (msg) => log('SUCCESS: ' + msg, 'success'),
-                        error: (msg) => log('ERROR: ' + msg, 'error')
-                    }
-                };
+                log("Starting Quatossian system...", 'info');
 
                 const canvas = document.getElementById('canvas');
                 let renderer;
                 try {
-                    renderer = new PhillipsRenderer(canvas, { backgroundColor: [0.1, 0.1, 0.1, 1] });
-                    log("Renderer initialized.", 'success');
+                    renderer = new PhillipsRenderer(canvas, { backgroundColor: [0.05, 0.05, 0.05, 1] });
+                    log("Renderer initialized (WebGL).", 'success');
                 } catch (e) {
                     throw new Error(`Renderer Init Failed: ${e.message}`);
                 }
 
-                const exportManager = new ExportManager(mockEngine);
+                const exportManager = new ExportManager();
 
                 // State
                 const state = {
-                    count: 5000,
-                    scale: PLASTIC_CONSTANT,
-                    speed: 1.0,
+                    mode: 'e8', // Default to E8 Path
+                    count: 2400,
+                    scale: 1.32,
+                    speed: 0.5,
+                    edge: 0.5,
                     time: 0
                 };
+
+                // Sync UI
+                document.getElementById('countVal').textContent = state.count;
+                document.getElementById('scaleVal').textContent = state.scale;
+                document.getElementById('speedVal').textContent = state.speed;
+                document.getElementById('edgeVal').textContent = state.edge;
 
                 // Data Generation
                 function generateData() {
@@ -315,36 +418,70 @@
                     const scales = new Float32Array(state.count);
                     const colors = new Float32Array(state.count * 3);
 
-                    for (let i = 0; i < state.count; i++) {
-                        const sample = getPlasticSamplingPoint(i);
-                        const theta = sample.x * Math.PI * 2;
-                        const phi = Math.acos(2 * sample.y - 1);
+                    if (state.mode === 'e8') {
+                        // E8 Lattice Generation
+                        // Heuristic for spread based on count to fill volume
+                        const spread = 3;
 
-                        const r = 1.0 + Math.sin(theta * 3 + phi * 5) * 0.1; // Slight deformation
+                        for (let i = 0; i < state.count; i++) {
+                            // 1. Generate integer point in D8
+                            const v8 = E8Lattice.generateLatticePoint(i, spread);
 
-                        positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
-                        positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-                        positions[i*3+2] = r * Math.cos(phi);
+                            // 2. Project to 3D
+                            const p3 = E8Lattice.project8Dto3D(v8);
 
-                        // Plastic power scaling
-                        scales[i] = 1.0 / Math.pow(state.scale, (i % 5));
+                            // 3. Normalize for viewing
+                            // Scale down to fit in view
+                            positions[i*3] = p3.x * 0.15;
+                            positions[i*3+1] = p3.y * 0.15;
+                            positions[i*3+2] = p3.z * 0.15;
 
-                        // Procedural Color based on position
-                        colors[i*3] = (positions[i*3] + 1) * 0.5;
-                        colors[i*3+1] = (positions[i*3+1] + 1) * 0.5;
-                        colors[i*3+2] = (positions[i*3+2] + 1) * 0.5;
+                            // 4. Color based on 8D norm or position
+                            const r = Math.sqrt(p3.x*p3.x + p3.y*p3.y + p3.z*p3.z);
+                            colors[i*3] = 0.5 + 0.5 * Math.sin(r * 0.5);
+                            colors[i*3+1] = 0.5 + 0.5 * Math.cos(r * 0.3);
+                            colors[i*3+2] = 0.9; // Strong Blue/Purple
+
+                            // Scale points down for E8 to see structure
+                            scales[i] = 0.3;
+                        }
+                    } else {
+                        // Classic Plastic Generation
+                        for (let i = 0; i < state.count; i++) {
+                            const sample = getPlasticSamplingPoint(i);
+                            const theta = sample.x * Math.PI * 2;
+                            const phi = Math.acos(2 * sample.y - 1);
+
+                            const r = 1.0 + Math.sin(theta * 3 + phi * 5) * 0.1;
+
+                            positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                            positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                            positions[i*3+2] = r * Math.cos(phi);
+
+                            scales[i] = 1.0 / Math.pow(state.scale, (i % 5));
+
+                            colors[i*3] = (positions[i*3] + 1) * 0.5;
+                            colors[i*3+1] = (positions[i*3+1] + 1) * 0.5;
+                            colors[i*3+2] = (positions[i*3+2] + 1) * 0.5;
+                        }
                     }
 
                     renderer.setData({ positions, scales, colors });
                 }
 
                 // UI Listeners
+                document.getElementById('renderMode').addEventListener('change', (e) => {
+                    state.mode = e.target.value;
+                    generateData();
+                    log(`Switched to mode: ${state.mode}`, 'info');
+                });
+
                 document.getElementById('scale').addEventListener('input', (e) => {
                     state.scale = parseFloat(e.target.value);
                     document.getElementById('scaleVal').textContent = state.scale.toFixed(2);
                     if (renderer) {
                         renderer.options.plasticScale = state.scale;
-                        generateData();
+                        if(state.mode === 'plastic') generateData();
                     }
                 });
 
@@ -359,8 +496,14 @@
                     document.getElementById('speedVal').textContent = state.speed.toFixed(1);
                 });
 
+                document.getElementById('edge').addEventListener('input', (e) => {
+                    state.edge = parseFloat(e.target.value);
+                    document.getElementById('edgeVal').textContent = state.edge.toFixed(2);
+                    if(renderer) renderer.options.holoEdge = state.edge;
+                });
+
                 document.getElementById('exportBtn').addEventListener('click', () => {
-                    if (exportManager) exportManager.exportToParserator();
+                    exportManager.exportToParserator();
                 });
 
                 // Loop
@@ -373,13 +516,6 @@
                     const near = 0.1;
                     const far = 100.0;
 
-                    // Perspective Matrix (Column-Major)
-                    // f/aspect, 0, 0, 0
-                    // 0, f, 0, 0
-                    // 0, 0, (n+f)/(n-f), -1
-                    // 0, 0, 2nf/(n-f), 0
-                    // Note: WebGL standard clip space.
-
                     const proj = new Float32Array([
                         f / aspect, 0, 0, 0,
                         0, f, 0, 0,
@@ -387,38 +523,18 @@
                         0, 0, (2 * near * far) / (near - far), 0
                     ]);
 
-                    // ModelView: Rotate Y then Translate Z -2.5
-                    const c = Math.cos(state.time);
-                    const s = Math.sin(state.time);
+                    const c = Math.cos(state.time * 0.5);
+                    const s = Math.sin(state.time * 0.5);
 
-                    // Rotation (Y)
-                    // c, 0, -s, 0
-                    // 0, 1, 0, 0
-                    // s, 0, c, 0
-                    // 0, 0, 0, 1
-                    // But in Column Major:
-                    // Col 0: c, 0, s, 0 (Wait, Row0=c, Row2=s in col0?)
-                    // Let's do Row-Major then transpose, or just be careful.
-                    // Standard RotY:
-                    // [ c  0  s  0]
-                    // [ 0  1  0  0]
-                    // [-s  0  c  0]
-                    // [ 0  0  0  1]
-                    // Column Major Array:
+                    // Simple rotation around Y
                     const model = [
-                        c, 0, -s, 0,  // Col 0
-                        0, 1, 0, 0,   // Col 1
-                        s, 0, c, 0,   // Col 2
-                        0, 0, -2.5, 1 // Col 3 (Translation included here for simplicity)
+                        c, 0, -s, 0,
+                        0, 1, 0, 0,
+                        s, 0, c, 0,
+                        0, 0, -2.5, 1
                     ];
 
-                    // Multiply Proj * Model
                     const viewProjection = new Float32Array(16);
-
-                    // Simple 4x4 Multiply (P * M)
-                    // P is ViewProjection, M is ModelView
-                    // We need P * M.
-
                     const a = proj;
                     const b = model;
 
@@ -426,8 +542,6 @@
                         for (let row = 0; row < 4; row++) {
                             let sum = 0;
                             for (let k = 0; k < 4; k++) {
-                                // a is column major, so a[row, k] is a[k*4 + row]
-                                // b is column major, so b[k, col] is b[col*4 + k]
                                 sum += a[k*4 + row] * b[col*4 + k];
                             }
                             viewProjection[col*4 + row] = sum;
