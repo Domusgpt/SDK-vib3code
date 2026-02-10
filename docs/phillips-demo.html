@@ -236,6 +236,38 @@
                 }
                 return { left: qL, right: qR };
             }
+
+            // --- 4D ROTATION (QUATERNION) ---
+            static quatMul(a, b) {
+                return new Float32Array([
+                    a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
+                    a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
+                    a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
+                    a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]
+                ]);
+            }
+
+            // Conjugate of a quaternion
+            static quatConj(q) {
+                return new Float32Array([-q[0], -q[1], -q[2], q[3]]);
+            }
+
+            // Rotate 4D vector v by unit quaternion q: v' = q * v * q^-1
+            // Note: v is treated as pure quaternion (x,y,z,w)
+            // But wait, typical 3D rotation uses pure quat (x,y,z,0).
+            // For 4D rotation, we need Left * Right multiplication: v' = L * v * R
+            // Or simpler: Isoclinic rotation.
+            // Let's implement the standard single-quaternion rotation P' = Q * P * Q^-1 which rotates 3D subspace.
+            // But for 4D objects, we usually rotate using TWO quaternions: P' = L * P * R.
+            // If L=R, it's a 3D rotation. If L != R, it's a 4D double rotation.
+
+            static rotate4D(p, qTime) {
+                // p is the 4D point (x,y,z,w)
+                // qTime is the rotation quaternion
+                // Let's do a double isoclinic rotation: P' = Q * P (Left Multiply only)
+                // This rotates the 4-sphere.
+                return this.quatMul(qTime, p);
+            }
         }
 
         // 3. Renderer: PhillipsRenderer.js (With Kirigami Shader Upgrade)
@@ -668,7 +700,6 @@
                         // In Moxness mode, we need more points to find the slice intersections effectively
                         // or we iterate a larger volume.
                         const scanBudget = state.count * 10;
-                        let hitCount = 0;
 
                         for (let i = 0; i < scanBudget && hitCount < state.count; i++) {
                             // 1. Generate E8 Root / Lattice Point
@@ -679,31 +710,41 @@
                             const folded = E8Lattice.fold(v8);
                             const q = folded.left; // Use Left 600-cell
 
-                            // 3. 4D Rotation (Animation)
-                            // Rotate in XW and YZ planes
-                            const t = state.time;
-                            const c = Math.cos(t);
-                            const s = Math.sin(t);
+                            // 3. 4D Rotation (Animation via Quaternion)
+                            const t = state.time * 0.5;
+                            // Create a time-varying quaternion (Hopf rotation)
+                            const rotQuat = new Float32Array([
+                                Math.sin(t), 0, Math.cos(t), 0
+                            ]);
+                            // Normalize
+                            const mag = Math.sqrt(rotQuat[0]**2 + rotQuat[2]**2);
+                            rotQuat[0] /= mag; rotQuat[2] /= mag;
 
-                            // Simple 4D rotation logic (X, Y, Z, W)
-                            // Rotate X-W
-                            const x_rot = q[0]*c - q[3]*s;
-                            const w_rot = q[0]*s + q[3]*c;
-
-                            // Rotate Y-Z
-                            const y_rot = q[1]*c - q[2]*s;
-                            const z_rot = q[1]*s + q[2]*c;
+                            // Apply rotation: P' = Q * P
+                            // Use Left copy for geometry
+                            const pRot = E8Lattice.rotate4D(q, rotQuat);
 
                             // 4. Slice (Check W coordinate)
-                            if (Math.abs(w_rot - sliceOffset) < epsilon) {
-                                positions[hitCount*3] = x_rot * 0.5;
-                                positions[hitCount*3+1] = y_rot * 0.5;
-                                positions[hitCount*3+2] = z_rot * 0.5;
+                            // The slice plane is w = sliceOffset
+                            if (Math.abs(pRot[3] - sliceOffset) < epsilon) {
+                                positions[hitCount*3] = pRot[0] * 0.6;
+                                positions[hitCount*3+1] = pRot[1] * 0.6;
+                                positions[hitCount*3+2] = pRot[2] * 0.6;
 
-                                // Color by original 8D norm parity
-                                colors[hitCount*3] = (v8[0]%2===0) ? 0.9 : 0.1;
-                                colors[hitCount*3+1] = (v8[1]%2===0) ? 0.5 : 0.2;
-                                colors[hitCount*3+2] = (v8[2]%2===0) ? 0.9 : 0.4;
+                                // 5. Triadic Coloring
+                                // Use the Right copy (Conjugate) as the "Phase" for color
+                                // This implements the "Dialectic Color Synthesis"
+                                // Red/Green/Blue channels modulated by the Right 4D vector components
+
+                                const phase = folded.right;
+                                // Rotate phase as well to keep it dynamic
+                                const phaseRot = E8Lattice.rotate4D(phase, rotQuat);
+
+                                // Map 4D phase to RGB
+                                // R = |x|, G = |y|, B = |z| (normalized)
+                                colors[hitCount*3] = 0.2 + 0.8 * Math.abs(phaseRot[0]);
+                                colors[hitCount*3+1] = 0.2 + 0.8 * Math.abs(phaseRot[1]);
+                                colors[hitCount*3+2] = 0.2 + 0.8 * Math.abs(phaseRot[2]);
 
                                 scales[hitCount] = 0.5;
                                 hitCount++;
