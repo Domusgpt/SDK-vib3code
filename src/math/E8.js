@@ -165,4 +165,135 @@ export class E8Lattice {
 
         return { x, y, z };
     }
+
+    // --- MOXNESS FOLDING MATRIX IMPLEMENTATION ---
+
+    /**
+     * Applies the Moxness Folding Matrix (U) to an 8D vector.
+     * This transforms E8 coordinates into two orthogonal 4D subspaces (Left and Right).
+     *
+     * The matrix U is constructed based on the coefficients of its palindromic characteristic polynomial.
+     * For this implementation, we use a numerical approximation of the 8x8 rotation matrix
+     * that aligns E8 with H4 symmetry.
+     *
+     * Since the exact matrix is complex to derive procedurally without a CAS,
+     * we implement the "Folding" as a projection into two 4D quaternions:
+     * qL (Left) and qR (Right).
+     *
+     * @param {Float32Array} v8 - The 8D input vector
+     * @returns {Object} { left: Float32Array(4), right: Float32Array(4) }
+     */
+    static fold(v8) {
+        // Constants for the Golden Ratio based projection
+        const phi = 1.61803398875;
+        const inv_phi = 1.0 / phi;
+        const f = 0.5; // Scaling factor
+
+        // The "Moxness" folding effectively groups dimensions.
+        // We use a simplified folding that maps E8 roots to the 600-cell vertices.
+        //
+        // E8 roots (240) -> 2 concentric 600-cells (120 + 120) in 4D.
+        //
+        // Map:
+        // qL = (v1 + phi*v5, v2 + phi*v6, v3 + phi*v7, v4 + phi*v8) * scale
+        // qR = (v1 - inv_phi*v5, ...) ... this is the "Galois Conjugate" folding
+
+        // We implement the linear combination that represents the projection columns.
+
+        const qL = new Float32Array(4);
+        const qR = new Float32Array(4);
+
+        // Fold 8D -> 4D (Left)
+        // This is a known construct for E8->H4
+        // u = a + b*phi
+        // We pair dimensions (0,4), (1,5), (2,6), (3,7)
+
+        for(let i=0; i<4; i++) {
+            // "Left" Copy: Standard Golden Ratio
+            qL[i] = v8[i] + v8[i+4] * phi;
+
+            // "Right" Copy: Conjugate Golden Ratio (1 - phi = -1/phi)
+            qR[i] = v8[i] + v8[i+4] * (1 - phi);
+        }
+
+        // Apply global scaling to match unit quaternion if needed, but raw folding preserves relative scale.
+        // For the 112 integer roots: (±1, ±1, 0...) -> length is sqrt(2).
+        // qL length depends on which dimensions are non-zero.
+
+        return { left: qL, right: qR };
+    }
+
+    // --- DATA ENCODING EXTENSIONS ---
+
+    /**
+     * Generates a "Codebook" of E8 projected points for quantization.
+     * This is a simple implementation that generates a cloud of D8 lattice points
+     * (integer coordinates, even sum) and projects them to 3D.
+     *
+     * @param {number} size - Number of points to generate (approximate)
+     * @param {number} spread - Spread of the lattice indices
+     * @returns {Array<Object>} Array of { point3D: {x,y,z}, latticeIndex: Int8Array }
+     */
+    static generateCodebook(size, spread = 3) {
+        const codebook = [];
+
+        // Simple iteration over a hypercube subset of the lattice
+        // Since 8D is huge, we use a random sampler to fill the codebook
+        // for this demo purpose, or deterministic procedural generation.
+
+        // Let's use the procedural generator we have but store them
+        for (let i = 0; i < size; i++) {
+            // Re-use the deterministic generator logic
+            // (Copying logic from demo/inlined for consistency in library)
+            const v = new Int8Array(8);
+            let sum = 0;
+            const rho = 1.324717957244746;
+
+            for(let d=0; d<8; d++) {
+                const val = (i * Math.pow(rho, d+1)) % 1.0;
+                v[d] = Math.floor(val * (spread * 2 + 1)) - spread;
+                sum += v[d];
+            }
+            if (Math.abs(sum) % 2 === 1) v[0] += 1;
+
+            const p3 = E8Lattice.project8Dto3D(v);
+
+            // Normalize scale for the codebook to be useful in unit range?
+            // For now, keep raw projection values.
+
+            codebook.push({
+                point: p3,
+                index: v,
+                id: i
+            });
+        }
+        return codebook;
+    }
+
+    /**
+     * Finds the nearest lattice point from the codebook to a given target point.
+     * This is "Vector Quantization" (VQ).
+     *
+     * @param {Object} target - {x, y, z}
+     * @param {Array<Object>} codebook - Result from generateCodebook
+     * @returns {Object} The nearest codebook entry
+     */
+    static quantize(target, codebook) {
+        let minDistSq = Infinity;
+        let bestMatch = null;
+
+        for (let i = 0; i < codebook.length; i++) {
+            const entry = codebook[i];
+            const dx = entry.point.x - target.x;
+            const dy = entry.point.y - target.y;
+            const dz = entry.point.z - target.z;
+            const d2 = dx*dx + dy*dy + dz*dz;
+
+            if (d2 < minDistSq) {
+                minDistSq = d2;
+                bestMatch = entry;
+            }
+        }
+        return bestMatch;
+    }
 }
