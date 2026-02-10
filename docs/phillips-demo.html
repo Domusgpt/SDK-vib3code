@@ -356,26 +356,111 @@
             }
         }
 
-        class ExportManager {
-            constructor() {}
-            exportToParserator() {
-                const payload = {
-                    version: "2.0.0",
-                    system: "Quatossian",
+        // 4. Export: JSOH (Inlined Logic)
+        class JSOH {
+            static generate(splatData, metadata = {}) {
+                const { positions, scales, colors } = splatData;
+                const count = positions.length / 3;
+
+                // 1. Semantic Massing
+                let min = [Infinity, Infinity, Infinity];
+                let max = [-Infinity, -Infinity, -Infinity];
+                let centroid = [0, 0, 0];
+
+                for (let i = 0; i < count; i++) {
+                    const x = positions[i * 3];
+                    const y = positions[i * 3 + 1];
+                    const z = positions[i * 3 + 2];
+
+                    if (x < min[0]) min[0] = x;
+                    if (y < min[1]) min[1] = y;
+                    if (z < min[2]) min[2] = z;
+
+                    if (x > max[0]) max[0] = x;
+                    if (y > max[1]) max[1] = y;
+                    if (z > max[2]) max[2] = z;
+
+                    centroid[0] += x;
+                    centroid[1] += y;
+                    centroid[2] += z;
+                }
+
+                if (count > 0) {
+                    centroid[0] /= count;
+                    centroid[1] /= count;
+                    centroid[2] /= count;
+                }
+
+                // 2. Data Compression (Hex Colors)
+                const hexColors = [];
+                for (let i = 0; i < count; i++) {
+                    const r = Math.floor(colors[i * 3] * 255);
+                    const g = Math.floor(colors[i * 3 + 1] * 255);
+                    const b = Math.floor(colors[i * 3 + 2] * 255);
+                    // Simple hex encoding
+                    const hex = ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+                    hexColors.push(hex);
+                }
+
+                return {
+                    schema: "JSOH/1.0",
                     timestamp: new Date().toISOString(),
-                    manifest: {
-                        lattice: "E8",
-                        projection: "Golden-Coxeter",
-                        nodes: 2400
+                    metadata: {
+                        ...metadata,
+                        plasticRatio: PLASTIC_CONSTANT,
+                        splatCount: count,
+                        compressionTarget: "17b"
+                    },
+                    semanticMassing: {
+                        bounds: { min, max },
+                        centroid: centroid,
+                        dimensions: [
+                            max[0] - min[0],
+                            max[1] - min[1],
+                            max[2] - min[2]
+                        ]
+                    },
+                    data: {
+                        // Truncate precision for JSON compactness
+                        positions: Array.from(positions).map(v => Number(v.toFixed(4))),
+                        scales: Array.from(scales).map(v => Number(v.toFixed(4))),
+                        colors: hexColors
                     }
                 };
-                const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'quatossian_manifest.jsoh';
-                a.click();
-                log("Exported JSOH Manifest.", 'success');
+            }
+        }
+
+        class ExportManager {
+            constructor() {}
+            exportToParserator(splatData) {
+                if (!splatData) {
+                    log("No data available to export.", 'error');
+                    return;
+                }
+
+                try {
+                    log("Generating JSOH payload...", 'info');
+                    const payload = JSOH.generate(splatData, {
+                        system: "Quatossian",
+                        lattice: "E8",
+                        projection: "Golden-Coxeter"
+                    });
+
+                    const jsonStr = JSON.stringify(payload, null, 2);
+                    const blob = new Blob([jsonStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `quatossian_export_${Date.now()}.jsoh.json`;
+                    a.click();
+
+                    URL.revokeObjectURL(url);
+                    log(`Exported JSOH Payload (${(jsonStr.length/1024).toFixed(1)} KB).`, 'success');
+                } catch (e) {
+                    log(`Export Failed: ${e.message}`, 'error');
+                    console.error(e);
+                }
             }
         }
 
@@ -395,6 +480,7 @@
                 }
 
                 const exportManager = new ExportManager();
+                let currentData = null; // Store current point cloud for export
 
                 // State
                 const state = {
@@ -466,7 +552,8 @@
                         }
                     }
 
-                    renderer.setData({ positions, scales, colors });
+                    currentData = { positions, scales, colors };
+                    renderer.setData(currentData);
                 }
 
                 // UI Listeners
@@ -503,7 +590,7 @@
                 });
 
                 document.getElementById('exportBtn').addEventListener('click', () => {
-                    exportManager.exportToParserator();
+                    exportManager.exportToParserator(currentData);
                 });
 
                 // Loop
