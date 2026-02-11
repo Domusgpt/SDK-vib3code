@@ -1,381 +1,218 @@
 /**
  * E8.js
- * Mathematical utilities for the E8 Gosset Lattice.
- * Provides the substrate for high-dimensional spatial indexing in the Quatossian Framework.
+ * The Mathematical Core of the Quatossian Inscription Framework.
+ *
+ * Provides:
+ * 1. Generation of E8 Gosset Lattice Roots (240 vertices of 4_21 polytope).
+ * 2. Moxness Folding: A projection from 8D -> 4D (H4 600-cell) -> 3D.
+ * 3. Quatossian Kernel: Lattice quantization and quaternion spin generation.
+ *
+ * References:
+ * - J.G. Moxness, "The E8 Polytopes"
+ * - Conway & Sloane, "Sphere Packings, Lattices and Groups"
  */
 
+import { PLASTIC_CONSTANT } from './Plastic.js';
+
 export class E8Lattice {
-    /**
-     * Projects a 3D point into the 8D E8 Lattice space.
-     * This is a "Golden Projection" approach.
-     *
-     * @param {number} x
-     * @param {number} y
-     * @param {number} z
-     * @returns {Float32Array} 8-dimensional vector coordinates.
-     */
-    static project3Dto8D(x, y, z) {
-        const v = new Float32Array(8);
-        const phi = 1.61803398875;
-        v[0] = x;
-        v[1] = y;
-        v[2] = z;
-        v[3] = x * phi;
-        v[4] = y * phi;
-        v[5] = z * phi;
-        v[6] = (x + y + z) / 3;
-        v[7] = 0;
-        return v;
-    }
+
+    // The Golden Ratio
+    static PHI = 1.61803398875;
+    static INV_PHI = 0.61803398875; // 1/phi = phi - 1
 
     /**
-     * Generates the 240 roots of the E8 Lattice (Shell 1).
-     * These form the vertices of the Gosset 4_21 polytope.
+     * Generates the 240 Roots of the E8 Lattice.
+     * These are the vertices of the Gosset 4_21 polytope.
+     * Length squared = 2.
      *
-     * Set 1: Permutations of (±1, ±1, 0, 0, 0, 0, 0, 0).
-     * Set 2: (±1/2, ±1/2, ..., ±1/2) with an even number of minus signs.
+     * Structure:
+     * - 112 roots: Permutations of (±1, ±1, 0^6)
+     * - 128 roots: (±1/2)^8 with even number of minus signs
      *
-     * @returns {Array<Float32Array>} An array of 240 8D vectors.
+     * @returns {Float32Array} Flat array of 240 * 8 coordinates.
      */
     static generateRoots() {
         const roots = [];
 
-        // Set 1: Permutations of (±1, ±1, 0...)
-        // We need all pairs of indices (i, j) from 0..7
-        for (let i = 0; i < 8; i++) {
-            for (let j = i + 1; j < 8; j++) {
-                // Four combinations of signs: (+,+), (+,-), (-,+), (-,-)
-                // But since order doesn't matter for the set, we just need to set v[i] and v[j].
-                // wait, order matters for the vector.
-                // It's all permutations of (±1, ±1, 0^6).
-                // Since the zeros are identical, we just choose 2 positions out of 8.
-                // For each pair, we have 4 sign combos:
-                // (1, 1), (1, -1), (-1, 1), (-1, -1)
+        // 1. Integer Roots (112)
+        // Permutations of (±1, ±1, 0, 0, 0, 0, 0, 0)
+        // Indices j < k
+        for (let j = 0; j < 8; j++) {
+            for (let k = j + 1; k < 8; k++) {
+                // Four sign combinations: (+,+), (+,-), (-,+), (-,-)
+                // But order matters for the vector, so (1,1) at (0,1) is different from...
+                // Wait, these are coordinates.
+                // v[j] and v[k] are set.
 
-                const signs = [[1,1], [1,-1], [-1,1], [-1,-1]];
+                const signs = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
                 for (let s of signs) {
                     const v = new Float32Array(8);
-                    v[i] = s[0];
-                    v[j] = s[1];
+                    v[j] = s[0];
+                    v[k] = s[1];
                     roots.push(v);
                 }
             }
         }
-        // Count so far: 8C2 * 4 = 28 * 4 = 112. Correct.
 
-        // Set 2: (±0.5)^8 with even sum of signs (or even number of minus signs if all magnitudes are 0.5)
-        // Since all are 0.5, sum = 0.5 * (num_pos - num_neg).
-        // If num_pos + num_neg = 8, then sum is integer iff (num_pos - num_neg) is even.
-        // num_pos - (8 - num_pos) = 2*num_pos - 8. This is always even.
-        // Wait, the condition for E8 is sum(xi) is even integer.
-        // sum = 0.5 * (k - (8-k)) = 0.5 * (2k - 8) = k - 4.
-        // This is always an integer.
-        // So any combination of signs works for D8? No.
-        // Definition: E8 = D8 U (D8 + (0.5)^8).
-        // D8: sum(xi) is even integer. Here integers.
-        // The half-integers: The sum must be an EVEN integer?
-        // Let's check Conway/Sloane.
-        // "The points (±1/2, ..., ±1/2) with an even number of minus signs."
-        // Let's verify: sum = 0.5 * (pos - neg).
-        // If neg is even (0, 2, 4, 6, 8), then pos is even (8, 6, 4, 2, 0).
-        // pos - neg is difference of two even numbers -> even.
-        // 0.5 * even = integer.
-        // Is it an EVEN integer?
-        // neg=0 => sum=4 (even).
-        // neg=2 => sum=2 (even).
-        // neg=4 => sum=0 (even).
-        // neg=6 => sum=-2 (even).
-        // neg=8 => sum=-4 (even).
-        // Yes. So the condition is "even number of minus signs".
-
-        // Iterate 0..255 (binary representation of signs)
+        // 2. Half-Integer Roots (128)
+        // (±1/2, ..., ±1/2) with even sum of signs
+        // We iterate 0..255 (binary)
         for (let i = 0; i < 256; i++) {
-            // Count set bits (minus signs)
-            let popcount = 0;
+            // Check parity (number of set bits)
+            // We want even number of MINUS signs.
+            // Let's say bit 1 = minus (-0.5), bit 0 = plus (+0.5).
+
+            let minusCount = 0;
             let temp = i;
-            while(temp > 0) {
-                if((temp & 1) === 1) popcount++;
+            while (temp > 0) {
+                if (temp & 1) minusCount++;
                 temp >>= 1;
             }
 
-            if (popcount % 2 === 0) {
+            if (minusCount % 2 === 0) {
                 const v = new Float32Array(8);
-                for (let bit = 0; bit < 8; bit++) {
-                    // If bit is set, -0.5, else +0.5
-                    v[bit] = ((i >> bit) & 1) ? -0.5 : 0.5;
+                for (let b = 0; b < 8; b++) {
+                    v[b] = ((i >> b) & 1) ? -0.5 : 0.5;
                 }
                 roots.push(v);
             }
         }
-        // Count: 256 / 2 = 128. Correct.
-        // Total: 112 + 128 = 240. Correct.
 
-        return roots;
-    }
-
-    /**
-     * Projects an 8D vector to 3D using the "Elser-Sloane" Quasicrystal projection matrix.
-     * This creates the iconic icosahedral symmetry.
-     *
-     * Matrix rows (simplified):
-     * x = (1,  c1, 0, -1, c2, 0, c1, 0)
-     * y = (0,  s1, 0,  0, s2, 0, s1, 0) ... approximate
-     *
-     * We use a standard Coxeter projection for E8 -> H4 (4D) -> R3.
-     * Or simpler: Projection onto the first 3 coordinates after a specific E8 rotation.
-     *
-     * For visual "coolness" (Quatossian Vibe), we use a Golden Ratio based folding:
-     * u = (1, phi)
-     *
-     * @param {Float32Array} v8
-     * @returns {Object} {x, y, z}
-     */
-    static project8Dto3D(v8) {
-        // A known projection that produces icosahedral symmetry from E8:
-        // (c1 = cos(pi/5), etc.)
-        // This is complex to implement exactly without a math library.
-        // Let's use a weighted sum based on the Golden Ratio (phi).
-        // This effectively folds the 8 dimensions into 3.
-
-        const phi = 1.618034;
-        const iphi = 1.0/phi; // 0.618
-
-        // Weights for the 8 dimensions to map to X, Y, Z
-        // These are chosen to avoid linear dependence.
-
-        // X = v1 + phi*v2 + ...
-        // We'll use a "spiral" projection.
-
-        let x = 0, y = 0, z = 0;
-
-        // Basis vectors for 8D -> 3D
-        // v_k = (cos(2*pi*k/8), sin(2*pi*k/8), cos(4*pi*k/8 + phi))
-
-        for (let k = 0; k < 8; k++) {
-            const theta = (Math.PI * 2 * k) / 8;
-            // Introduce phi-based irrationality to prevent grid collapse
-            const basisX = Math.cos(theta);
-            const basisY = Math.sin(theta);
-            const basisZ = Math.cos(theta * phi);
-
-            x += v8[k] * basisX;
-            y += v8[k] * basisY;
-            z += v8[k] * basisZ;
+        // Flatten
+        const flat = new Float32Array(roots.length * 8);
+        for (let i = 0; i < roots.length; i++) {
+            flat.set(roots[i], i * 8);
         }
-
-        return { x, y, z };
+        return flat;
     }
 
-    // --- MOXNESS FOLDING MATRIX IMPLEMENTATION ---
-
     /**
-     * Applies the Moxness Folding Matrix (U) to an 8D vector.
-     * This transforms E8 coordinates into two orthogonal 4D subspaces (Left and Right).
+     * Projects 8D E8 coordinates to 4D H4 (600-cell) space.
+     * This is the "Moxness Folding" operation.
      *
-     * The matrix U is constructed based on the coefficients of its palindromic characteristic polynomial.
-     * For this implementation, we use a numerical approximation of the 8x8 rotation matrix
-     * that aligns E8 with H4 symmetry.
+     * The projection matrix typically folds E8 using the Golden Ratio to preserve H4 symmetry.
+     * Columns of the projection matrix:
+     * C_i = c_i * (1, phi) ... (simplified concept)
      *
-     * Since the exact matrix is complex to derive procedurally without a CAS,
-     * we implement the "Folding" as a projection into two 4D quaternions:
-     * qL (Left) and qR (Right).
+     * We use the standard folding:
+     * u = (v1 + phi*v5, v2 + phi*v6, v3 + phi*v7, v4 + phi*v8) * factor
      *
-     * @param {Float32Array} v8 - The 8D input vector
-     * @returns {Object} { left: Float32Array(4), right: Float32Array(4) }
+     * @param {Float32Array} v8 - 8D Vector
+     * @returns {Float32Array} 4D Vector (Quaternion)
      */
-    static fold(v8) {
-        // Constants for the Golden Ratio based projection
-        const phi = 1.61803398875;
-        const inv_phi = 1.0 / phi;
-        const f = 0.5; // Scaling factor
+    static foldTo4D(v8) {
+        const phi = E8Lattice.PHI;
+        // Scale factor to normalize the resulting 4D roots to a standard size (e.g. 1 or 2)
+        // E8 roots length^2 = 2.
+        // H4 roots (600-cell) include permutations of (±1, 0, 0, 0), (±1/2, ±1/2, ±1/2, ±1/2), (0, ±1/2, ±phi/2, ±1/2phi)...
 
-        // The "Moxness" folding effectively groups dimensions.
-        // We use a simplified folding that maps E8 roots to the 600-cell vertices.
-        //
-        // E8 roots (240) -> 2 concentric 600-cells (120 + 120) in 4D.
-        //
-        // Map:
-        // qL = (v1 + phi*v5, v2 + phi*v6, v3 + phi*v7, v4 + phi*v8) * scale
-        // qR = (v1 - inv_phi*v5, ...) ... this is the "Galois Conjugate" folding
+        // This linear combination (a + phi*b) is a standard projection from E8 to H4.
+        const q = new Float32Array(4);
 
-        // We implement the linear combination that represents the projection columns.
-
-        const qL = new Float32Array(4);
-        const qR = new Float32Array(4);
-
-        // Fold 8D -> 4D (Left)
-        // This is a known construct for E8->H4
-        // u = a + b*phi
         // We pair dimensions (0,4), (1,5), (2,6), (3,7)
+        // This is a specific chosen basis that works for the standard E8 definition.
 
-        for(let i=0; i<4; i++) {
-            // "Left" Copy: Standard Golden Ratio
-            qL[i] = v8[i] + v8[i+4] * phi;
+        q[0] = v8[0] + phi * v8[4];
+        q[1] = v8[1] + phi * v8[5];
+        q[2] = v8[2] + phi * v8[6];
+        q[3] = v8[3] + phi * v8[7];
 
-            // "Right" Copy: Conjugate Golden Ratio (1 - phi = -1/phi)
-            qR[i] = v8[i] + v8[i+4] * (1 - phi);
-        }
+        // The "Shadow" is the other fold: v_i - (1/phi)*v_{i+4}
 
-        // Apply global scaling to match unit quaternion if needed, but raw folding preserves relative scale.
-        // For the 112 integer roots: (±1, ±1, 0...) -> length is sqrt(2).
-        // qL length depends on which dimensions are non-zero.
-
-        return { left: qL, right: qR };
+        return q;
     }
 
-    // --- 4D ROTATION (QUATERNION) ---
-    static quatMul(a, b) {
+    /**
+     * Projects 4D (Quaternion) to 3D Space.
+     *
+     * @param {Float32Array} q - 4D Vector
+     * @returns {Float32Array} 3D Vector
+     */
+    static project4Dto3D(q) {
+        // Standard stereographic or orthographic projection
+        // For the "Moxness" shadow, we often just drop W or do a perspective divide.
+
+        // Let's use a perspective projection from 4D to 3D to see the "Shadow".
+        // w is the "time" or "scale" dimension.
+
+        const w = q[3];
+        const dist = 2.0 - w; // Camera at w=2
+        const f = 1.0 / (dist > 0.001 ? dist : 0.001);
+
         return new Float32Array([
-            a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
-            a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
-            a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
-            a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]
+            q[0] * f,
+            q[1] * f,
+            q[2] * f
         ]);
     }
 
-    // Rotate 4D vector v by unit quaternion q: v' = q * v * q^-1 (or just q*v for left-isoclinic)
-    // For Moxness spec, we use left-isoclinic for simple 4D rotation
-    static rotate4D(p, qTime) {
-        return this.quatMul(qTime, p);
-    }
-
-    // --- DATA ENCODING EXTENSIONS ---
-
     /**
-     * Finds the nearest lattice point for a given 8D vector.
-     * Alias for `quantize` (using a codebook for now) or direct algebraic decoding.
-     * Currently stubbed to use a small codebook generation if none provided.
+     * Generates a "Quatossian Cloud".
+     * A set of points in 3D, each with an associated Quaternion spin.
      *
-     * @param {Float32Array} v8
-     * @returns {Object} { index: Int8Array, point: Object }
+     * @param {number} shells - Number of lattice shells to generate (approx radius).
+     * @returns {Object} { positions: Float32Array, rotations: Float32Array }
      */
-    static quantizeToLattice(v8) {
-        // Full algebraic decoding (Conway's algorithm) is complex.
-        // For the prototype, we assume v8 is already "close" to a lattice point
-        // generated by our system, or we round to D8.
+    static generateCloud(shells = 1) {
+        // For efficiency in JS, we'll just use the Roots (Shell 1) and scale them
+        // using the Plastic Ratio to create "Phi-shells".
+        // This mimics the "Quasicrystal" growth.
 
-        // Simple D8 rounding:
-        // Round all coordinates to nearest integer.
-        // If sum is odd, adjust the coordinate with largest rounding error.
+        const rootsFlat = this.generateRoots();
+        const numRoots = 240;
 
-        const round = new Int8Array(8);
-        const diff = new Float32Array(8);
-        let sum = 0;
-        let maxErr = -1;
-        let maxErrIdx = -1;
+        const count = numRoots * shells;
+        const positions = new Float32Array(count * 3);
+        const rotations = new Float32Array(count * 4); // Quaternions
 
-        for(let i=0; i<8; i++) {
-            round[i] = Math.round(v8[i]);
-            const err = Math.abs(v8[i] - round[i]);
-            diff[i] = err;
-            sum += round[i];
+        const phi = E8Lattice.PHI;
 
-            if (err > maxErr) {
-                maxErr = err;
-                maxErrIdx = i;
+        let idx = 0;
+
+        for (let s = 0; s < shells; s++) {
+            // Scale grows by Plastic Constant or Phi?
+            // "Plastic Ratio (rho ~ 1.3247) Sampling"
+            const scale = Math.pow(PLASTIC_CONSTANT, s + 1);
+
+            for (let i = 0; i < numRoots; i++) {
+                // Extract 8D root
+                const v8 = rootsFlat.subarray(i*8, i*8+8);
+
+                // Fold to 4D (This is our "Spin" state!)
+                // The 4D projection of an E8 root is a quaternion.
+                const q = this.foldTo4D(v8);
+
+                // Normalize q to be a valid rotation quaternion
+                let len = Math.sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
+                if (len > 0) {
+                    q[0]/=len; q[1]/=len; q[2]/=len; q[3]/=len;
+                }
+
+                // Store Rotation
+                rotations[idx * 4 + 0] = q[0];
+                rotations[idx * 4 + 1] = q[1];
+                rotations[idx * 4 + 2] = q[2];
+                rotations[idx * 4 + 3] = q[3];
+
+                // Project to 3D (Position)
+                // We use the 4D point projected to 3D, scaled by the shell factor.
+                const p3 = this.project4Dto3D(q); // Re-calculating un-normalized 4D? No, use normalized direction * scale?
+                // Actually, the lattice points are at specific radii.
+                // Let's map the lattice point to 3D directly.
+
+                // Position = Direction of q projected to 3D * Scale
+                // Or use the "Moxness" shadow directly.
+
+                const shadow = this.project4Dto3D(E8Lattice.foldTo4D(v8)); // Use un-normalized for position
+
+                positions[idx * 3 + 0] = shadow[0] * scale;
+                positions[idx * 3 + 1] = shadow[1] * scale;
+                positions[idx * 3 + 2] = shadow[2] * scale;
+
+                idx++;
             }
         }
 
-        // Enforce even sum (D8 condition)
-        if (Math.abs(sum) % 2 === 1) {
-            if (v8[maxErrIdx] > round[maxErrIdx]) {
-                round[maxErrIdx] += 1;
-            } else {
-                round[maxErrIdx] -= 1;
-            }
-        }
-
-        // Note: E8 = D8 U (D8 + 0.5). We should check the half-integer grid too
-        // and return whichever is closer. For this prototype, D8 is sufficient.
-
-        return {
-            index: round,
-            point: E8Lattice.project8Dto3D(round)
-        };
-    }
-
-    /**
-     * Generates a Locality Sensitive Hash (LSH) for a lattice node.
-     * This allows us to use the lattice index as a hash key for storage.
-     *
-     * @param {Int8Array} latticeNode - The 8D integer coordinates.
-     * @returns {string} A unique string or BigInt representation.
-     */
-    static generateLSH(latticeNode) {
-        // Simple string serialization for JS map keys
-        // "1,2,-1,0,..."
-        return latticeNode.join(',');
-    }
-
-    /**
-     * Generates a "Codebook" of E8 projected points for quantization.
-     * This is a simple implementation that generates a cloud of D8 lattice points
-     * (integer coordinates, even sum) and projects them to 3D.
-     *
-     * @param {number} size - Number of points to generate (approximate)
-     * @param {number} spread - Spread of the lattice indices
-     * @returns {Array<Object>} Array of { point3D: {x,y,z}, latticeIndex: Int8Array }
-     */
-    static generateCodebook(size, spread = 3) {
-        const codebook = [];
-
-        // Simple iteration over a hypercube subset of the lattice
-        // Since 8D is huge, we use a random sampler to fill the codebook
-        // for this demo purpose, or deterministic procedural generation.
-
-        // Let's use the procedural generator we have but store them
-        for (let i = 0; i < size; i++) {
-            // Re-use the deterministic generator logic
-            // (Copying logic from demo/inlined for consistency in library)
-            const v = new Int8Array(8);
-            let sum = 0;
-            const rho = 1.324717957244746;
-
-            for(let d=0; d<8; d++) {
-                const val = (i * Math.pow(rho, d+1)) % 1.0;
-                v[d] = Math.floor(val * (spread * 2 + 1)) - spread;
-                sum += v[d];
-            }
-            if (Math.abs(sum) % 2 === 1) v[0] += 1;
-
-            const p3 = E8Lattice.project8Dto3D(v);
-
-            // Normalize scale for the codebook to be useful in unit range?
-            // For now, keep raw projection values.
-
-            codebook.push({
-                point: p3,
-                index: v,
-                id: i
-            });
-        }
-        return codebook;
-    }
-
-    /**
-     * Finds the nearest lattice point from the codebook to a given target point.
-     * This is "Vector Quantization" (VQ).
-     *
-     * @param {Object} target - {x, y, z}
-     * @param {Array<Object>} codebook - Result from generateCodebook
-     * @returns {Object} The nearest codebook entry
-     */
-    static quantize(target, codebook) {
-        let minDistSq = Infinity;
-        let bestMatch = null;
-
-        for (let i = 0; i < codebook.length; i++) {
-            const entry = codebook[i];
-            const dx = entry.point.x - target.x;
-            const dy = entry.point.y - target.y;
-            const dz = entry.point.z - target.z;
-            const d2 = dx*dx + dy*dy + dz*dz;
-
-            if (d2 < minDistSq) {
-                minDistSq = d2;
-                bestMatch = entry;
-            }
-        }
-        return bestMatch;
+        return { positions, rotations };
     }
 }

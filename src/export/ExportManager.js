@@ -4,7 +4,8 @@
  */
 import { PhillipsRenderer } from '../systems/PhillipsRenderer.js';
 import { JSOH } from './JSOH.js';
-import { PLASTIC_CONSTANT, getPlasticSamplingPoint } from '../math/Plastic.js';
+import { E8Lattice } from '../math/E8.js';
+import { PLASTIC_CONSTANT } from '../math/Plastic.js';
 
 export class ExportManager {
     constructor(engine) {
@@ -61,56 +62,63 @@ export class ExportManager {
 
     /**
      * Export to Parserator (AI Agent Ready Format)
-     * Generates a "Canonical View" and JSOH metadata.
+     * Generates a "Canonical View" and JSOH metadata using the Quatossian E8 Framework.
      */
     async exportToParserator() {
-        if (this.engine.statusManager) this.engine.statusManager.info('Generating Parserator Package...');
+        if (this.engine.statusManager) this.engine.statusManager.info('Generating Quatossian Parserator Package...');
 
-        // 1. Generate Synthetic Plastic Cloud (Since we don't have a real point cloud source yet)
-        const pointCount = 5000;
-        const positions = new Float32Array(pointCount * 3);
+        // 1. Generate Quatossian Cloud (E8 Lattice + Spin)
+        // Use 20 shells to approximate ~4800 points (240 roots * 20)
+        const shells = 20;
+        const cloud = E8Lattice.generateCloud(shells);
+
+        const positions = cloud.positions;
+        const rotations = cloud.rotations;
+        const pointCount = positions.length / 3;
+
         const scales = new Float32Array(pointCount);
         const colors = new Float32Array(pointCount * 3);
 
+        // Procedural generation of Scale and Color based on Lattice structure
         for (let i = 0; i < pointCount; i++) {
-            // Use Plastic Sampling for low-discrepancy distribution
-            const sample = getPlasticSamplingPoint(i);
+            // Determine shell index (approximate)
+            const shellIndex = Math.floor(i / 240);
 
-            // Map 0..1 to -1..1 spherical distribution approx
-            const theta = sample.x * Math.PI * 2;
-            const phi = Math.acos(2 * sample.y - 1);
+            // Scale follows Plastic Power Law
+            scales[i] = 1.0 / Math.pow(PLASTIC_CONSTANT, (shellIndex % 5) + 1);
 
-            const r = 1.0; // Unit sphere
-            positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
-            positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-            positions[i*3+2] = r * Math.cos(phi);
-
-            // Scale modulated by Plastic powers
-            // Power law distribution: 1/rho^k
-            scales[i] = 1.0 / Math.pow(PLASTIC_CONSTANT, (i % 5));
-
-            // Procedural Color
-            colors[i*3] = (Math.sin(theta) + 1) * 0.5;
-            colors[i*3+1] = (Math.cos(phi) + 1) * 0.5;
-            colors[i*3+2] = 0.8;
+            // Color based on 4D Quaternion Spin Phase
+            // q = (x, y, z, w)
+            // Color mapping: RGB = (x+0.5, y+0.5, z+0.5)
+            const qIdx = i * 4;
+            colors[i*3] = (rotations[qIdx] + 1.0) * 0.5;   // R from Q.x
+            colors[i*3+1] = (rotations[qIdx+1] + 1.0) * 0.5; // G from Q.y
+            colors[i*3+2] = (rotations[qIdx+2] + 1.0) * 0.5; // B from Q.z
+            // Alpha/Intensity is implicit in the renderer
         }
 
-        const splatData = { positions, scales, colors };
+        const splatData = { positions, scales, colors, rotations };
 
         // 2. Render Canonical View
         const canvas = document.createElement('canvas');
         canvas.width = 512;
         canvas.height = 512;
-        const renderer = this.createPhillipsRenderer(canvas, { backgroundColor: [0,0,0,1] });
+
+        // Use PhillipsRenderer with Quatossian support
+        const renderer = this.createPhillipsRenderer(canvas, {
+            backgroundColor: [0,0,0,1],
+            moireFreq: 30.0,
+            kirigamiShift: [0.1, 0.1] // Fixed shift for canonical consistency
+        });
 
         renderer.setData(splatData);
 
         // Canonical Camera: Orthographic or Fixed Perspective looking at center
-        // Simple scale matrix to fit unit sphere in view
+        // Adjusted scale for E8 cloud bounds
         const viewProjection = new Float32Array([
-            0.8, 0, 0, 0,
-            0, 0.8, 0, 0,
-            0, 0, 0.5, 0,
+            0.15, 0, 0, 0,
+            0, 0.15, 0, 0,
+            0, 0, 0.1, 0,
             0, 0, 0, 1
         ]);
 
@@ -125,27 +133,31 @@ export class ExportManager {
         reader.onloadend = () => {
             const base64Image = reader.result;
 
-            // 4. Generate JSOH
+            // 4. Generate JSOH with Quatossian Metadata
             const jsoh = JSOH.generate(splatData, {
-                generatedBy: "PhillipsRenderer",
-                viewType: "Canonical"
+                generatedBy: "PhillipsRenderer (Quatossian)",
+                viewType: "Canonical",
+                lattice: "E8 Gosset",
+                folding: "Moxness-Phillips"
             });
 
             // 5. Package
             const pkg = {
-                parseratorVersion: "1.0",
+                parseratorVersion: "2.0-quatossian",
                 image: base64Image,
                 structure: jsoh
             };
 
             const json = JSON.stringify(pkg, null, 2);
-            this.downloadFile(json, 'parserator-package.json', 'application/json');
-            if (this.engine.statusManager) this.engine.statusManager.success('Parserator Package Exported');
+            this.downloadFile(json, 'parserator-quatossian.json', 'application/json');
+            if (this.engine.statusManager) this.engine.statusManager.success('Quatossian Package Exported');
 
             // Cleanup
-            renderer.destroy();
+            renderer.destroy(); // Ensure PhillipsRenderer has a destroy method
         };
     }
+
+    // ... (Rest of the file remains unchanged, saving space)
     
     /**
      * Save to Gallery - Creates properly formatted collection for gallery system

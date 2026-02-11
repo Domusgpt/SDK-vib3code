@@ -3,286 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phillips Rendering System Demo (E8 Enabled)</title>
+    <title>Quatossian Inscription Framework - Demo v2.1</title>
     <style>
-        body { margin: 0; background: #050505; color: #fff; font-family: monospace; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; }
         canvas { display: block; width: 100vw; height: 100vh; }
         #controls {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.85);
+            background: rgba(10, 10, 16, 0.9);
             padding: 20px;
-            border-radius: 8px;
-            width: 300px;
-            border: 1px solid #333;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            width: 320px;
+            border: 1px solid #334455;
+            box-shadow: 0 0 30px rgba(0, 100, 255, 0.1);
+            backdrop-filter: blur(5px);
         }
         .control-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 12px; }
-        input[type="range"] { width: 100%; cursor: pointer; }
-        select { width: 100%; padding: 5px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; }
+        label { display: block; margin-bottom: 5px; color: #88aaff; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #4a9eff; }
+        select { width: 100%; padding: 8px; background: #111; color: #fff; border: 1px solid #334455; border-radius: 2px; font-family: inherit; font-size: 12px; }
         button {
-            background: #4a9eff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
+            background: linear-gradient(135deg, #224466, #112233);
+            color: #4a9eff;
+            border: 1px solid #334455;
+            padding: 12px;
             cursor: pointer;
-            border-radius: 4px;
             width: 100%;
             margin-top: 10px;
             font-weight: bold;
             text-transform: uppercase;
             font-size: 11px;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
         }
-        button:hover { background: #3a8eef; box-shadow: 0 0 10px rgba(74, 158, 255, 0.4); }
-        .value { float: right; color: #4a9eff; }
-        h1 { margin: 0 0 20px 0; font-size: 1.2em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee; }
-        .mode-label { color: #88ff88; font-weight: bold; margin-bottom: 10px; display: block; }
+        button:hover { background: #335577; box-shadow: 0 0 15px rgba(74, 158, 255, 0.2); border-color: #4a9eff; }
+        .value { float: right; color: #fff; }
+        h1 { margin: 0 0 20px 0; font-size: 14px; border-bottom: 1px solid #334455; padding-bottom: 10px; color: #4a9eff; letter-spacing: 2px; }
+        .status { font-size: 10px; color: #556677; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <div id="error-log" style="display:none; position:fixed; bottom:0; left:0; right:0; height:150px; background:rgba(50,0,0,0.9); color:#ffaaaa; font-family:monospace; font-size:12px; padding:10px; overflow-y:scroll; z-index:9999; border-top:2px solid #ff0000;">
-        <div style="font-weight:bold; border-bottom:1px solid #ff5555; margin-bottom:5px;">System Log (Errors & Info)</div>
-        <div id="log-content"></div>
-    </div>
-
     <div id="controls">
-        <h1>Phillips System v2</h1>
+        <h1>QUATOSSIAN FRAMEWORK</h1>
 
         <div class="control-group">
-            <label class="mode-label">RENDER MODE</label>
+            <label>Lattice Projection Mode</label>
             <select id="renderMode">
-                <option value="e8">Quatossian (E8 Lattice)</option>
-                <option value="plastic">Classic (Plastic Ratio)</option>
-                <option value="torus_e8">Shape Encoding: Torus (E8)</option>
-                <option value="moxness">Moxness Folding (4D Shadow)</option>
+                <option value="e8_cloud">E8 Lattice (Quatossian Cloud)</option>
+                <option value="moxness">Moxness Folding (4D Slice)</option>
+                <option value="plastic">Plastic Ratio (Reference)</option>
             </select>
         </div>
 
         <div class="control-group">
-            <label>Scale / Dispersion <span id="scaleVal" class="value">1.32</span></label>
-            <input type="range" id="scale" min="0.5" max="5.0" step="0.01" value="1.3247">
+            <label>Lattice Density (Shells) <span id="countVal" class="value">20</span></label>
+            <input type="range" id="shells" min="1" max="50" step="1" value="20">
+            <div class="status">Points: <span id="pointCount">4800</span> (Shells * 240)</div>
         </div>
 
         <div class="control-group">
-            <label>Lattice Density (Points) <span id="countVal" class="value">240</span></label>
-            <input type="range" id="count" min="240" max="10000" step="100" value="2400">
+            <label>Moiré Interference <span id="moireVal" class="value">30.0</span></label>
+            <input type="range" id="moire" min="0" max="100.0" step="1.0" value="30.0">
         </div>
 
         <div class="control-group">
-            <label>Holographic Edge <span id="edgeVal" class="value">0.5</span></label>
-            <input type="range" id="edge" min="0.0" max="1.0" step="0.01" value="0.5">
+            <label>Kirigami Shift <span id="shiftVal" class="value">0.1</span></label>
+            <input type="range" id="shift" min="0.0" max="1.0" step="0.01" value="0.1">
         </div>
 
-        <div class="control-group">
-            <label>Spin Speed <span id="speedVal" class="value">0.5</span></label>
-            <input type="range" id="speed" min="0" max="5.0" step="0.1" value="0.5">
-        </div>
-
-        <button id="exportBtn">Export JSOH Payload</button>
+        <button id="exportBtn">Export to Parserator (JSOH)</button>
+        <div id="log" class="status" style="color: #88ff88; min-height: 15px;"></div>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <script>
-        // Global Error Handler
-        const logEl = document.getElementById('log-content');
-        const errContainer = document.getElementById('error-log');
+        // --- INLINED CORE MATH (From src/math/E8.js and Plastic.js) ---
 
-        function log(msg, type='info') {
-            errContainer.style.display = 'block';
-            const div = document.createElement('div');
-            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            if (type === 'error') div.style.color = '#ff5555';
-            else if (type === 'success') div.style.color = '#55ff55';
-            else div.style.color = '#cccccc';
-            logEl.appendChild(div);
-            logEl.scrollTop = logEl.scrollHeight;
-            console.log(msg);
-        }
-
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            log(`ERROR: ${msg} (${url}:${lineNo})`, 'error');
-            return false;
-        };
-
-        log("Initializing Quatossian Framework...", 'info');
-    </script>
-
-    <script>
-        // --- INLINED DEPENDENCIES ---
-
-        // 1. Math: Plastic.js
         const PLASTIC_CONSTANT = 1.324717957244746;
-        function getPlasticSamplingPoint(index) {
-            const rho = PLASTIC_CONSTANT;
-            const a1 = 1.0 / rho;
-            const a2 = 1.0 / (rho * rho);
-            return {
-                x: (0.5 + a1 * index) % 1.0,
-                y: (0.5 + a2 * index) % 1.0
-            };
-        }
+        const PHI = 1.61803398875;
 
-        // 2. Math: E8.js (Inlined Logic)
         class E8Lattice {
-            static project3Dto8D(x, y, z) {
-                // Simplified stub for completeness, not used directly in generation loop for speed
-                return new Float32Array([x, y, z, 0, 0, 0, 0, 0]);
-            }
-
-            // Generate a point in D8 lattice (subset of E8) from a seed index
-            // Uses Plastic sequence to pick integer coordinates, enforces even sum
-            static generateLatticePoint(index, spread=4) {
-                const v = new Int8Array(8);
-                let sum = 0;
-
-                // Deterministic Pseudo-Random based on Plastic Ratio
-                // avoiding Math.random for stability
-                const rho = 1.324717957244746;
-
-                for(let i=0; i<8; i++) {
-                    // Unique offset for each dimension based on index
-                    const val = (index * Math.pow(rho, i+1)) % 1.0;
-                    // Map 0..1 to -spread..spread
-                    v[i] = Math.floor(val * (spread * 2 + 1)) - spread;
-                    sum += v[i];
-                }
-
-                // Enforce D8 condition: sum of coordinates must be even
-                if (Math.abs(sum) % 2 === 1) {
-                    v[0] += 1; // Adjust first coordinate to fix parity
-                }
-                return v;
-            }
-
-            // Project 8D to 3D (Golden Projection)
-            static project8Dto3D(v8) {
-                const phi = 1.618034;
-                let x = 0, y = 0, z = 0;
-                for (let k = 0; k < 8; k++) {
-                    const theta = (Math.PI * 2 * k) / 8;
-                    const bX = Math.cos(theta);
-                    const bY = Math.sin(theta);
-                    const bZ = Math.cos(theta * phi);
-                    x += v8[k] * bX;
-                    y += v8[k] * bY;
-                    z += v8[k] * bZ;
-                }
-                return {x, y, z};
-            }
-
-            // --- VQ ADDITION ---
-            // Generates a "Codebook" of E8 projected points for quantization.
-            static generateCodebook(size, spread = 3) {
-                const codebook = [];
-                for (let i = 0; i < size; i++) {
-                    // Generate integer point in D8 (consistent with generateLatticePoint)
-                    const v = new Int8Array(8);
-                    let sum = 0;
-                    const rho = 1.324717957244746;
-                    for(let d=0; d<8; d++) {
-                        const val = (i * Math.pow(rho, d+1)) % 1.0;
-                        v[d] = Math.floor(val * (spread * 2 + 1)) - spread;
-                        sum += v[d];
-                    }
-                    if (Math.abs(sum) % 2 === 1) v[0] += 1;
-
-                    const p3 = this.project8Dto3D(v);
-
-                    // Normalize for quantization lookup
-                    // We need a consistent scale. Let's assume codebook is generated in "Lattice Units"
-                    // and targets are scaled to match.
-
-                    codebook.push({
-                        point: p3,
-                        index: v, // The "Compressed" data (8 integers)
-                        id: i
-                    });
-                }
-                return codebook;
-            }
-
-            // Finds nearest lattice point (Naive Search)
-            // Real implementation would use kd-tree or lattice decoding algorithm (Conway)
-            static quantize(target, codebook) {
-                let minDistSq = Infinity;
-                let bestMatch = null;
-                for (let i = 0; i < codebook.length; i++) {
-                    const entry = codebook[i];
-                    const dx = entry.point.x - target.x;
-                    const dy = entry.point.y - target.y;
-                    const dz = entry.point.z - target.z;
-                    const d2 = dx*dx + dy*dy + dz*dz;
-                    if (d2 < minDistSq) {
-                        minDistSq = d2;
-                        bestMatch = entry;
+            // Generate 240 Roots of E8
+            static generateRoots() {
+                const roots = [];
+                // 1. Integer Roots (112): Permutations of (±1, ±1, 0^6)
+                for (let j = 0; j < 8; j++) {
+                    for (let k = j + 1; k < 8; k++) {
+                        const signs = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+                        for (let s of signs) {
+                            const v = new Float32Array(8);
+                            v[j] = s[0]; v[k] = s[1];
+                            roots.push(v);
+                        }
                     }
                 }
-                return bestMatch;
-            }
-
-            // --- MOXNESS FOLDING ---
-            static fold(v8) {
-                const phi = 1.61803398875;
-                const qL = new Float32Array(4);
-                const qR = new Float32Array(4);
-                // Fold 8D -> 4D (Left) via Golden Ratio
-                for(let i=0; i<4; i++) {
-                    qL[i] = v8[i] + v8[i+4] * phi; // Left Copy
-                    qR[i] = v8[i] + v8[i+4] * (1 - phi); // Right Copy (Conjugate)
+                // 2. Half-Integer Roots (128): (±0.5)^8 with even sum of signs
+                for (let i = 0; i < 256; i++) {
+                    let minusCount = 0;
+                    let temp = i;
+                    while(temp > 0) { if(temp & 1) minusCount++; temp >>= 1; }
+                    if (minusCount % 2 === 0) {
+                        const v = new Float32Array(8);
+                        for(let b=0; b<8; b++) v[b] = ((i >> b) & 1) ? -0.5 : 0.5;
+                        roots.push(v);
+                    }
                 }
-                return { left: qL, right: qR };
+                // Flatten
+                const flat = new Float32Array(roots.length * 8);
+                for(let i=0; i<roots.length; i++) flat.set(roots[i], i*8);
+                return flat;
             }
 
-            // --- 4D ROTATION (QUATERNION) ---
-            static quatMul(a, b) {
-                return new Float32Array([
-                    a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
-                    a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
-                    a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
-                    a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]
-                ]);
+            // Moxness Folding: 8D -> 4D (Left H4)
+            static foldTo4D(v8) {
+                const q = new Float32Array(4);
+                // Standard E8->H4 fold: u = a + phi*b
+                q[0] = v8[0] + PHI * v8[4];
+                q[1] = v8[1] + PHI * v8[5];
+                q[2] = v8[2] + PHI * v8[6];
+                q[3] = v8[3] + PHI * v8[7];
+                return q;
             }
 
-            // Conjugate of a quaternion
-            static quatConj(q) {
-                return new Float32Array([-q[0], -q[1], -q[2], q[3]]);
+            // Project 4D to 3D (Shadow)
+            static project4Dto3D(q) {
+                // Simple w-drop or perspective. Let's use 3D projection of the 4D point.
+                // Scale factor to normalize visualization
+                const f = 1.0;
+                return new Float32Array([q[0]*f, q[1]*f, q[2]*f]);
             }
 
-            // Rotate 4D vector v by unit quaternion q: v' = q * v * q^-1
-            // Note: v is treated as pure quaternion (x,y,z,w)
-            // But wait, typical 3D rotation uses pure quat (x,y,z,0).
-            // For 4D rotation, we need Left * Right multiplication: v' = L * v * R
-            // Or simpler: Isoclinic rotation.
-            // Let's implement the standard single-quaternion rotation P' = Q * P * Q^-1 which rotates 3D subspace.
-            // But for 4D objects, we usually rotate using TWO quaternions: P' = L * P * R.
-            // If L=R, it's a 3D rotation. If L != R, it's a 4D double rotation.
+            // Generate "Quatossian Cloud": Positions + Rotations (Spin)
+            static generateCloud(shells = 1) {
+                const rootsFlat = this.generateRoots();
+                const numRoots = 240;
+                const count = numRoots * shells;
 
-            static rotate4D(p, qTime) {
-                // p is the 4D point (x,y,z,w)
-                // qTime is the rotation quaternion
-                // Let's do a double isoclinic rotation: P' = Q * P (Left Multiply only)
-                // This rotates the 4-sphere.
-                return this.quatMul(qTime, p);
+                const positions = new Float32Array(count * 3);
+                const rotations = new Float32Array(count * 4);
+
+                let idx = 0;
+                for (let s = 0; s < shells; s++) {
+                    // Plastic Scale expansion
+                    const scale = Math.pow(PLASTIC_CONSTANT, s + 1) * 0.2; // Scale factor for viz
+
+                    for (let i = 0; i < numRoots; i++) {
+                        const v8 = rootsFlat.subarray(i*8, i*8+8);
+
+                        // Spin State comes from the Folding
+                        const q = this.foldTo4D(v8);
+
+                        // Normalize q for rotation
+                        const len = Math.sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
+                        const qNorm = new Float32Array([q[0]/len, q[1]/len, q[2]/len, q[3]/len]);
+
+                        rotations[idx*4+0] = qNorm[0];
+                        rotations[idx*4+1] = qNorm[1];
+                        rotations[idx*4+2] = qNorm[2];
+                        rotations[idx*4+3] = qNorm[3];
+
+                        // Position comes from the Fold projected to 3D * Shell Scale
+                        // Note: We use the fold direction as the position vector
+                        positions[idx*3+0] = q[0] * scale;
+                        positions[idx*3+1] = q[1] * scale;
+                        positions[idx*3+2] = q[2] * scale;
+
+                        idx++;
+                    }
+                }
+                return { positions, rotations };
             }
         }
 
-        // 3. Renderer: PhillipsRenderer.js (With Kirigami Shader Upgrade)
+        // --- RENDERER (From src/systems/PhillipsRenderer.js) ---
+
         class PhillipsRenderer {
             constructor(canvas, options = {}) {
                 this.canvas = canvas;
                 this.gl = canvas.getContext('webgl', { alpha: true, antialias: false });
-                if (!this.gl) throw new Error('PhillipsRenderer: WebGL not supported');
-
                 this.options = {
                     plasticScale: PLASTIC_CONSTANT,
-                    backgroundColor: [0, 0, 0, 0],
-                    kirigamiShift: [0, 0],
+                    backgroundColor: [0,0,0,1],
+                    kirigamiShift: [0,0],
                     moireFreq: 20.0,
-                    holoEdge: 0.5,
                     ...options
                 };
                 this.init();
@@ -290,118 +195,124 @@
 
             init() {
                 const gl = this.gl;
+
+                // Vertex Shader with Rotation Attribute
                 const vs = `
                     attribute vec3 a_position;
                     attribute float a_scale;
                     attribute vec3 a_color;
+                    attribute vec4 a_rotation; // Quatossian Spin
+
                     uniform mat4 u_viewProjection;
                     uniform float u_plasticScale;
+
                     varying vec3 v_color;
                     varying vec2 v_screenPos;
-                    varying float v_depth;
+                    varying vec4 v_rotation;
+
                     void main() {
                         vec4 pos = u_viewProjection * vec4(a_position, 1.0);
                         gl_Position = pos;
+
                         float dist = pos.w;
-                        // Distance attenuation + user scale
-                        float size = (400.0 * a_scale * u_plasticScale) / dist;
+                        float size = (300.0 * a_scale * u_plasticScale) / dist;
                         gl_PointSize = max(2.0, size);
+
                         v_color = a_color;
+                        v_rotation = a_rotation;
                         v_screenPos = pos.xy / pos.w;
-                        v_depth = dist;
                     }
                 `;
 
-                // UPGRADED FRAGMENT SHADER (Kirigami Interference)
+                // Fragment Shader with Kirigami Interference
                 const fs = `
                     precision mediump float;
                     uniform vec2 u_kirigamiShift;
                     uniform float u_moireFreq;
-                    uniform float u_time;
-                    uniform float u_holoEdge;
+
                     varying vec3 v_color;
                     varying vec2 v_screenPos;
-                    varying float v_depth;
+                    varying vec4 v_rotation;
 
                     void main() {
-                        // 1. Circular Splat Geometry
                         vec2 coord = gl_PointCoord - vec2(0.5);
-                        float r2 = dot(coord, coord);
-                        if (r2 > 0.25) discard;
+                        float distSq = dot(coord, coord);
+                        if (distSq > 0.25) discard;
 
-                        // 2. Kirigami Interference Pattern
-                        // Simulates wave interference through a mask
-                        float sx = sin(v_screenPos.x * 20.0 + u_time * 2.0);
-                        float sy = cos(v_screenPos.y * 20.0 - u_time * 1.5);
+                        // Extract Phase from Spin (w component + x tilt)
+                        float spinPhase = v_rotation.w * 3.14 + v_rotation.x;
 
-                        // Complex Moiré
-                        float wave = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq + u_kirigamiShift.x);
-                        float wave2 = cos((v_screenPos.x - v_screenPos.y) * u_moireFreq * 0.9 + u_kirigamiShift.y);
+                        // Moiré Pattern
+                        float g1 = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq + spinPhase);
+                        float g2 = sin((v_screenPos.x + v_screenPos.y + u_kirigamiShift.x) * (u_moireFreq * 1.05) + spinPhase);
 
-                        float interference = 0.5 + 0.5 * (wave * wave2);
+                        float interference = 0.5 + 0.5 * (g1 * g2);
 
-                        // 3. Holographic Edge Detection (Fresnel-like)
-                        // Uses radial distance from center of splat to simulate curvature
-                        float edge = smoothstep(0.1, 0.25, r2);
-                        float center = 1.0 - edge;
-
-                        // Mix colors
-                        vec3 baseColor = v_color;
-                        vec3 holoColor = vec3(0.5, 0.8, 1.0) * interference * 2.0; // Cyan tint
-
-                        // Final composite
-                        // "Holographic Edge" blends between flat color and interference pattern
-                        vec3 finalColor = mix(baseColor, holoColor, u_holoEdge * edge + interference * 0.2);
-
-                        // Alpha falloff
-                        float alpha = 1.0 - smoothstep(0.23, 0.25, r2);
+                        // "Diamond-Locked" look
+                        vec3 finalColor = v_color * (0.6 + 0.8 * interference);
+                        float alpha = 1.0 - smoothstep(0.20, 0.25, distSq);
 
                         gl_FragColor = vec4(finalColor, alpha);
                     }
                 `;
 
-                const compile = (type, src) => {
-                    const s = gl.createShader(type);
-                    gl.shaderSource(s, src);
-                    gl.compileShader(s);
-                    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-                        console.error(gl.getShaderInfoLog(s));
-                        return null;
-                    }
-                    return s;
-                };
-
-                const p = gl.createProgram();
-                gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
-                gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
-                gl.linkProgram(p);
-                if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p));
-
+                const p = this.createProgram(gl, vs, fs);
                 this.program = p;
+
                 this.buffers = {
                     pos: gl.createBuffer(),
                     scale: gl.createBuffer(),
-                    col: gl.createBuffer()
+                    col: gl.createBuffer(),
+                    rot: gl.createBuffer()
                 };
+
+                this.attribs = {
+                    pos: gl.getAttribLocation(p, 'a_position'),
+                    scale: gl.getAttribLocation(p, 'a_scale'),
+                    col: gl.getAttribLocation(p, 'a_color'),
+                    rot: gl.getAttribLocation(p, 'a_rotation')
+                };
+
                 this.uniforms = {
                     vp: gl.getUniformLocation(p, 'u_viewProjection'),
                     ps: gl.getUniformLocation(p, 'u_plasticScale'),
                     ks: gl.getUniformLocation(p, 'u_kirigamiShift'),
-                    mf: gl.getUniformLocation(p, 'u_moireFreq'),
-                    time: gl.getUniformLocation(p, 'u_time'),
-                    he: gl.getUniformLocation(p, 'u_holoEdge')
+                    mf: gl.getUniformLocation(p, 'u_moireFreq')
                 };
+
                 this.resize();
+            }
+
+            createProgram(gl, vs, fs) {
+                const compile = (t, s) => {
+                    const shader = gl.createShader(t);
+                    gl.shaderSource(shader, s);
+                    gl.compileShader(shader);
+                    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader));
+                    return shader;
+                };
+                const p = gl.createProgram();
+                gl.attachShader(p, compile(gl.VERTEX_SHADER, vs));
+                gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+                gl.linkProgram(p);
+                return p;
             }
 
             setData(data) {
                 const gl = this.gl;
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.pos);
                 gl.bufferData(gl.ARRAY_BUFFER, data.positions, gl.STATIC_DRAW);
+
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.scale);
                 gl.bufferData(gl.ARRAY_BUFFER, data.scales, gl.STATIC_DRAW);
+
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.col);
                 gl.bufferData(gl.ARRAY_BUFFER, data.colors, gl.STATIC_DRAW);
+
+                if (data.rotations) {
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.rot);
+                    gl.bufferData(gl.ARRAY_BUFFER, data.rotations, gl.STATIC_DRAW);
+                }
                 this.count = data.positions.length / 3;
             }
 
@@ -411,20 +322,18 @@
                 this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
             }
 
-            render(vpMatrix) {
+            render(vp) {
                 if (!this.program) return;
                 const gl = this.gl;
                 this.resize();
 
-                const bg = this.options.backgroundColor;
-                gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+                gl.clearColor(0.05, 0.05, 0.05, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 gl.enable(gl.BLEND);
                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                 gl.useProgram(this.program);
 
-                const enableAttrib = (name, buf, size) => {
-                    const loc = gl.getAttribLocation(this.program, name);
+                const bind = (buf, loc, size) => {
                     if (loc !== -1) {
                         gl.bindBuffer(gl.ARRAY_BUFFER, buf);
                         gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
@@ -432,432 +341,155 @@
                     }
                 };
 
-                enableAttrib('a_position', this.buffers.pos, 3);
-                enableAttrib('a_scale', this.buffers.scale, 1);
-                enableAttrib('a_color', this.buffers.col, 3);
+                bind(this.buffers.pos, this.attribs.pos, 3);
+                bind(this.buffers.scale, this.attribs.scale, 1);
+                bind(this.buffers.col, this.attribs.col, 3);
+                bind(this.buffers.rot, this.attribs.rot, 4);
 
-                gl.uniformMatrix4fv(this.uniforms.vp, false, vpMatrix);
+                gl.uniformMatrix4fv(this.uniforms.vp, false, vp);
                 gl.uniform1f(this.uniforms.ps, this.options.plasticScale);
-
-                const time = Date.now() * 0.001;
-                gl.uniform1f(this.uniforms.time, time);
-
-                gl.uniform2f(this.uniforms.ks,
-                    this.options.kirigamiShift[0] || Math.sin(time),
-                    this.options.kirigamiShift[1] || Math.cos(time)
-                );
+                gl.uniform2fv(this.uniforms.ks, this.options.kirigamiShift);
                 gl.uniform1f(this.uniforms.mf, this.options.moireFreq);
-                gl.uniform1f(this.uniforms.he, this.options.holoEdge);
 
                 gl.drawArrays(gl.POINTS, 0, this.count);
             }
         }
 
-        // 4. Export: JSOH (Inlined Logic)
-        class JSOH {
-            static generate(splatData, metadata = {}) {
-                const { positions, scales, colors } = splatData;
+        // --- MAIN LOGIC ---
+
+        const canvas = document.getElementById('canvas');
+        const renderer = new PhillipsRenderer(canvas);
+        let currentData = null;
+
+        const state = {
+            shells: 20,
+            moire: 30.0,
+            shift: 0.1,
+            time: 0,
+            mode: 'e8_cloud'
+        };
+
+        function generateData() {
+            let positions, scales, colors, rotations;
+
+            if (state.mode === 'e8_cloud') {
+                const cloud = E8Lattice.generateCloud(state.shells);
+                positions = cloud.positions;
+                rotations = cloud.rotations;
                 const count = positions.length / 3;
 
-                // 1. Semantic Massing
-                let min = [Infinity, Infinity, Infinity];
-                let max = [-Infinity, -Infinity, -Infinity];
-                let centroid = [0, 0, 0];
+                scales = new Float32Array(count);
+                colors = new Float32Array(count * 3);
 
-                for (let i = 0; i < count; i++) {
-                    const x = positions[i * 3];
-                    const y = positions[i * 3 + 1];
-                    const z = positions[i * 3 + 2];
+                for(let i=0; i<count; i++) {
+                    const shellIdx = Math.floor(i / 240);
+                    scales[i] = 1.0 / Math.pow(PLASTIC_CONSTANT, (shellIdx % 5) + 1);
 
-                    if (x < min[0]) min[0] = x;
-                    if (y < min[1]) min[1] = y;
-                    if (z < min[2]) min[2] = z;
-
-                    if (x > max[0]) max[0] = x;
-                    if (y > max[1]) max[1] = y;
-                    if (z > max[2]) max[2] = z;
-
-                    centroid[0] += x;
-                    centroid[1] += y;
-                    centroid[2] += z;
+                    // Color from Spin (x,y,z)
+                    colors[i*3] = (rotations[i*4] + 1)*0.5;
+                    colors[i*3+1] = (rotations[i*4+1] + 1)*0.5;
+                    colors[i*3+2] = (rotations[i*4+2] + 1)*0.5;
                 }
-
-                if (count > 0) {
-                    centroid[0] /= count;
-                    centroid[1] /= count;
-                    centroid[2] /= count;
-                }
-
-                // 2. Data Compression (Hex Colors)
-                const hexColors = [];
-                for (let i = 0; i < count; i++) {
-                    const r = Math.floor(colors[i * 3] * 255);
-                    const g = Math.floor(colors[i * 3 + 1] * 255);
-                    const b = Math.floor(colors[i * 3 + 2] * 255);
-                    // Simple hex encoding
-                    const hex = ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-                    hexColors.push(hex);
-                }
-
-                return {
-                    schema: "JSOH/1.0",
-                    timestamp: new Date().toISOString(),
-                    metadata: {
-                        ...metadata,
-                        plasticRatio: PLASTIC_CONSTANT,
-                        splatCount: count,
-                        compressionTarget: "17b"
-                    },
-                    semanticMassing: {
-                        bounds: { min, max },
-                        centroid: centroid,
-                        dimensions: [
-                            max[0] - min[0],
-                            max[1] - min[1],
-                            max[2] - min[2]
-                        ]
-                    },
-                    data: {
-                        // Truncate precision for JSON compactness
-                        positions: Array.from(positions).map(v => Number(v.toFixed(4))),
-                        scales: Array.from(scales).map(v => Number(v.toFixed(4))),
-                        colors: hexColors
-                    }
-                };
+                document.getElementById('pointCount').textContent = count;
             }
+            else {
+                // Placeholder for other modes (not implemented in this explicit demo)
+                // Just use a single shell
+                const cloud = E8Lattice.generateCloud(1);
+                positions = cloud.positions;
+                rotations = cloud.rotations;
+                scales = new Float32Array(240).fill(1.0);
+                colors = new Float32Array(240 * 3).fill(1.0);
+            }
+
+            currentData = { positions, scales, colors, rotations };
+            renderer.setData(currentData);
         }
 
-        class ExportManager {
-            constructor() {}
-            exportToParserator(splatData) {
-                if (!splatData) {
-                    log("No data available to export.", 'error');
-                    return;
-                }
+        // Animation Loop
+        function loop() {
+            state.time += 0.005;
 
-                try {
-                    log("Generating JSOH payload...", 'info');
-                    const payload = JSOH.generate(splatData, {
-                        system: "Quatossian",
-                        lattice: "E8",
-                        projection: "Golden-Coxeter"
-                    });
+            // Auto-shift Kirigami if not interacting
+            const autoShift = [
+                state.shift + Math.sin(state.time)*0.05,
+                state.shift + Math.cos(state.time)*0.05
+            ];
+            renderer.options.kirigamiShift = autoShift;
+            renderer.options.moireFreq = state.moire;
 
-                    const jsonStr = JSON.stringify(payload, null, 2);
-                    const blob = new Blob([jsonStr], {type: 'application/json'});
-                    const url = URL.createObjectURL(blob);
+            // Simple Camera
+            const aspect = canvas.width / canvas.height;
+            const f = 1.0 / Math.tan(45 * Math.PI / 360); // 90 deg FOV
+            const proj = new Float32Array([
+                f/aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, -1, -1,
+                0, 0, -0.2, 0
+            ]);
 
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `quatossian_export_${Date.now()}.jsoh.json`;
-                    a.click();
+            // Rotate Model
+            const c = Math.cos(state.time * 0.5);
+            const s = Math.sin(state.time * 0.5);
+            const model = [
+                c, 0, -s, 0,
+                0, 1, 0, 0,
+                s, 0, c, 0,
+                0, 0, -4.0, 1 // Zoom out to see cloud
+            ];
 
-                    URL.revokeObjectURL(url);
-                    log(`Exported JSOH Payload (${(jsonStr.length/1024).toFixed(1)} KB).`, 'success');
-                } catch (e) {
-                    log(`Export Failed: ${e.message}`, 'error');
-                    console.error(e);
+            // Multiply MVP (Simplified)
+            const mvp = new Float32Array(16);
+            // ... (standard matrix mult omitted for brevity, assuming WebGL handles standard layout)
+            // Actually need to mult:
+            // Manual mult:
+            const a = proj; const b = model;
+            for(let i=0; i<4; i++) {
+                for(let j=0; j<4; j++) {
+                    let sum = 0;
+                    for(let k=0; k<4; k++) sum += a[k*4+j] * b[i*4+k]; // Column major
+                    mvp[i*4+j] = sum;
                 }
             }
+
+            renderer.render(mvp);
+            requestAnimationFrame(loop);
         }
 
-        // --- END INLINED DEPENDENCIES ---
+        // UI
+        document.getElementById('shells').oninput = (e) => {
+            state.shells = parseInt(e.target.value);
+            document.getElementById('countVal').textContent = state.shells;
+            generateData();
+        };
+        document.getElementById('moire').oninput = (e) => {
+            state.moire = parseFloat(e.target.value);
+            document.getElementById('moireVal').textContent = state.moire;
+        };
+        document.getElementById('shift').oninput = (e) => {
+            state.shift = parseFloat(e.target.value);
+            document.getElementById('shiftVal').textContent = state.shift;
+        };
+        document.getElementById('exportBtn').onclick = () => {
+             const json = JSON.stringify({
+                 schema: "JSOH/2.0",
+                 data: {
+                     positions: Array.from(currentData.positions),
+                     rotations: Array.from(currentData.rotations)
+                 }
+             });
+             const blob = new Blob([json], {type:'application/json'});
+             const url = URL.createObjectURL(blob);
+             const link = document.createElement('a');
+             link.href = url;
+             link.download = 'quatossian.json';
+             link.click();
+        };
 
-        (async function init() {
-            try {
-                log("Starting Quatossian system...", 'info');
+        generateData();
+        loop();
 
-                const canvas = document.getElementById('canvas');
-                let renderer;
-                try {
-                    renderer = new PhillipsRenderer(canvas, { backgroundColor: [0.05, 0.05, 0.05, 1] });
-                    log("Renderer initialized (WebGL).", 'success');
-                } catch (e) {
-                    throw new Error(`Renderer Init Failed: ${e.message}`);
-                }
-
-                const exportManager = new ExportManager();
-                let currentData = null; // Store current point cloud for export
-
-                // State
-                const state = {
-                    mode: 'e8', // Default to E8 Path
-                    count: 2400,
-                    scale: 1.32,
-                    speed: 0.5,
-                    edge: 0.5,
-                    time: 0
-                };
-
-                // Sync UI
-                document.getElementById('countVal').textContent = state.count;
-                document.getElementById('scaleVal').textContent = state.scale;
-                document.getElementById('speedVal').textContent = state.speed;
-                document.getElementById('edgeVal').textContent = state.edge;
-
-                // Data Generation
-                function generateData() {
-                    const positions = new Float32Array(state.count * 3);
-                    const scales = new Float32Array(state.count);
-                    const colors = new Float32Array(state.count * 3);
-
-                    if (state.mode === 'e8') {
-                        // E8 Lattice Generation
-                        // Heuristic for spread based on count to fill volume
-                        const spread = 3;
-
-                        for (let i = 0; i < state.count; i++) {
-                            // 1. Generate integer point in D8
-                            const v8 = E8Lattice.generateLatticePoint(i, spread);
-
-                            // 2. Project to 3D
-                            const p3 = E8Lattice.project8Dto3D(v8);
-
-                            // 3. Normalize for viewing
-                            // Scale down to fit in view
-                            positions[i*3] = p3.x * 0.15;
-                            positions[i*3+1] = p3.y * 0.15;
-                            positions[i*3+2] = p3.z * 0.15;
-
-                            // 4. Color based on 8D norm or position
-                            const r = Math.sqrt(p3.x*p3.x + p3.y*p3.y + p3.z*p3.z);
-                            colors[i*3] = 0.5 + 0.5 * Math.sin(r * 0.5);
-                            colors[i*3+1] = 0.5 + 0.5 * Math.cos(r * 0.3);
-                            colors[i*3+2] = 0.9; // Strong Blue/Purple
-
-                            // Scale points down for E8 to see structure
-                            scales[i] = 0.3;
-                        }
-                    } else if (state.mode === 'plastic') {
-                        // Classic Plastic Generation
-                        for (let i = 0; i < state.count; i++) {
-                            const sample = getPlasticSamplingPoint(i);
-                            const theta = sample.x * Math.PI * 2;
-                            const phi = Math.acos(2 * sample.y - 1);
-
-                            const r = 1.0 + Math.sin(theta * 3 + phi * 5) * 0.1;
-
-                            positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
-                            positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-                            positions[i*3+2] = r * Math.cos(phi);
-
-                            scales[i] = 1.0 / Math.pow(state.scale, (i % 5));
-
-                            colors[i*3] = (positions[i*3] + 1) * 0.5;
-                            colors[i*3+1] = (positions[i*3+1] + 1) * 0.5;
-                            colors[i*3+2] = (positions[i*3+2] + 1) * 0.5;
-                        }
-                    } else if (state.mode === 'torus_e8') {
-                        // General Shape Encoding (Torus) via E8 Lattice
-                        // 1. Generate E8 Codebook (The "Constellation" to encode against)
-                        // Use a larger spread to ensure we cover the Torus volume
-                        const codebookSize = 8000;
-                        const codebook = E8Lattice.generateCodebook(codebookSize, 5);
-
-                        // 2. Sample points on a Torus
-                        const R = 3.0; // Major radius
-                        const r = 1.0; // Minor radius
-
-                        // We iterate through our 'count' (budget) to generate the shape
-                        for (let i = 0; i < state.count; i++) {
-                            // Generate a target point on Torus surface
-                            const u = Math.random() * Math.PI * 2;
-                            const v = Math.random() * Math.PI * 2;
-
-                            const tx = (R + r * Math.cos(v)) * Math.cos(u);
-                            const ty = (R + r * Math.cos(v)) * Math.sin(u);
-                            const tz = r * Math.sin(v);
-
-                            // 3. ENCODE: Find nearest E8 Lattice Point
-                            // This is the crucial step: We are not rendering the torus point.
-                            // We are finding the lattice node that *represents* it.
-                            const latticeNode = E8Lattice.quantize({x:tx, y:ty, z:tz}, codebook);
-
-                            if (latticeNode) {
-                                // 4. DECODE/RENDER: Display the Lattice Node
-                                // Scale down for view
-                                positions[i*3] = latticeNode.point.x * 0.15;
-                                positions[i*3+1] = latticeNode.point.y * 0.15;
-                                positions[i*3+2] = latticeNode.point.z * 0.15;
-
-                                // Color by Lattice Index (Dimension 0 parity) to show structure
-                                const parity = latticeNode.index[0] % 2 === 0;
-                                colors[i*3] = parity ? 1.0 : 0.2; // Red vs Dark
-                                colors[i*3+1] = (latticeNode.point.x + 5) * 0.1;
-                                colors[i*3+2] = 0.5;
-
-                                scales[i] = 0.3; // Small points to show the lattice "grain"
-                            }
-                        }
-                        log(`Encoded Torus using ${codebookSize} E8 codevectors.`, 'info');
-                    } else if (state.mode === 'moxness') {
-                        // Moxness Folding: 8D -> 4D -> 3D Slice
-                        // We animate the slice over time
-                        const sliceOffset = Math.sin(state.time * 0.5) * 2.0;
-                        const epsilon = 0.2; // Slice thickness
-
-                        let hitCount = 0;
-                        // In Moxness mode, we need more points to find the slice intersections effectively
-                        // or we iterate a larger volume.
-                        const scanBudget = state.count * 10;
-
-                        for (let i = 0; i < scanBudget && hitCount < state.count; i++) {
-                            // 1. Generate E8 Root / Lattice Point
-                            const v8 = E8Lattice.generateLatticePoint(i, 5); // Larger spread
-
-                            // 2. Fold to 4D (Left Copy)
-                            // Note: `fold` is not yet on the instance, it's static
-                            const folded = E8Lattice.fold(v8);
-                            const q = folded.left; // Use Left 600-cell
-
-                            // 3. 4D Rotation (Animation via Quaternion)
-                            const t = state.time * 0.5;
-                            // Create a time-varying quaternion (Hopf rotation)
-                            const rotQuat = new Float32Array([
-                                Math.sin(t), 0, Math.cos(t), 0
-                            ]);
-                            // Normalize
-                            const mag = Math.sqrt(rotQuat[0]**2 + rotQuat[2]**2);
-                            rotQuat[0] /= mag; rotQuat[2] /= mag;
-
-                            // Apply rotation: P' = Q * P
-                            // Use Left copy for geometry
-                            const pRot = E8Lattice.rotate4D(q, rotQuat);
-
-                            // 4. Slice (Check W coordinate)
-                            // The slice plane is w = sliceOffset
-                            if (Math.abs(pRot[3] - sliceOffset) < epsilon) {
-                                positions[hitCount*3] = pRot[0] * 0.6;
-                                positions[hitCount*3+1] = pRot[1] * 0.6;
-                                positions[hitCount*3+2] = pRot[2] * 0.6;
-
-                                // 5. Triadic Coloring
-                                // Use the Right copy (Conjugate) as the "Phase" for color
-                                // This implements the "Dialectic Color Synthesis"
-                                // Red/Green/Blue channels modulated by the Right 4D vector components
-
-                                const phase = folded.right;
-                                // Rotate phase as well to keep it dynamic
-                                const phaseRot = E8Lattice.rotate4D(phase, rotQuat);
-
-                                // Map 4D phase to RGB
-                                // R = |x|, G = |y|, B = |z| (normalized)
-                                colors[hitCount*3] = 0.2 + 0.8 * Math.abs(phaseRot[0]);
-                                colors[hitCount*3+1] = 0.2 + 0.8 * Math.abs(phaseRot[1]);
-                                colors[hitCount*3+2] = 0.2 + 0.8 * Math.abs(phaseRot[2]);
-
-                                scales[hitCount] = 0.5;
-                                hitCount++;
-                            }
-                        }
-                        // Zero out remaining buffer
-                        for (let k=hitCount; k<state.count; k++) {
-                            scales[k] = 0;
-                        }
-                        if (Math.random() < 0.01) log(`Moxness Slice Active: ${hitCount} points visible`, 'info');
-                    }
-
-                    currentData = { positions, scales, colors };
-                    renderer.setData(currentData);
-                }
-
-                // UI Listeners
-                document.getElementById('renderMode').addEventListener('change', (e) => {
-                    state.mode = e.target.value;
-                    generateData();
-                    log(`Switched to mode: ${state.mode}`, 'info');
-                });
-
-                document.getElementById('scale').addEventListener('input', (e) => {
-                    state.scale = parseFloat(e.target.value);
-                    document.getElementById('scaleVal').textContent = state.scale.toFixed(2);
-                    if (renderer) {
-                        renderer.options.plasticScale = state.scale;
-                        if(state.mode === 'plastic') generateData();
-                    }
-                });
-
-                document.getElementById('count').addEventListener('input', (e) => {
-                    state.count = parseInt(e.target.value);
-                    document.getElementById('countVal').textContent = state.count;
-                    if (renderer) generateData();
-                });
-
-                document.getElementById('speed').addEventListener('input', (e) => {
-                    state.speed = parseFloat(e.target.value);
-                    document.getElementById('speedVal').textContent = state.speed.toFixed(1);
-                });
-
-                document.getElementById('edge').addEventListener('input', (e) => {
-                    state.edge = parseFloat(e.target.value);
-                    document.getElementById('edgeVal').textContent = state.edge.toFixed(2);
-                    if(renderer) renderer.options.holoEdge = state.edge;
-                });
-
-                document.getElementById('exportBtn').addEventListener('click', () => {
-                    exportManager.exportToParserator(currentData);
-                });
-
-                // Loop
-                function loop() {
-                    state.time += 0.01 * state.speed;
-
-                    const aspect = canvas.width / canvas.height;
-                    const fov = 60 * Math.PI / 180;
-                    const f = 1.0 / Math.tan(fov / 2);
-                    const near = 0.1;
-                    const far = 100.0;
-
-                    const proj = new Float32Array([
-                        f / aspect, 0, 0, 0,
-                        0, f, 0, 0,
-                        0, 0, (near + far) / (near - far), -1,
-                        0, 0, (2 * near * far) / (near - far), 0
-                    ]);
-
-                    const c = Math.cos(state.time * 0.5);
-                    const s = Math.sin(state.time * 0.5);
-
-                    // Simple rotation around Y
-                    const model = [
-                        c, 0, -s, 0,
-                        0, 1, 0, 0,
-                        s, 0, c, 0,
-                        0, 0, -2.5, 1
-                    ];
-
-                    const viewProjection = new Float32Array(16);
-                    const a = proj;
-                    const b = model;
-
-                    for (let col = 0; col < 4; col++) {
-                        for (let row = 0; row < 4; row++) {
-                            let sum = 0;
-                            for (let k = 0; k < 4; k++) {
-                                sum += a[k*4 + row] * b[col*4 + k];
-                            }
-                            viewProjection[col*4 + row] = sum;
-                        }
-                    }
-
-                    if (renderer) renderer.render(viewProjection);
-                    requestAnimationFrame(loop);
-                }
-
-                // Init
-                generateData();
-                loop();
-
-                // Handle Resize
-                window.addEventListener('resize', () => {
-                    if(renderer) renderer.resize();
-                });
-
-            } catch (err) {
-                log(`FATAL: ${err.message}`, 'error');
-                console.error(err);
-            }
-        })();
+        document.getElementById('log').textContent = "System Operational: Quatossian Kernel Active";
     </script>
 </body>
 </html>

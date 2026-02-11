@@ -1,12 +1,12 @@
 /**
  * PhillipsRenderer.js
- * Core rendering system for the "Gaussian Flat" architecture.
+ * Core rendering system for the "Quatossian Inscription Framework".
  *
  * Features:
  * - Deterministic "Canonical View" rendering (Albedo only).
- * - No Spherical Harmonics (SH) or view-dependent effects.
+ * - "Cubit" Rendering: Points with intrinsic Quaternion Spin.
+ * - Kirigami Modulation: Moiré interference patterns driven by spin phase.
  * - Uses Plastic Ratio for scale modulation.
- * - Extremely lightweight vertex/fragment shaders.
  */
 
 import { PLASTIC_CONSTANT } from '../math/Plastic.js';
@@ -52,12 +52,12 @@ export class PhillipsRenderer {
     }
 
     initShaders() {
-        // Vertex Shader: Projects 3D points to 2D screen space.
-        // Uses a_scale driven by Plastic powers.
+        // Vertex Shader
         const vertexSource = `
             attribute vec3 a_position;
             attribute float a_scale;
-            attribute vec3 a_color; // Expecting normalized float 0-1 or we can use u8 normalized
+            attribute vec3 a_color;
+            attribute vec4 a_rotation; // Quatossian Spin State (Quaternion)
 
             uniform mat4 u_viewProjection;
             uniform float u_plasticScale;
@@ -65,28 +65,27 @@ export class PhillipsRenderer {
 
             varying vec3 v_color;
             varying vec2 v_screenPos;
+            varying vec4 v_rotation; // Pass spin to fragment
 
             void main() {
                 // Project position
                 vec4 pos = u_viewProjection * vec4(a_position, 1.0);
                 gl_Position = pos;
 
-                // Simple point size calculation based on depth and plastic scale
-                // Perspective division for size attenuation
+                // Size attenuation
                 float dist = pos.w;
                 float size = (300.0 * a_scale * u_plasticScale) / dist;
-
-                gl_PointSize = max(2.0, size); // Ensure minimum visibility
+                gl_PointSize = max(2.0, size);
 
                 v_color = a_color;
+                v_rotation = a_rotation;
 
-                // Pass normalized screen position for Moiré calculation
+                // Normalized screen position (-1 to 1)
                 v_screenPos = pos.xy / pos.w;
             }
         `;
 
-        // Fragment Shader: The "Quatossian Flat Shader"
-        // Now includes Kirigami Moiré Modulation for interference effects.
+        // Fragment Shader: Quatossian Moiré Interference
         const fragmentSource = `
             precision mediump float;
 
@@ -95,34 +94,40 @@ export class PhillipsRenderer {
 
             varying vec3 v_color;
             varying vec2 v_screenPos;
+            varying vec4 v_rotation;
 
             void main() {
                 // Circular point shape
                 vec2 coord = gl_PointCoord - vec2(0.5);
                 float distSq = dot(coord, coord);
+                if (distSq > 0.25) discard;
 
-                if (distSq > 0.25) {
-                    discard;
-                }
+                // --- Kirigami Interference Logic ---
 
-                // Kirigami-based Moiré Modulation
-                // Simulating two overlapping grids (G1 and G2)
-                // T(x) = Sum(G1(x) * G2(x + s))
+                // 1. Extract Phase from Quaternion Spin
+                // We use the 'w' component (scalar) and a projection of the vector part
+                // to determine the phase offset of this specific Cubit.
+                // This makes every point's interference unique based on its 8D->4D fold.
+                float spinPhase = v_rotation.w * 3.14159 + v_rotation.x;
 
-                // Grid 1 (Base Mask)
-                float g1 = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq);
+                // 2. Moiré Pattern Generation
+                // G1: Base Grid (Screen Space)
+                float g1 = sin((v_screenPos.x + v_screenPos.y) * u_moireFreq + spinPhase);
 
-                // Grid 2 (Shifted Completer Mask)
-                float g2 = sin((v_screenPos.x + v_screenPos.y + u_kirigamiShift.x) * (u_moireFreq * 1.05)); // Slight freq diff for beats
+                // G2: Shifted Grid (Kirigami Offset)
+                // The shift creates the Moiré beats.
+                float g2 = sin((v_screenPos.x + v_screenPos.y + u_kirigamiShift.x) * (u_moireFreq * 1.05) + spinPhase);
 
-                // Interference Pattern (0.0 to 1.0)
+                // 3. Construct Interference Term
+                // I = I0 * (1 + sin(Phase + Moiré))
                 float interference = 0.5 + 0.5 * (g1 * g2);
 
-                // Modulate opacity/intensity
-                float alpha = 1.0 - smoothstep(0.24, 0.25, distSq);
+                // 4. Modulate Intensity
+                // "Diamond-Locked" coherence means stable, bright centers with shimmering edges.
+                vec3 finalColor = v_color * (0.6 + 0.8 * interference);
 
-                // "Shimmer" effect: Modulate color intensity by interference
-                vec3 finalColor = v_color * (0.8 + 0.4 * interference);
+                // Soft edge alpha
+                float alpha = 1.0 - smoothstep(0.20, 0.25, distSq);
 
                 gl_FragColor = vec4(finalColor, alpha);
             }
@@ -131,6 +136,13 @@ export class PhillipsRenderer {
         this.program = this.createProgram(vertexSource, fragmentSource);
 
         if (this.program) {
+            this.attributes = {
+                position: this.gl.getAttribLocation(this.program, 'a_position'),
+                scale: this.gl.getAttribLocation(this.program, 'a_scale'),
+                color: this.gl.getAttribLocation(this.program, 'a_color'),
+                rotation: this.gl.getAttribLocation(this.program, 'a_rotation')
+            };
+
             this.uniforms = {
                 viewProjection: this.gl.getUniformLocation(this.program, 'u_viewProjection'),
                 plasticScale: this.gl.getUniformLocation(this.program, 'u_plasticScale'),
@@ -175,20 +187,20 @@ export class PhillipsRenderer {
     }
 
     initBuffers() {
-        // Create buffers but don't fill them yet.
-        // setData() will handle that.
         const gl = this.gl;
         this.buffers.position = gl.createBuffer();
         this.buffers.scale = gl.createBuffer();
         this.buffers.color = gl.createBuffer();
+        this.buffers.rotation = gl.createBuffer();
     }
 
     /**
-     * Populate the renderer with splat data.
-     * @param {Object} data - Arrays of data.
-     * @param {Float32Array} data.positions - Flat [x,y,z, x,y,z...]
-     * @param {Float32Array} data.scales - Flat [s, s...]
-     * @param {Float32Array} data.colors - Flat [r,g,b, r,g,b...] (Normalized 0-1)
+     * Populate the renderer with Quatossian Cubit data.
+     * @param {Object} data
+     * @param {Float32Array} data.positions - Flat [x,y,z...]
+     * @param {Float32Array} data.scales - Flat [s...]
+     * @param {Float32Array} data.colors - Flat [r,g,b...]
+     * @param {Float32Array} data.rotations - Flat [x,y,z,w...] (Quaternions)
      */
     setData(data) {
         const gl = this.gl;
@@ -208,6 +220,11 @@ export class PhillipsRenderer {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.color);
             gl.bufferData(gl.ARRAY_BUFFER, data.colors, gl.STATIC_DRAW);
         }
+
+        if (data.rotations) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.rotation);
+            gl.bufferData(gl.ARRAY_BUFFER, data.rotations, gl.STATIC_DRAW);
+        }
     }
 
     resize() {
@@ -221,10 +238,6 @@ export class PhillipsRenderer {
         }
     }
 
-    /**
-     * Render the frame.
-     * @param {Float32Array} viewProjectionMatrix - 4x4 View-Projection Matrix
-     */
     render(viewProjectionMatrix) {
         if (!this.program) return;
 
@@ -236,37 +249,40 @@ export class PhillipsRenderer {
         gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        // enable blending
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         gl.useProgram(this.program);
 
-        // Bind attributes
+        // Bind Attributes
+        // Position
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position);
-        gl.enableVertexAttribArray(0); // a_position is index 0 usually, but better to look it up if not enforced
-        // Wait, I didn't enforce locations in shader or look them up for attribs.
-        // Let's do it dynamically.
-        const aPosition = gl.getAttribLocation(this.program, 'a_position');
-        const aScale = gl.getAttribLocation(this.program, 'a_scale');
-        const aColor = gl.getAttribLocation(this.program, 'a_color');
+        gl.vertexAttribPointer(this.attributes.position, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.attributes.position);
 
-        if (aPosition !== -1) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position);
-            gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(aPosition);
-        }
-
-        if (aScale !== -1) {
+        // Scale
+        if (this.attributes.scale !== -1) {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.scale);
-            gl.vertexAttribPointer(aScale, 1, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(aScale);
+            gl.vertexAttribPointer(this.attributes.scale, 1, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this.attributes.scale);
         }
 
-        if (aColor !== -1) {
+        // Color
+        if (this.attributes.color !== -1) {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.color);
-            gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(aColor);
+            gl.vertexAttribPointer(this.attributes.color, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this.attributes.color);
+        }
+
+        // Rotation (Quaternion)
+        if (this.attributes.rotation !== -1) {
+            // If no rotation data provided, we need to disable the attrib or provide default
+            // But setData assumes we have it.
+            // Check if buffer is bound (size > 0).
+            // Simplified: We assume data is provided if attrib is active.
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.rotation);
+            gl.vertexAttribPointer(this.attributes.rotation, 4, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(this.attributes.rotation);
         }
 
         // Set Uniforms
@@ -274,22 +290,13 @@ export class PhillipsRenderer {
         gl.uniform1f(this.uniforms.plasticScale, this.options.plasticScale);
         gl.uniform2f(this.uniforms.resolution, this.canvas.width, this.canvas.height);
 
-        // Dynamic Kirigami Uniforms (using Date.now for "shimmer" if not provided)
         const time = Date.now() * 0.001;
-        const shiftX = this.options.kirigamiShift[0] || Math.sin(time);
-        const shiftY = this.options.kirigamiShift[1] || Math.cos(time);
+        const shiftX = this.options.kirigamiShift[0] || Math.sin(time * 0.5);
+        const shiftY = this.options.kirigamiShift[1] || Math.cos(time * 0.5);
         gl.uniform2f(this.uniforms.kirigamiShift, shiftX, shiftY);
         gl.uniform1f(this.uniforms.moireFreq, this.options.moireFreq);
 
         // Draw
         gl.drawArrays(gl.POINTS, 0, this.count);
-    }
-
-    destroy() {
-        const gl = this.gl;
-        gl.deleteBuffer(this.buffers.position);
-        gl.deleteBuffer(this.buffers.scale);
-        gl.deleteBuffer(this.buffers.color);
-        gl.deleteProgram(this.program);
     }
 }
