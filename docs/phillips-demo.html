@@ -628,7 +628,7 @@
                             // Scale points down for E8 to see structure
                             scales[i] = 0.3;
                         }
-                    } else {
+                    } else if (state.mode === 'plastic') {
                         // Classic Plastic Generation
                         for (let i = 0; i < state.count; i++) {
                             const sample = getPlasticSamplingPoint(i);
