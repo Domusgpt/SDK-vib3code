@@ -12,7 +12,7 @@
 
 | Metric | Value |
 |--------|-------|
-| **Active Systems** | 3 (Quantum, Faceted, Holographic) |
+| **Active Systems** | 4 (Quantum, Faceted, Holographic, Quatossian) |
 | **Rotation Planes** | 6 (XY, XZ, YZ + XW, YW, ZW) |
 | **Geometries** | 24 per system (8 base × 3 cores) |
 | **Canvas Layers** | 5 per system |
@@ -22,7 +22,7 @@
 
 ## Features
 
-- **3 Active Visualization Systems:** Quantum lattices, Faceted patterns, Holographic effects
+- **4 Active Visualization Systems:** Quantum lattices, Faceted patterns, Holographic effects, Quatossian clouds
 - **24 Geometry Variants:** 8 base shapes × 3 core warp types (Base, Hypersphere, Hypertetrahedron)
 - **6D Rotation:** Full control over 3D planes (XY/XZ/YZ) and 4D hyperspace planes (XW/YW/ZW)
 - **Audio Reactivity:** Real-time visualization response to audio input (all 3 systems)
@@ -36,6 +36,7 @@
 - **Platform Integrations:** React, Vue, Svelte components; Figma plugin; Three.js ShaderMaterial; TouchDesigner GLSL export; OBS transparent background
 - **Advanced Features:** WebXR VR/AR, WebGPU compute shaders, MIDI controller mapping, AI preset generation, OffscreenCanvas worker rendering
 - **Shader Sync Tool:** Verifies inline shaders match external files across all systems
+- **Quatossian Framework (New):** E8 Lattice Visualization with "Holographic Edge" detection
 
 ---
 
@@ -91,6 +92,7 @@ npm run verify:shaders  # Verify shader sync
 | **Quantum** | Complex lattice visualizations with quantum-inspired patterns | 24 |
 | **Faceted** | Clean 2D geometric patterns with 4D rotation projection | 24 |
 | **Holographic** | 5-layer audio-reactive holographic effects | 24 |
+| **Quatossian** | E8 Lattice cloud with 4D Moxness folding and holographic edge detection | 1 (E8 Cloud) |
 
 ### Placeholder (TBD)
 
@@ -394,6 +396,7 @@ npm test -- tests/agent/AgentCLI.test.js
 | [`24-GEOMETRY-6D-ROTATION-SUMMARY.md`](24-GEOMETRY-6D-ROTATION-SUMMARY.md) | Geometry encoding details |
 | [`DOCS/GPU_DISPOSAL_GUIDE.md`](DOCS/GPU_DISPOSAL_GUIDE.md) | Resource management |
 | [`CLAUDE.md`](CLAUDE.md) | AI/Developer technical reference (v2.0.0) |
+| [`docs/QUATOSSIAN_MANUAL.md`](docs/QUATOSSIAN_MANUAL.md) | Quatossian Framework Technical Manual |
 
 ---
 
