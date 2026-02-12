@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quatossian Inscription Framework - Demo v4.0 (Holographic Edges)</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 10, 16, 0.9);
+            padding: 20px;
+            border-radius: 4px;
+            width: 320px;
+            border: 1px solid #334455;
+            box-shadow: 0 0 30px rgba(0, 100, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #88aaff; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #4a9eff; }
+        select { width: 100%; padding: 8px; background: #111; color: #fff; border: 1px solid #334455; border-radius: 2px; font-family: inherit; font-size: 12px; }
+        button {
+            background: linear-gradient(135deg, #224466, #112233);
+            color: #4a9eff;
+            border: 1px solid #334455;
+            padding: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+        button:hover { background: #335577; box-shadow: 0 0 15px rgba(74, 158, 255, 0.2); border-color: #4a9eff; }
+        .value { float: right; color: #fff; }
+        h1 { margin: 0 0 20px 0; font-size: 14px; border-bottom: 1px solid #334455; padding-bottom: 10px; color: #4a9eff; letter-spacing: 2px; }
+        .status { font-size: 10px; color: #556677; margin-top: 5px; }
+        .toggle { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #88aaff; margin-bottom: 10px; }
+        .toggle input { width: auto; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h1>QUATOSSIAN FRAMEWORK v4</h1>
+
+        <div class="control-group">
+            <label>Visualization Mode</label>
+            <select id="renderMode">
+                <option value="moxness_gpu">Moxness (GPU 4D Rotation)</option>
+                <option value="e8_cloud">Static E8 Cloud</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <div class="toggle">
+                <label>Holographic Edge (Berry Phase)</label>
+                <input type="checkbox" id="postProcess" checked>
+            </div>
+            <label>Edge Sensitivity <span id="edgeVal" class="value">1.0</span></label>
+            <input type="range" id="edgeSens" min="0.0" max="5.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="control-group">
+            <label>Lattice Shells <span id="countVal" class="value">25</span></label>
+            <input type="range" id="shells" min="1" max="50" step="1" value="25">
+            <div class="status">Points: <span id="pointCount">6000</span></div>
+        </div>
+
+        <div class="control-group">
+            <label>Rotation Speed <span id="speedVal" class="value">1.0</span></label>
+            <input type="range" id="speed" min="0" max="5.0" step="0.1" value="1.0">
+        </div>
+
+        <button id="exportBtn">Export JSOH (Sorted)</button>
+        <div id="log" class="status" style="color: #88ff88; min-height: 15px;"></div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // --- CORE MATH LIBRARIES (Inlined) ---
+        const PLASTIC_CONSTANT = 1.324717957244746;
+        const PHI = 1.61803398875;
+
+        class Quaternion {
+            constructor(x=0,y=0,z=0,w=1) { this.x=x; this.y=y; this.z=z; this.w=w; }
+            static fromAxisAngle(axis, angle) {
+                const h = angle * 0.5;
+                const s = Math.sin(h);
+                return new Quaternion(axis[0]*s, axis[1]*s, axis[2]*s, Math.cos(h));
+            }
+        }
+
+        class E8Lattice {
+            static generateRoots() {
+                const roots = [];
+                for (let j=0; j<8; j++) {
+                    for (let k=j+1; k<8; k++) {
+                        const signs = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+                        for (let s of signs) {
+                            const v = new Float32Array(8);
+                            v[j] = s[0]; v[k] = s[1];
+                            roots.push(v);
+                        }
+                    }
+                }
+                for (let i=0; i<256; i++) {
+                    let c = 0, t = i;
+                    while(t>0) { if(t&1) c++; t>>=1; }
+                    if (c%2 === 0) {
+                        const v = new Float32Array(8);
+                        for(let b=0; b<8; b++) v[b] = ((i>>b)&1) ? -0.5 : 0.5;
+                        roots.push(v);
+                    }
+                }
+                const flat = new Float32Array(roots.length * 8);
+                for(let i=0; i<roots.length; i++) flat.set(roots[i], i*8);
+                return flat;
+            }
+
+            static foldTo4D(v8) {
+                const q = new Float32Array(4);
+                q[0] = v8[0] + PHI * v8[4];
+                q[1] = v8[1] + PHI * v8[5];
+                q[2] = v8[2] + PHI * v8[6];
+                q[3] = v8[3] + PHI * v8[7];
+                return q;
+            }
+
+            static generateCloud(shells = 1) {
+                const rootsFlat = this.generateRoots();
+                const numRoots = 240;
+                const count = numRoots * shells;
+                const positions = new Float32Array(count * 3);
+                const rotations = new Float32Array(count * 4);
+                let idx = 0;
+                for (let s = 0; s < shells; s++) {
+                    const scale = Math.pow(PLASTIC_CONSTANT, s + 1) * 0.2;
+                    for (let i = 0; i < numRoots; i++) {
+                        const v8 = rootsFlat.subarray(i*8, i*8+8);
+                        const q = this.foldTo4D(v8);
+                        rotations[idx*4+0] = q[0]; rotations[idx*4+1] = q[1]; rotations[idx*4+2] = q[2]; rotations[idx*4+3] = q[3];
+                        positions[idx*3+0] = q[0] * scale; positions[idx*3+1] = q[1] * scale; positions[idx*3+2] = q[2] * scale;
+                        idx++;
+                    }
+                }
+                return { positions, rotations };
+            }
+        }
+
+        // --- RENDERER (Updated with Multi-Pass) ---
+        class PhillipsRenderer {
+            constructor(canvas, options = {}) {
+                this.canvas = canvas;
+                // Try WebGL2 for MRT
+                this.gl = canvas.getContext('webgl2', { alpha: true, antialias: false });
+                if (!this.gl) throw new Error('PhillipsRenderer: WebGL2 required for v4');
+                this.gl.getExtension('EXT_color_buffer_float');
+
+                this.options = {
+                    plasticScale: PLASTIC_CONSTANT,
+                    backgroundColor: [0,0,0,1],
+                    kirigamiShift: [0,0],
+                    moireFreq: 20.0,
+                    enable4D: false,
+                    enablePostProcess: true,
+                    edgeSensitivity: 1.0,
+                    timeRotation: [0,0,0,1],
+                    ...options
+                };
+                this.init();
+            }
+
+            init() {
+                const gl = this.gl;
+                this.initShaders();
+                this.initPostShaders();
+                this.initBuffers();
+                this.initFramebuffers();
+                this.resize();
+            }
+
+            initFramebuffers() {
+                const gl = this.gl;
+                if(this.fbo) gl.deleteFramebuffer(this.fbo);
+                if(this.texCol) gl.deleteTexture(this.texCol);
+                if(this.texSpin) gl.deleteTexture(this.texSpin);
+
+                this.fbo = gl.createFramebuffer();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+
+                this.texCol = this.createTex(gl.RGBA, gl.UNSIGNED_BYTE);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texCol, 0);
+
+                this.texSpin = this.createTex(gl.RGBA, gl.FLOAT);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, this.texSpin, 0);
+
+                gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            }
+
+            createTex(format, type) {
+                const gl = this.gl;
+                const t = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, t);
+                gl.texImage2D(gl.TEXTURE_2D, 0, format, this.canvas.width, this.canvas.height, 0, format, type, null);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                return t;
+            }
+
+            initShaders() {
+                const vs = `#version 300 es
+                    in vec3 a_position;
+                    in float a_scale;
+                    in vec3 a_color;
+                    in vec4 a_rotation;
+                    uniform mat4 u_viewProjection;
+                    uniform float u_plasticScale;
+                    uniform vec4 u_timeRotation;
+                    uniform bool u_enable4D;
+                    out vec3 v_color;
+                    out vec4 v_rotation;
+                    vec4 qmul(vec4 a, vec4 b) {
+                        return vec4(a.w*b.x+a.x*b.w+a.y*b.z-a.z*b.y, a.w*b.y-a.x*b.z+a.y*b.w+a.z*b.x, a.w*b.z+a.x*b.y-a.y*b.x+a.z*b.w, a.w*b.w-a.x*b.x-a.y*b.y-a.z*b.z);
+                    }
+                    void main() {
+                        vec3 p = a_position;
+                        vec4 s = a_rotation;
+                        if(u_enable4D) {
+                            vec4 pr = qmul(u_timeRotation, a_rotation);
+                            p = pr.xyz * (1.0 / max(0.001, 2.0 - pr.w));
+                            s = pr;
+                        }
+                        gl_Position = u_viewProjection * vec4(p, 1.0);
+                        gl_PointSize = max(2.0, (300.0 * a_scale * u_plasticScale)/gl_Position.w);
+                        v_color = a_color;
+                        v_rotation = s;
+                    }
+                `;
+                const fs = `#version 300 es
+                    precision mediump float;
+                    in vec3 v_color;
+                    in vec4 v_rotation;
+                    layout(location=0) out vec4 cOut;
+                    layout(location=1) out vec4 sOut;
+                    void main() {
+                        vec2 c = gl_PointCoord - 0.5;
+                        if(dot(c,c)>0.25) discard;
+                        cOut = vec4(v_color, 1.0);
+                        sOut = v_rotation;
+                    }
+                `;
+                this.prog = this.createProg(vs, fs);
+                const gl = this.gl;
+                this.loc = {
+                    pos: gl.getAttribLocation(this.prog, 'a_position'),
+                    scl: gl.getAttribLocation(this.prog, 'a_scale'),
+                    col: gl.getAttribLocation(this.prog, 'a_color'),
+                    rot: gl.getAttribLocation(this.prog, 'a_rotation'),
+                    vp: gl.getUniformLocation(this.prog, 'u_viewProjection'),
+                    ps: gl.getUniformLocation(this.prog, 'u_plasticScale'),
+                    tr: gl.getUniformLocation(this.prog, 'u_timeRotation'),
+                    e4: gl.getUniformLocation(this.prog, 'u_enable4D')
+                };
+            }
+
+            initPostShaders() {
+                const vs = `#version 300 es
+                    in vec2 a_pos; out vec2 v_uv;
+                    void main() { v_uv = a_pos*0.5+0.5; gl_Position = vec4(a_pos,0.,1.); }
+                `;
+                const fs = `#version 300 es
+                    precision mediump float;
+                    uniform sampler2D u_c; uniform sampler2D u_s;
+                    uniform vec2 u_res; uniform float u_sens;
+                    in vec2 v_uv; out vec4 color;
+                    void main() {
+                        vec4 base = texture(u_c, v_uv);
+                        vec4 s0 = texture(u_s, v_uv);
+                        float diff = 0.0;
+                        vec2 p = 1.0/u_res;
+                        vec2 off[4] = vec2[](vec2(1,0), vec2(-1,0), vec2(0,1), vec2(0,-1));
+                        for(int i=0; i<4; i++) {
+                            vec4 sN = texture(u_s, v_uv + off[i]*p);
+                            diff += (1.0 - abs(dot(s0, sN)));
+                        }
+                        float edge = smoothstep(0.01, 0.1, diff * u_sens);
+                        color = vec4(base.rgb + vec3(0,1,1)*edge, 1.0);
+                    }
+                `;
+                this.post = this.createProg(vs, fs);
+                this.quad = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.quad);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), this.gl.STATIC_DRAW);
+            }
+
+            createProg(vs, fs) {
+                const gl = this.gl;
+                const v = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(v, vs); gl.compileShader(v);
+                if(!gl.getShaderParameter(v, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(v));
+                const f = gl.createShader(gl.FRAGMENT_SHADER); gl.shaderSource(f, fs); gl.compileShader(f);
+                if(!gl.getShaderParameter(f, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(f));
+                const p = gl.createProgram(); gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+                return p;
+            }
+
+            initBuffers() {
+                const gl = this.gl;
+                this.bufs = { p: gl.createBuffer(), s: gl.createBuffer(), c: gl.createBuffer(), r: gl.createBuffer() };
+            }
+
+            setData(d) {
+                const gl = this.gl;
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.bufs.p); gl.bufferData(gl.ARRAY_BUFFER, d.positions, gl.STATIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.bufs.s); gl.bufferData(gl.ARRAY_BUFFER, d.scales, gl.STATIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.bufs.c); gl.bufferData(gl.ARRAY_BUFFER, d.colors, gl.STATIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.bufs.r); gl.bufferData(gl.ARRAY_BUFFER, d.rotations, gl.STATIC_DRAW);
+                this.cnt = d.positions.length/3;
+            }
+
+            resize() {
+                if(this.canvas.width !== this.canvas.clientWidth || this.canvas.height !== this.canvas.clientHeight) {
+                    this.canvas.width = this.canvas.clientWidth;
+                    this.canvas.height = this.canvas.clientHeight;
+                    this.initFramebuffers();
+                }
+            }
+
+            render(vp) {
+                const gl = this.gl;
+                this.resize();
+
+                // Pass 1
+                gl.bindFramebuffer(gl.FRAMEBUFFER, this.options.enablePostProcess ? this.fbo : null);
+                gl.viewport(0,0,this.canvas.width,this.canvas.height);
+                gl.clearColor(0,0,0,1);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+                gl.useProgram(this.prog);
+                const b = (buf, loc, s) => { gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.vertexAttribPointer(loc, s, gl.FLOAT, false,0,0); gl.enableVertexAttribArray(loc); };
+                b(this.bufs.p, this.loc.pos, 3); b(this.bufs.s, this.loc.scl, 1);
+                b(this.bufs.c, this.loc.col, 3); b(this.bufs.r, this.loc.rot, 4);
+
+                gl.uniformMatrix4fv(this.loc.vp, false, vp);
+                gl.uniform1f(this.loc.ps, this.options.plasticScale);
+                gl.uniform1i(this.loc.e4, this.options.enable4D?1:0);
+                const q = this.options.timeRotation;
+                gl.uniform4f(this.loc.tr, q[0], q[1], q[2], q[3]);
+
+                gl.drawArrays(gl.POINTS, 0, this.cnt);
+
+                // Pass 2
+                if(this.options.enablePostProcess) {
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.useProgram(this.post);
+                    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.texCol);
+                    gl.uniform1i(gl.getUniformLocation(this.post, 'u_c'), 0);
+                    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.texSpin);
+                    gl.uniform1i(gl.getUniformLocation(this.post, 'u_s'), 1);
+                    gl.uniform2f(gl.getUniformLocation(this.post, 'u_res'), this.canvas.width, this.canvas.height);
+                    gl.uniform1f(gl.getUniformLocation(this.post, 'u_sens'), this.options.edgeSensitivity);
+
+                    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+                    const al = gl.getAttribLocation(this.post, 'a_pos');
+                    gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0,0); gl.enableVertexAttribArray(al);
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
+                }
+            }
+        }
+
+        // --- APP ---
+        const canvas = document.getElementById('canvas');
+        const renderer = new PhillipsRenderer(canvas);
+
+        const state = { shells: 25, speed: 1.0, mode: 'moxness_gpu', edge: 1.0, post: true, time: 0 };
+        const el = (id) => document.getElementById(id);
+
+        function gen() {
+            const c = E8Lattice.generateCloud(state.shells);
+            const cnt = c.positions.length/3;
+            const scl = new Float32Array(cnt);
+            const col = new Float32Array(cnt*3);
+            for(let i=0; i<cnt; i++) {
+                scl[i] = 1.0 / Math.pow(PLASTIC_CONSTANT, (Math.floor(i/240)%5)+1);
+                col[i*3] = (c.rotations[i*4]+1)*0.5;
+                col[i*3+1] = (c.rotations[i*4+1]+1)*0.5;
+                col[i*3+2] = (c.rotations[i*4+2]+1)*0.5;
+            }
+            renderer.setData({ ...c, scales: scl, colors: col });
+            el('pointCount').textContent = cnt;
+        }
+
+        function loop() {
+            state.time += 0.01 * state.speed;
+            const t = state.time;
+            renderer.options.enablePostProcess = state.post;
+            renderer.options.edgeSensitivity = state.edge;
+            renderer.options.enable4D = (state.mode === 'moxness_gpu');
+            renderer.options.timeRotation = [Math.sin(t), 0, Math.cos(t), 0];
+
+            const ar = canvas.width/canvas.height;
+            const proj = new Float32Array([1/ar,0,0,0, 0,1,0,0, 0,0,-1,-1, 0,0,-0.2,0]);
+            const mod = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,-3,1];
+            const mvp = new Float32Array(16);
+            for(let i=0; i<4; i++) for(let j=0; j<4; j++) {
+                let s=0; for(let k=0; k<4; k++) s+=proj[k*4+j]*mod[i*4+k];
+                mvp[i*4+j]=s;
+            }
+            renderer.render(mvp);
+            requestAnimationFrame(loop);
+        }
+
+        el('shells').oninput = (e) => { state.shells = parseInt(e.target.value); el('countVal').textContent=state.shells; gen(); };
+        el('edgeSens').oninput = (e) => { state.edge = parseFloat(e.target.value); el('edgeVal').textContent=state.edge; };
+        el('postProcess').onchange = (e) => { state.post = e.target.checked; };
+        el('speed').oninput = (e) => { state.speed = parseFloat(e.target.value); el('speedVal').textContent=state.speed; };
+        el('renderMode').onchange = (e) => { state.mode = e.target.value; };
+
+        gen();
+        loop();
+        el('log').textContent = "Holographic Kernel v4.0 Active";
+    </script>
+</body>
+</html>

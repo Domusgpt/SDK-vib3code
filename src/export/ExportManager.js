@@ -2,6 +2,10 @@
  * VIB34D Export/Import Management System
  * Handles all export and import functionality for configurations and media
  */
+import { PhillipsRenderer } from '../systems/PhillipsRenderer.js';
+import { JSOH } from './JSOH.js';
+import { E8Lattice } from '../math/E8.js';
+import { PLASTIC_CONSTANT } from '../math/Plastic.js';
 
 export class ExportManager {
     constructor(engine) {
@@ -55,6 +59,105 @@ export class ExportManager {
         this.downloadFile(json, 'vib34d-config.json', 'application/json');
         this.engine.statusManager.success('Configuration exported as JSON');
     }
+
+    /**
+     * Export to Parserator (AI Agent Ready Format)
+     * Generates a "Canonical View" and JSOH metadata using the Quatossian E8 Framework.
+     */
+    async exportToParserator() {
+        if (this.engine.statusManager) this.engine.statusManager.info('Generating Quatossian Parserator Package...');
+
+        // 1. Generate Quatossian Cloud (E8 Lattice + Spin)
+        // Use 20 shells to approximate ~4800 points (240 roots * 20)
+        const shells = 20;
+        const cloud = E8Lattice.generateCloud(shells);
+
+        const pointCount = cloud.positions.length / 3;
+
+        const scales = new Float32Array(pointCount);
+        const colors = new Float32Array(pointCount * 3);
+
+        // Procedural generation of Scale and Color based on Lattice structure
+        for (let i = 0; i < pointCount; i++) {
+            const shellIndex = Math.floor(i / 240);
+            scales[i] = 1.0 / Math.pow(PLASTIC_CONSTANT, (shellIndex % 5) + 1);
+
+            const qIdx = i * 4;
+            colors[i*3] = (cloud.rotations[qIdx] + 1.0) * 0.5;   // R from Q.x
+            colors[i*3+1] = (cloud.rotations[qIdx+1] + 1.0) * 0.5; // G from Q.y
+            colors[i*3+2] = (cloud.rotations[qIdx+2] + 1.0) * 0.5; // B from Q.z
+        }
+
+        // Attach new arrays to cloud object
+        cloud.scales = scales;
+        cloud.colors = colors;
+
+        // 2. SPATIAL SORTING (Phase 6)
+        // Reorder points by Morton Z-Curve for spatial coherence
+        const sortedCloud = E8Lattice.sortCloud(cloud);
+
+        const splatData = sortedCloud;
+
+        // 3. Render Canonical View
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+
+        // Use PhillipsRenderer with Quatossian support
+        const renderer = this.createPhillipsRenderer(canvas, {
+            backgroundColor: [0,0,0,1],
+            moireFreq: 30.0,
+            kirigamiShift: [0.1, 0.1] // Fixed shift for canonical consistency
+        });
+
+        renderer.setData(splatData);
+
+        // Canonical Camera: Orthographic or Fixed Perspective looking at center
+        // Adjusted scale for E8 cloud bounds
+        const viewProjection = new Float32Array([
+            0.15, 0, 0, 0,
+            0, 0.15, 0, 0,
+            0, 0, 0.1, 0,
+            0, 0, 0, 1
+        ]);
+
+        renderer.render(viewProjection);
+
+        // 4. Capture Image
+        const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        // Convert to Base64 for single-file JSON
+        const reader = new FileReader();
+        reader.readAsDataURL(imageBlob);
+
+        reader.onloadend = () => {
+            const base64Image = reader.result;
+
+            // 5. Generate JSOH with Quatossian Metadata
+            const jsoh = JSOH.generate(splatData, {
+                generatedBy: "PhillipsRenderer (Quatossian)",
+                viewType: "Canonical",
+                lattice: "E8 Gosset",
+                folding: "Moxness-Phillips",
+                sorting: "Morton-Z"
+            });
+
+            // 6. Package
+            const pkg = {
+                parseratorVersion: "2.0-quatossian",
+                image: base64Image,
+                structure: jsoh
+            };
+
+            const json = JSON.stringify(pkg, null, 2);
+            this.downloadFile(json, 'parserator-quatossian.json', 'application/json');
+            if (this.engine.statusManager) this.engine.statusManager.success('Quatossian Package Exported (Sorted)');
+
+            // Cleanup
+            renderer.destroy();
+        };
+    }
+
+    // ... (Rest of the file remains unchanged)
     
     /**
      * Save to Gallery - Creates properly formatted collection for gallery system
@@ -576,5 +679,15 @@ window.addEventListener('load', () => {
     getGeometryName(index) {
         const names = ['Tetrahedron', 'Hypercube', 'Sphere', 'Torus', 'Klein Bottle', 'Fractal', 'Wave', 'Crystal'];
         return names[index] || 'Unknown';
+    }
+
+    /**
+     * Create a Phillips Renderer instance for Canonical Views.
+     * @param {HTMLCanvasElement} canvas
+     * @param {Object} options
+     * @returns {PhillipsRenderer}
+     */
+    createPhillipsRenderer(canvas, options) {
+        return new PhillipsRenderer(canvas, options);
     }
 }
