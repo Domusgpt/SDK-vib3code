@@ -43,6 +43,11 @@ export class CanvasManager {
     return engine;
   }
 
+  createSystemCanvases(systemName) {
+    this.destroyAllCanvasesAndCreateFresh(systemName);
+    return this.getCanvasIdsForSystem(systemName);
+  }
+
   destroyOldWebGLContexts() {
     console.log('💥 COMPLETE DESTRUCTION: WebGL contexts + old system cleanup...');
     
@@ -154,6 +159,9 @@ export class CanvasManager {
         return baseIds.map(id => `quantum-${id}`);
       case 'holographic':
         return baseIds.map(id => `holo-${id}`);
+      case 'quatossian':
+        // Quatossian system is efficient: uses a single unified canvas
+        return ['quatossian-content-canvas'];
       case 'polychora':
         return baseIds.map(id => `polychora-${id}`);
       default:
@@ -189,6 +197,20 @@ export class CanvasManager {
             engine = new engineClasses.RealHolographicSystem();
             window.holographicSystem = engine;
             console.log('✅ Fresh Holographic engine');
+          }
+          break;
+
+        case 'quatossian':
+          if (engineClasses.QuatossianEngine) {
+            engine = new engineClasses.QuatossianEngine();
+            // Need to initialize with the canvas we just created
+            // Since Quatossian uses a single canvas, we find it by ID
+            const canvas = document.getElementById('quatossian-content-canvas');
+            if (canvas) {
+                engine.init(canvas);
+            }
+            window.quatossianEngine = engine;
+            console.log('✅ Fresh Quatossian engine');
           }
           break;
           

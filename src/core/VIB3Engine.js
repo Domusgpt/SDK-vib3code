@@ -12,6 +12,7 @@ import { CanvasManager } from './CanvasManager.js';
 import { QuantumEngine } from '../quantum/QuantumEngine.js';
 import { FacetedSystem } from '../faceted/FacetedSystem.js';
 import { RealHolographicSystem } from '../holograms/RealHolographicSystem.js';
+import { QuatossianEngine } from '../quatossian/QuatossianEngine.js';
 import { ReactivityManager } from '../reactivity/ReactivityManager.js';
 import { ReactivityConfig } from '../reactivity/ReactivityConfig.js';
 import { SpatialInputSystem } from '../reactivity/SpatialInputSystem.js';
@@ -163,6 +164,19 @@ export class VIB3Engine {
                     }
                     break;
 
+                case 'quatossian':
+                    system = new QuatossianEngine();
+                    const qCanvas = document.getElementById('quatossian-content-canvas');
+                    if (qCanvas) {
+                        system.init(qCanvas);
+                        system.setActive(true); // Auto-activate
+                        console.log('Quatossian System initialized');
+                    } else {
+                        console.error('Quatossian canvas not found');
+                        throw new Error('Quatossian initialization failed: No canvas');
+                    }
+                    break;
+
                 default:
                     throw new Error(`Unknown system: ${systemName}`);
             }
@@ -196,7 +210,7 @@ export class VIB3Engine {
      * DESTROYS old system and CREATES new system (proper WebGL cleanup)
      */
     async switchSystem(systemName) {
-        if (!['quantum', 'faceted', 'holographic'].includes(systemName)) {
+        if (!['quantum', 'faceted', 'holographic', 'quatossian'].includes(systemName)) {
             console.error('Unknown system:', systemName);
             return false;
         }
