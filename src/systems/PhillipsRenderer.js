@@ -270,6 +270,8 @@ export class PhillipsRenderer {
                 // Additive glow
                 vec3 neon = vec3(0.0, 1.0, 1.0) * edge; // Cyan edge
 
+                // Ensure base color is visible (Additive Blend)
+                // If baseColor alpha is 0, we might lose it, but here we assume opaque background or handling.
                 finalColor = vec4(baseColor.rgb + neon, 1.0);
             }
         `;
